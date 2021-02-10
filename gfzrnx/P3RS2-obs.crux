@@ -1,0 +1,23 @@
+replace :
+#--------
+    ALL:
+        regexp_from:    "^(.{60})PGM\s*/\s*RUN\s*BY\s*/\s*DATE\s*$"
+        regexp_to:      "$1PGM / RUN BY / DATE"
+    ALL:
+        string_from:    "PGM/RUN BY/DATE"
+        string_to:      "PGM / RUN BY / DATE"
+    ALL:
+        string_from:    "PGM / RUN BY /DATE"
+        string_to:      "PGM / RUN BY / DATE"
+
+update_insert :
+#--------
+    O - ALL:
+        "APPROX POSITION XYZ"   : {0:"4023741.3045", 1:"309110.4584", 2:"4922723.1945"}
+        "MARKER NAME"           : {0:$(marker)}
+        "MARKER NUMBER"         : {0:"0004"}
+        "OBSERVER / AGENCY"     : {0:"CISS", 1:"RMA-BEL"}
+        "MARKER TYPE"           : {0:$(marker)}
+        "REC # / TYPE / VERS"   : {0:"BEP3RS2", 1:"P3RS2", 2:"001"}
+        "ANT # / TYPE"          : {0:"BEANT", 1:"NAVXPERIENCE"}
+        "COMMENT"               : {0:"HEADER CHANGED BY RMA-CISS"}

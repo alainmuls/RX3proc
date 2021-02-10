@@ -1,0 +1,71 @@
+.PHONY: clean run
+
+# REPORT := $(REPORT)
+# MYREPORT = SC021-06-Tides
+
+# $(MYREPORT).mdfiles contains the ordered list of markdown files to combine to get the output
+# ifneq ("$(wildcard $(REPORT))","")
+# 	MD_FILES=$(shell cat $(REPORT))
+# else
+# 	MD_FILES=$(REPORT).md
+# endif
+
+ROOTDIR := $(dir $(REPORT))
+PDFBASENAME := $(basename $(REPORT))
+
+# PAPER=$(REPORT).pdf
+MD_FILES=$(shell cat $(REPORT))
+DEP=$(shell find ./ -name "*.sty" -o -name "*.jpg" -o -name "*.png" -o -name "*.eps" -o -name "*.md" -o -name "*.mdfiles")
+
+AUTHOR="Alain Muls"
+TITLE="PETRUS WPs"
+
+TEMPLATE=/home/amuls/.pandoc/templates/eisvogel.tex
+TEMPLATEDOCX=/home/amuls/.pandoc/templates/amreference.docx
+# TEMPLATEDOCX=/home/amuls/lnxenc/PETRUS/PETRUSCampaign/PETRUS-WP/WPs/BE-WPS/PETRUS_template.docx
+PANDOC=/usr/bin/pandoc
+PDFLATEX=/usr/bin/pdflatex
+
+TABLENOS=/home/amuls/.local/bin/pandoc-tablenos
+FIGNOS=/home/amuls/.local/bin/pandoc-fignos
+
+# OUTDIRDOCX=./Word
+# OUTDIRHTML=./HTML
+
+
+pdf: $(PDFBASENAME).pdf
+
+$(PDFBASENAME).pdf: $(MD_FILES) $(DEP)
+	@echo "creating PDF document"
+	$(PANDOC) $(MD_FILES) -o $(PDFBASENAME).pdf --from markdown --template $(TEMPLATE) --number-sections --filter=$(TABLENOS) --filter=$(FIGNOS)
+
+docx: $(PDFBASENAME).docx
+
+$(PDFBASENAME).docx: $(MD_FILES) $(TEMPLATEDOCX) ${DEP}
+	@echo "creating word document"
+	$(PANDOC) --standalone  $(MD_FILES) --reference-doc=$(TEMPLATEDOCX)  --filter=pandoc-tablenos --filter=pandoc-fignos --output $(PDFBASENAME).docx
+
+html: $(PDFBASENAME).html
+
+$(PDFBASENAME).html: $(MD_FILES) ${DEP}
+	@echo "creating HTML document"
+	$(PANDOC) --standalone  $(MD_FILES)  --filter=pandoc-tablenos --filter=pandoc-fignos --output $(PDFBASENAME).html
+
+clean:
+	@rm -f $(PDFBASENAME).pdf
+	@rm -f $(PDFBASENAME).docx
+	@rm -f $(PDFBASENAME).html
+
+files:
+	@echo "----------------"
+	@echo "DEP = "$(DEP)
+	@echo "----------------"
+	@echo "REPORT = "$(REPORT)
+	@echo "----------------"
+	@echo "MD_FILES = "$(MD_FILES)
+	@echo "----------------"
+	@echo "ROOTDIR = "$(ROOTDIR)
+	@echo "----------------"
+	@echo "PDFBASENAME = "$(PDFBASENAME)
+
+
