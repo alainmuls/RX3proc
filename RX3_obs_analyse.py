@@ -16,6 +16,7 @@ from ampyutils import am_config as amc
 from ampyutils import amutils, location
 from plot import obsstat_plot
 from gfzrnx import rnxobs_analysis
+from ltx import ltx_obstab_reporting
 
 __author__ = 'amuls'
 
@@ -141,7 +142,12 @@ def main(argv):
     dHdr = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZRNX['gfzrnx'], obs3f=dGFZRNX['obsf'], logger=logger)
     logger.info('{func:s}: dHdr =\n{json!s}'.format(func=cFuncName, json=json.dumps(dHdr, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    # sys.exit(6)
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX, sort_keys=False, indent=4, default=amutils.json_convertor)))
+
+    sec_script = ltx_obstab_reporting.obstab_script_information(dCLI=dGFZRNX['cli'], script_name=os.path.basename(__file__))
+
+    print(sec_script)
+    sys.exit(6)
 
     # create the tabular observation file for the selected GNSSs
     for gnss in dGFZRNX['GNSSs']:
