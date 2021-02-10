@@ -51,7 +51,7 @@ def treatCmdOpts(argv):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('-r', '--rnx_dir', help='Root directory of P3RS2 RINEX files (default {:s})'.format(colored(gco.P3RS2RNXDIR, 'green')), required=False, type=str, default=gco.P3RS2RNXDIR)
+    parser.add_argument('-r', '--rnx_dir', help='directory of RINEX files', required=True, type=str)
     parser.add_argument('-o', '--obsf', help='RINEX observation file', type=str, required=True)
 
     parser.add_argument('-g', '--gnsss', help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')), default=gfzc.lst_GNSSs[0], type=str, required=False, action=gnss_action, nargs='+')
@@ -141,7 +141,7 @@ def main(argv):
     dHdr = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZRNX['gfzrnx'], obs3f=dGFZRNX['obsf'], logger=logger)
     logger.info('{func:s}: dHdr =\n{json!s}'.format(func=cFuncName, json=json.dumps(dHdr, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    sys.exit(6)
+    # sys.exit(6)
 
     # create the tabular observation file for the selected GNSSs
     for gnss in dGFZRNX['GNSSs']:
@@ -150,7 +150,7 @@ def main(argv):
         obs_statf = 'obs_{gnss:s}_statf'.format(gnss=gnss)
         dGFZRNX[obs_tabf], dGFZRNX[obs_statf] = create_tabular_observations(gfzrnx=dGFZRNX['gfzrnx'], obsf=dGFZRNX['obsf'], gnss=gnss, logger=logger)
 
-        # plot hte observation statistics
+        # plot the observation statistics
         obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZRNX[obs_statf], gnss=gnss, gfzrnx=dGFZRNX['gfzrnx'], show_plot=show_plot, logger=logger)
 
     # report to the user
