@@ -79,9 +79,9 @@ def obsstat_plot_obscount(obs_statf: str, gnss: str, gfzrnx: str, show_plot: boo
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
-    for ext in ['pdf', 'png']:
+    for ext in ['pdf', 'png', 'eps']:
         plt_name = os.path.join('png', '{basen:s}-{gnss:s}-obscount.{ext:s}'.format(basen=obs_statf.split('.')[0], gnss=gnss, ext=ext))
-        fig.savefig(plt_name, dpi=150, bbox_inches='tight')
+        fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
     if show_plot:

@@ -107,6 +107,7 @@ def main(argv):
     dGFZRNX['bin'] = {}
     dGFZRNX['hdr'] = {}
     dGFZRNX['ltx'] = {}
+    dGFZRNX['obsproc'] = {}
 
     # treat command line options
     dCLI = {}
@@ -157,22 +158,21 @@ def main(argv):
 
     dGFZRNX['ltx']['script'] = os.path.join(dGFZRNX['ltx']['path'], 'script_info')
     sec_script.generate_tex(dGFZRNX['ltx']['script'])
-    sys.exit(6)
 
     # create the tabular observation file for the selected GNSSs
-    for gnss in dGFZRNX['GNSSs']:
+    for gnss in dGFZRNX['cli']['GNSSs']:
         # create names for obs_tab and obs_stat files for current gnss
         obs_tabf = 'obs_{gnss:s}_tabf'.format(gnss=gnss)
         obs_statf = 'obs_{gnss:s}_statf'.format(gnss=gnss)
-        dGFZRNX[obs_tabf], dGFZRNX[obs_statf] = create_tabular_observations(gfzrnx=dGFZRNX['gfzrnx'], obsf=dGFZRNX['obsf'], gnss=gnss, logger=logger)
+        dGFZRNX['obsproc'][obs_tabf], dGFZRNX['obsproc'][obs_statf] = create_tabular_observations(gfzrnx=dGFZRNX['bin']['gfzrnx'], obsf=dGFZRNX['cli']['obsf'], gnss=gnss, logger=logger)
 
         # plot the observation statistics
-        obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZRNX[obs_statf], gnss=gnss, gfzrnx=dGFZRNX['gfzrnx'], show_plot=show_plot, logger=logger)
+        obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZRNX['obsproc'][obs_statf], gnss=gnss, gfzrnx=dGFZRNX['bin']['gfzrnx'], show_plot=show_plot, logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    shutil.copyfile(log_name, os.path.join(dGFZRNX['path'], '{:s}.log'.format(os.path.basename(__file__).replace('.', '_'))))
+    shutil.copyfile(log_name, os.path.join(dGFZRNX['cli']['path'], '{:s}.log'.format(os.path.basename(__file__).replace('.', '_'))))
     os.remove(log_name)
 
 
