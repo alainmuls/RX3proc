@@ -4,19 +4,24 @@ from datetime import datetime
 from pylatex.utils import bold
 import numpy as np
 from nested_lookup import nested_lookup
+import json
+
+from gfzrnx import gfzrnx_constants as gfzc
 
 from ampyutils import am_config as amc
-from gfzrnx import gfzrnx_constants as gfzc
+from ampyutils import amutils
 from ltx import ltx_gfzrnx_report
 
 __author__ = 'amuls'
 
 
-def obstab_script_information(dCLI: dict, script_name: str):
+def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: str):
     """
     obstab_script_information creates the section with information about the script obstab_analyze
     """
-    info_report = ltx_gfzrnx_report.report_information()
+    info_report = ltx_gfzrnx_report.report_information(dInfo=dInfo)
+
+    print('dHdr information =\n{json!s}'.format(json=json.dumps(dHdr, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     ssec = Subsection('Script details')
     with ssec.create(Subsubsection(title='Program information', numbering=True)) as sssec:
@@ -27,22 +32,28 @@ def obstab_script_information(dCLI: dict, script_name: str):
             longtabu.add_row(('', '', '{company:s}'.format(company=', '.join(info_report['company']))))
             # longtabu.add_empty_row()
 
-    with ssec.create(Subsubsection(title='CLI parameters', numbering=True)) as sssec:
+    with ssec.create(Subsubsection(title='Parameters', numbering=True)) as sssec:
         with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
-            longtabu.add_row(('RINEX root directory', ':', os.path.expanduser(dCLI['rnx_dir'])))
-            longtabu.add_row(('Marker', ':', dCLI['marker']))
-            longtabu.add_row(('Year/day-of-year', ':', '{yyyy:04d}/{doy:03d}'.format(yyyy=dCLI['yyyy'], doy=dCLI['doy'])))
-            for i, gnss in enumerate(dCLI['GNSSs']):
+            longtabu.add_row(('RINEX root directory', ':', os.path.expanduser(dCli['path'])))
+            longtabu.add_row(('RINEX observation file', ':', dCli['obsf']))
+            longtabu.add_row(('Marker', ':', dInfo['marker']))
+            longtabu.add_row(('Year/day-of-year', ':', '{yyyy:04d}/{doy:03d}'.format(yyyy=dInfo['yyyy'], doy=dInfo['doy'])))
+            for i, gnss in enumerate(dCli['GNSSs']):
                 if i == 0:
                     longtabu.add_row(('GNSS', ':', '{gnss:s} ({name:s}) '.format(gnss=gnss, name=gfzc.dict_GNSSs[gnss])))
                 else:
                     longtabu.add_row(('', ':', '{gnss:s} ({name:s}) '.format(gnss=gnss, name=gfzc.dict_GNSSs[gnss])))
-            for i, obst in enumerate(dCLI['obstypes']):
+            for i, obst in enumerate(dCli['obstypes']):
                 if i == 0:
                     longtabu.add_row(('Observable types', ':', '{obst:s} ({name:s}) '.format(obst=obst, name=gfzc.dict_obstypes[obst])))
                 else:
                     longtabu.add_row(('', ':', '{obst:s} ({name:s}) '.format(obst=obst, name=gfzc.dict_obstypes[obst])))
             # longtabu.add_empty_row()
+
+    # print('ssec = \n{!s}'.format(ssec))
+    # print('-' * 25)
+    # print('type(ssec) = {!s}'.format(type(ssec)))
+    # print('-' * 25)
 
     return ssec
 

@@ -8,6 +8,8 @@ import logging
 import json
 from typing import Tuple
 import shutil
+from nested_lookup import nested_lookup
+from datetime import datetime
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -19,22 +21,6 @@ from gfzrnx import rnxobs_analysis
 from ltx import ltx_obstab_reporting
 
 __author__ = 'amuls'
-
-
-class logging_action(argparse.Action):
-    def __call__(self, parser, namespace, log_actions, option_string=None):
-        for log_action in log_actions:
-            if log_action not in gco.lst_logging_choices:
-                raise argparse.ArgumentError(self, "log_actions must be in {choices!s}".format(choices=gco.lst_logging_choices))
-        setattr(namespace, self.dest, log_actions)
-
-
-class gnss_action(argparse.Action):
-    def __call__(self, parser, namespace, gnsss, option_string=None):
-        for gnss in gnsss:
-            if gnss not in gfzc.lst_GNSSs:
-                raise argparse.ArgumentError(self, 'select GNSS(s) out of {gnsss:s}'.format(gnsss='|'.join(gfzc.lst_GNSSs)))
-        setattr(namespace, self.dest, gnsss)
 
 
 def treatCmdOpts(argv):
@@ -55,17 +41,18 @@ def treatCmdOpts(argv):
     parser.add_argument('-r', '--rnx_dir', help='directory of RINEX files', required=True, type=str)
     parser.add_argument('-o', '--obsf', help='RINEX observation file', type=str, required=True)
 
-    parser.add_argument('-g', '--gnsss', help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')), default=gfzc.lst_GNSSs[0], type=str, required=False, action=gnss_action, nargs='+')
+    parser.add_argument('-g', '--gnsss', help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')), default=gfzc.lst_GNSSs[0], type=str, required=False, action=gco.gnss_action, nargs='+')
+    parser.add_argument('-t', '--types_obs', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
 
     parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
-    parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=logging_action)
+    parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.rnx_dir, args.obsf, args.gnsss, args.plot, args.logging
+    return args.rnx_dir, args.obsf, args.gnsss, args.types_obs, args.plot, args.logging
 
 
 def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: logging.Logger = None) -> Tuple[str, str]:
@@ -92,7 +79,6 @@ def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: loggi
     # create the observation statistics file
     # gfzrnx -finp COMB00XXX_R_20191340000_01D_01S_MO.rnx -stk_obs -obs_types S
     obs_statf = '{basen:s}_{gnss:s}.obsstat'.format(basen=os.path.splitext(obsf)[0], gnss=gnss)
-
     args4GFZRNX = [gfzrnx, '-finp', obsf, '-stk_obs', '-fout', obs_statf, '-f', '-satsys', gnss, '-obs_types', 'C,S']
 
     if logger is not None:
@@ -114,10 +100,18 @@ def main(argv):
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    # treat command line options
-    # store cli parameters
+    # store parameters in dicttionaries
     dGFZRNX = {}
-    dGFZRNX['path'], dGFZRNX['obsf'], dGFZRNX['GNSSs'], show_plot, logLevels = treatCmdOpts(argv)
+    dGFZRNX['info'] = {}
+    dGFZRNX['cli'] = {}
+    dGFZRNX['bin'] = {}
+    dGFZRNX['hdr'] = {}
+    dGFZRNX['ltx'] = {}
+
+    # treat command line options
+    dCLI = {}
+    dCLI['path'], dCLI['obsf'], dCLI['GNSSs'], dCLI['obstypes'], show_plot, logLevels = treatCmdOpts(argv)
+    dGFZRNX['cli'] = dCLI
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
@@ -126,27 +120,43 @@ def main(argv):
     # dGFZRNX['path'], dGFZRNX['obsf'] = os.path.split(os.path.abspath(obsf))
 
     # external program
-    dGFZRNX['gfzrnx'] = location.locateProg(progName='gfzrnx', logger=logger)
+    dGFZRNX['bin']['gfzrnx'] = location.locateProg(progName='gfzrnx', logger=logger)
 
     # check & change to rnx path
-    if not amutils.changeDir(dGFZRNX['path']):
+    if not amutils.changeDir(dGFZRNX['cli']['path']):
         logger.error('{func:s}: changing to directory {dir:s} failed'.format(dir=dGFZRNX['path'], func=cFuncName))
         sys.exit(amc.E_DIR_NOT_EXIST)
 
     # check accessibilty of observation file
-    if not amutils.file_exists(fname=dGFZRNX['obsf'], logger=logger):
-        logger.error('{func:s}: observation file {file:s} not accessible'.format(file=dGFZRNX['obsf'], func=cFuncName))
+    if not amutils.file_exists(fname=dGFZRNX['cli']['obsf'], logger=logger):
+        logger.error('{func:s}: observation file {file:s} not accessible'.format(file=dGFZRNX['cli']['obsf'], func=cFuncName))
         sys.exit(amc.E_FILE_NOT_EXIST)
 
+    # create dir for storing the latex sections
+    dGFZRNX['ltx']['path'] = os.path.join(dGFZRNX['cli']['path'], 'ltx')
+    if not amutils.mkdir_p(dGFZRNX['ltx']['path']):
+        logger.error('{func:s}: cannot create directory {dir:s} failed'.format(dir=dGFZRNX['ltx']['path'], func=cFuncName))
+        sys.exit(amc.E_FAILURE)
+
     # examine the header of the RX3 observation file
-    dHdr = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZRNX['gfzrnx'], obs3f=dGFZRNX['obsf'], logger=logger)
-    logger.info('{func:s}: dHdr =\n{json!s}'.format(func=cFuncName, json=json.dumps(dHdr, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    dGFZRNX['hdr'] = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZRNX['bin']['gfzrnx'], obs3f=dGFZRNX['cli']['obsf'], logger=logger)
 
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    logger.info('{func:s}: dGFZRNX[hdr] =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    sec_script = ltx_obstab_reporting.obstab_script_information(dCLI=dGFZRNX['cli'], script_name=os.path.basename(__file__))
+    # extract information from the header useful for later usage
+    obs_date = nested_lookup(key='first', document=dGFZRNX['hdr'])[0]
+    dGFZRNX['info']['obs_date'] = datetime.strptime(obs_date.split('.')[0], '%Y %m %d %H %M %S').strftime('%d %B %Y')
+    print(dGFZRNX['cli']['obsf'])
+    dGFZRNX['info']['marker'] = dGFZRNX['cli']['obsf'][:9]
+    dGFZRNX['info']['yyyy'] = int(dGFZRNX['cli']['obsf'][12:16])
+    dGFZRNX['info']['doy'] = int(dGFZRNX['cli']['obsf'][16:19])
 
-    print(sec_script)
+    logger.info('{func:s}: dGFZRNX =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX, sort_keys=False, indent=4, default=amutils.json_convertor)))
+
+    sec_script = ltx_obstab_reporting.obstab_script_information(dCli=dGFZRNX['cli'], dHdr=dGFZRNX['hdr'], dInfo=dGFZRNX['info'], script_name=os.path.basename(__file__))
+
+    dGFZRNX['ltx']['script'] = os.path.join(dGFZRNX['ltx']['path'], 'script_info')
+    sec_script.generate_tex(dGFZRNX['ltx']['script'])
     sys.exit(6)
 
     # create the tabular observation file for the selected GNSSs

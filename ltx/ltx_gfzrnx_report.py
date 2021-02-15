@@ -4,7 +4,6 @@ import sys
 from termcolor import colored
 from pylatex.utils import NoEscape
 from nested_lookup import nested_lookup
-from datetime import datetime
 import logging
 from pylatex import Document, Section
 
@@ -12,16 +11,14 @@ from ampyutils import am_config as amc
 from ltx import ltx_report, ltx_obstab_reporting, ltx_titlepage, ltx_navtab_reporting
 
 
-def report_information(logger: logging.Logger = None) -> dict:
+def report_information(dInfo: dict, logger: logging.Logger = None) -> dict:
     """
     report_information determines the info about author and so on
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    obs_date = nested_lookup(key='first', document=amc.dRTK)[0]
-    obs_date = datetime.strptime(obs_date.split('.')[0], '%Y %m %d %H %M %S').strftime('%d %B %Y')
-    report_info = {'title': NoEscape('Analysis of observations\n\n{date:s}'.format(date=obs_date)),
-                   'subtitle': NoEscape('Receiver {marker:s} @ {year:04d}/{doy:03d}'.format(marker=amc.dRTK['cli']['marker'], year=amc.dRTK['cli']['yyyy'], doy=amc.dRTK['cli']['doy'])),
+    report_info = {'title': NoEscape('Analysis of observations\n\n{date:s}'.format(date=dInfo['obs_date'])),
+                   'subtitle': NoEscape('Receiver {marker:s} @ {year:04d}/{doy:03d}'.format(marker=dInfo['marker'], year=dInfo['yyyy'], doy=dInfo['doy'])),
                    'author': ['A. Muls'],
                    'company': ['Royal Military Academy'],
                    'classification': '  '}
@@ -29,6 +26,7 @@ def report_information(logger: logging.Logger = None) -> dict:
     if logger is not None:
         logger.info('{func:s}: report creation information {report!s}'.format(report=report_info, func=cFuncName))
 
+    print('{func:s}: report creation information {report!s}'.format(report=report_info, func=cFuncName))
     return report_info
 
 
