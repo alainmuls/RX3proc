@@ -33,18 +33,17 @@ def treatCmdOpts(argv):
     baseName = os.path.basename(__file__)
     amc.cBaseName = colored(baseName, 'yellow')
 
-    helpTxt = amc.cBaseName + ' creates observation tabular file for selected GNSSs'
+    helpTxt = amc.cBaseName + ' creates observation tabular/statistics file for selected GNSSs'
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('-r', '--rnx_dir', help='directory of RINEX files', required=True, type=str)
-    parser.add_argument('-o', '--obsf', help='RINEX observation file', type=str, required=True)
+    parser.add_argument('-r', '--rnxobsf', help='RINEX observation file', type=str, required=True)
 
     parser.add_argument('-g', '--gnsss', help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')), default=gfzc.lst_GNSSs[0], type=str, required=False, action=gco.gnss_action, nargs='+')
-    parser.add_argument('-t', '--types_obs', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
+    # parser.add_argument('-t', '--types_obs', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
 
-    parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
+    # parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
     parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
@@ -52,7 +51,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.rnx_dir, args.obsf, args.gnsss, args.types_obs, args.plot, args.logging
+    return args.rnxobsf, args.gnsss, args.logging
 
 
 def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: logging.Logger = None) -> Tuple[str, str]:
@@ -79,7 +78,7 @@ def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: loggi
     # create the observation statistics file
     # gfzrnx -finp COMB00XXX_R_20191340000_01D_01S_MO.rnx -stk_obs -obs_types S
     obs_statf = '{basen:s}_{gnss:s}.obsstat'.format(basen=os.path.splitext(obsf)[0], gnss=gnss)
-    args4GFZRNX = [gfzrnx, '-finp', obsf, '-stk_obs', '-fout', obs_statf, '-f', '-satsys', gnss, '-obs_types', 'C,S']
+    args4GFZRNX = [gfzrnx, '-finp', obsf, '-stk_obs', '-fout', obs_statf, '-f', '-satsys', gnss]
 
     if logger is not None:
         logger.info('{func:s} creating observation statistics file {obstab:s}'.format(obstab=colored(obs_statf, 'blue'), func=cFuncName))
@@ -94,7 +93,7 @@ def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: loggi
     return obs_tabf, obs_statf
 
 
-def main(argv):
+def rnx_tabular(argv):
     """
     rnx2obstab adds statistics to RINEX file, makes ::RX3:: format and crates the observation tabular file
     """
@@ -107,11 +106,13 @@ def main(argv):
     dGFZRNX['bin'] = {}
     dGFZRNX['hdr'] = {}
     dGFZRNX['ltx'] = {}
-    dGFZRNX['obsproc'] = {}
+    dGFZRNX['obstab'] = {}
 
     # treat command line options
     dCLI = {}
-    dCLI['path'], dCLI['obsf'], dCLI['GNSSs'], dCLI['obstypes'], show_plot, logLevels = treatCmdOpts(argv)
+    rnx3obsf, dCLI['GNSSs'], logLevels = treatCmdOpts(argv)
+    dCLI['obsf'] = os.path.basename(rnx3obsf)
+    dCLI['path'] = os.path.dirname(rnx3obsf)
     dGFZRNX['cli'] = dCLI
 
     # create logging for better debugging
@@ -161,13 +162,14 @@ def main(argv):
 
     # create the tabular observation file for the selected GNSSs
     for gnss in dGFZRNX['cli']['GNSSs']:
+        dGFZRNX['obstab'][gnss] = {}
         # create names for obs_tab and obs_stat files for current gnss
         obs_tabf = 'obs_{gnss:s}_tabf'.format(gnss=gnss)
         obs_statf = 'obs_{gnss:s}_statf'.format(gnss=gnss)
-        dGFZRNX['obsproc'][obs_tabf], dGFZRNX['obsproc'][obs_statf] = create_tabular_observations(gfzrnx=dGFZRNX['bin']['gfzrnx'], obsf=dGFZRNX['cli']['obsf'], gnss=gnss, logger=logger)
+        dGFZRNX['obstab'][gnss][obs_tabf], dGFZRNX['obstab'][gnss][obs_statf] = create_tabular_observations(gfzrnx=dGFZRNX['bin']['gfzrnx'], obsf=dGFZRNX['cli']['obsf'], gnss=gnss, logger=logger)
 
         # plot the observation statistics
-        obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZRNX['obsproc'][obs_statf], gnss=gnss, gfzrnx=dGFZRNX['bin']['gfzrnx'], show_plot=show_plot, logger=logger)
+        # obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZRNX['obstab'][obs_statf], gnss=gnss, gfzrnx=dGFZRNX['bin']['gfzrnx'], show_plot=show_plot, logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX, sort_keys=False, indent=4, default=amutils.json_convertor)))
@@ -175,6 +177,10 @@ def main(argv):
     shutil.copyfile(log_name, os.path.join(dGFZRNX['cli']['path'], '{:s}.log'.format(os.path.basename(__file__).replace('.', '_'))))
     os.remove(log_name)
 
+    return dGFZRNX['obstab']
+
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    main(sys.argv)
+    dObstabs = rnx_tabular(sys.argv)
+
+    print('dObstabs = {!s}'.format(dObstabs))

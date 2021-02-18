@@ -105,7 +105,7 @@ def sbf_rnx3(sbffile: str, sbfdir: str, rnxdir: str, logger: logging.Logger = No
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    sys.argv = ['--sbfdir', sbfdir, '--file', sbffile, '--rnxdir', rnxdir]
+    sys.argv = ['--sbff', os.path.join(sbfdir, sbffile), '--rnxdir', rnxdir]
 
     if logger is not None:
         logger.info('=== {func:s}: passing control to {scr:s}  (options: {opts!s}) ==='.format(scr=colored('sbf_rinex.py', 'red'), opts=colored(' '.join(sys.argv), 'blue'), func=cFuncName))

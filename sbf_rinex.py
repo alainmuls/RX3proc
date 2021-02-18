@@ -46,8 +46,8 @@ def treatCmdOpts(argv: list):
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
-    parser.add_argument('-s', '--sbfdir', help='SBF directory (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
-    parser.add_argument('-f', '--file', help='Binary SBF file', required=True, type=str)
+    # parser.add_argument('-s', '--sbfdir', help='SBF directory (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
+    parser.add_argument('-f', '--sbff', help='Binary SBF file', required=True, type=str)
 
     parser.add_argument('-r', '--rnxdir', help='Directory for RINEX output (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
 
@@ -57,7 +57,7 @@ def treatCmdOpts(argv: list):
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.sbfdir, args.file, args.rnxdir, args.logging
+    return args.sbff, args.rnxdir, args.logging
 
 
 def checkValidityArgs(logger: logging.Logger) -> bool:
@@ -144,15 +144,15 @@ def sbf2rnx3(argv):
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # treat command line options
-    sbfDir, sbffile, rnxdir, logLevels = treatCmdOpts(argv)
+    sbffile, rnxdir, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
 
     # store cli parameters
     dRnx['dirs'] = {}
-    dRnx['dirs']['sbf'] = sbfDir
-    dRnx['sbff'] = sbffile
+    dRnx['dirs']['sbf'] = os.path.dirname(sbffile)
+    dRnx['sbff'] = os.path.basename(sbffile)
     dRnx['dirs']['rnx'] = rnxdir
 
     logger.info('{func:s}: arguments processed: dRnx = {drtk!s}'.format(func=cFuncName, drtk=dRnx))
