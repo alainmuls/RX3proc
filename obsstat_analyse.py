@@ -20,6 +20,7 @@ from ampyutils import amutils
 from plot import obsstat_plot
 from gfzrnx import rnxobs_analysis
 from ltx import ltx_obstab_reporting
+from tle import tle_visibility
 
 __author__ = 'amuls'
 
@@ -82,6 +83,13 @@ def check_arguments(logger: logging.Logger = None):
             logger.error('{func:s}: cannot create directory {dir:s} failed'.format(dir=dStat['ltx']['path'], func=cFuncName))
         sys.exit(amc.E_FAILURE)
 
+    # extract YY and DOY from filename
+    dStat['time'] = {}
+    dStat['time']['YYYY'] = int(dStat['obsstatf'][12:16])
+    dStat['time']['DOY'] = int(dStat['obsstatf'][16:19])
+    # converting to date
+    dStat['time']['date'] = datetime.strptime('{year:04d}-{doy:03d}'.format(year=dStat['time']['YYYY'], doy=dStat['time']['DOY']), "%Y-%j")
+
 
 def read_obsstat(logger: logging.Logger = None):
     """
@@ -128,6 +136,13 @@ def rnxobs_analyse(argv):
     dfObsStat = read_obsstat(logger=logger)
     amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
 
+    # get list of unique PRNs
+    # lst_prns = dfObsStat.TYP.unique()
+    # print(lst_prns)
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
+
+    # get the observation time spans based on TLE values
+    tle_visibility.PRNs_visibility(prn_lst=dfObsStat.TYP.unique(), cur_date=dStat['time']['date'], logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
