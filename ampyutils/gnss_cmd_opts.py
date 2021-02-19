@@ -9,6 +9,7 @@ P3RS2RNXDIR = os.path.expanduser('~/RxTURP/BEGPIOS/P3RS2/rinex/')
 P3RS2PVTLSDIR = os.path.expanduser('~/RxTURP/BEGPIOS/P3RS2/LOG/pvt_ls/')
 
 lst_logging_choices = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
+lst_intervals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 2., 5., 10., 30., 60.]
 
 
 class logging_action(argparse.Action):
@@ -69,3 +70,17 @@ class freqtype_action(argparse.Action):
             if freqtype not in gfzc.lst_freqs:
                 raise argparse.ArgumentError(self, 'select freq(s) out of {freqtypes:s}'.format(freqtypes='|'.join(gfzc.lst_freqs)))
         setattr(namespace, self.dest, freqtypes)
+
+
+class interval_action(argparse.Action):
+    def __call__(self, parser, namespace, interval, option_string=None):
+        if interval not in lst_intervals:
+            raise argparse.ArgumentError(self, "interval not valid")
+        setattr(namespace, self.dest, interval)
+
+
+class cutoff_action(argparse.Action):
+    def __call__(self, parser, namespace, cutoff, option_string=None):
+        if cutoff not in range(0, 45):
+            raise argparse.ArgumentError(self, "cutoff angle must be in [0...45] degrees")
+        setattr(namespace, self.dest, cutoff)

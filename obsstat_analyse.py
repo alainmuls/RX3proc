@@ -11,6 +11,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
+from numpy import linspace
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -44,6 +45,10 @@ def treatCmdOpts(argv):
 
     parser.add_argument('-f', '--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
 
+    parser.add_argument('-i', '--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
+
+    parser.add_argument('-c', '--cutoff', help='curoff angle in degrees (default {mask:s})'.format(mask=colored('5', 'green')), default=5, type=int, required=False, action=gco.cutoff_action)
+
     parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
     parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
@@ -52,7 +57,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obsstat, args.freqs, args.plot, args.logging
+    return args.obsstat, args.freqs, args.interval, args.cutoff, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -84,7 +89,6 @@ def check_arguments(logger: logging.Logger = None):
         sys.exit(amc.E_FAILURE)
 
     # extract YY and DOY from filename
-    dStat['time'] = {}
     dStat['time']['YYYY'] = int(dStat['obsstatf'][12:16])
     dStat['time']['DOY'] = int(dStat['obsstatf'][16:19])
     # converting to date
@@ -122,9 +126,10 @@ def rnxobs_analyse(argv):
     global dStat
     dStat = {}
     dStat['cli'] = {}
+    dStat['time'] = {}
     dStat['ltx'] = {}
 
-    dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['cli']['plot'], logLevels = treatCmdOpts(argv)
+    dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['time']['interval'], dStat['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
@@ -139,10 +144,9 @@ def rnxobs_analyse(argv):
     # get list of unique PRNs
     # lst_prns = dfObsStat.TYP.unique()
     # print(lst_prns)
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # get the observation time spans based on TLE values
-    tle_visibility.PRNs_visibility(prn_lst=dfObsStat.TYP.unique(), cur_date=dStat['time']['date'], logger=logger)
+    tle_visibility.PRNs_visibility(prn_lst=dfObsStat.TYP.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))

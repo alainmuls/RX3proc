@@ -11,7 +11,7 @@ from ampyutils import amutils
 __author__ = 'amuls'
 
 
-def PRNs_visibility(prn_lst: list, cur_date: datetime, cutoff: int = 5, logger: logging.Logger = None):
+def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: int = 5, logger: logging.Logger = None):
     """
     PRNs_visibility determines the visibilty info for list of PRNs passed
     """
