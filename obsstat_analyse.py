@@ -146,7 +146,8 @@ def rnxobs_analyse(argv):
     # print(lst_prns)
 
     # get the observation time spans based on TLE values
-    tle_visibility.PRNs_visibility(prn_lst=dfObsStat.TYP.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
+    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.TYP.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
+    amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))

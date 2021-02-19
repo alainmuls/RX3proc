@@ -4,6 +4,7 @@ import logging
 from termcolor import colored
 from datetime import datetime, timedelta
 from skyfield import api as sf
+import pandas as pd
 
 from tle import tle_parser
 from ampyutils import amutils
@@ -11,7 +12,7 @@ from ampyutils import amutils
 __author__ = 'amuls'
 
 
-def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: int = 5, logger: logging.Logger = None):
+def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: int = 5, logger: logging.Logger = None) -> pd.DataFrame:
     """
     PRNs_visibility determines the visibilty info for list of PRNs passed
     """
@@ -46,10 +47,18 @@ def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: 
     # find corresponding TLE record for NORAD nrs
     df_tles = tle_parser.find_norad_tle_yydoy(dNorads=dNORADs, yydoy=cur_date.strftime('%y%j'), logger=logger)
 
-    # # list of rise / set times by observation / TLEs
-    # lst_obs_rise = []
+    # list of rise / set times by observation / TLEs
+    lst_obs_rise = []
 
     # find in observations and by TLEs what the riuse/set times are and number of observations
     for prn in prn_lst:
         # find rise:set times using TLEs
         dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count = tle_parser.tle_rise_set_times(prn=prn, df_tle=df_tles, marker=RMA, t0=t0, t1=t1, elev_min=cutoff, obs_int=1, logger=logger)
+
+        # add to list for creating dataframe
+        lst_obs_rise.append([dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count])
+
+    # test to import in dataframe
+    df_rise_set_tmp = pd.DataFrame(lst_obs_rise, columns=['tle_rise', 'tle_set', 'tle_cul', 'tle_arc_count'], index=prn_lst)
+
+    return df_rise_set_tmp
