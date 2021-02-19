@@ -7,6 +7,7 @@ from termcolor import colored
 import json
 import logging
 from shutil import copyfile
+from pathlib import Path
 import glob
 
 from ampyutils import am_config as amc
@@ -151,9 +152,9 @@ def sbf2rnx3(argv):
 
     # store cli parameters
     dRnx['dirs'] = {}
-    dRnx['dirs']['sbf'] = os.path.dirname(sbffile)
+    dRnx['dirs']['sbf'] = os.path.dirname(Path(sbffile).resolve())
     dRnx['sbff'] = os.path.basename(sbffile)
-    dRnx['dirs']['rnx'] = rnxdir
+    dRnx['dirs']['rnx'] = (Path(rnxdir).resolve())
 
     logger.info('{func:s}: arguments processed: dRnx = {drtk!s}'.format(func=cFuncName, drtk=dRnx))
 
@@ -188,6 +189,7 @@ def sbf2rnx3(argv):
         json.dump(dRnx, f, ensure_ascii=False, indent=4, default=amutils.json_convertor)
 
     # clean up
+    copyfile(log_name, os.path.join(dRnx['dirs']['rnx'], '{:s}.log'.format(os.path.basename(__file__).replace('.', '_'))))
     os.remove(log_name)
 
     return dRnx['obs3f'], dRnx['nav3f']

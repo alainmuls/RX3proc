@@ -70,7 +70,7 @@ def check_arguments(logger: logging.Logger = None):
         sys.exit(amc.E_DIR_NOT_EXIST)
 
     # check if given crux file exists
-    dProc['cli']['cruxf'] = os.path.expanduser( os.path.join(os.getcwd(), dProc['cli']['cruxf']))
+    dProc['cli']['cruxf'] = os.path.expanduser(os.path.join(os.getcwd(), dProc['cli']['cruxf']))
     if not amutils.CheckFile(filename=dProc['cli']['cruxf']):
         if logger is not None:
             logger.error('{func:s}: observation crux file {crux:s} does not exist'.format(crux=colored(dProc['cli']['cruxf'], 'red'), func=cFuncName))

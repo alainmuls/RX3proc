@@ -12,6 +12,8 @@ lst_obstypes = ['C', 'S', 'D', 'L']
 lst_obstypes_names = ['Pseudorange', 'SNR', 'Doppler', 'Carrier']
 dict_obstypes = dict(zip(lst_obstypes, lst_obstypes_names))
 
+lst_freqs = ['1', '2', '5', '6']
+
 # crux templates
 crux_tmpl = path.expanduser('~/amPython/RX3proc/gfzrnx/P3RS2-obs.crux')
 

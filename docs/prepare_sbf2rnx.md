@@ -73,16 +73,14 @@ INFO: sbf_daily.py - main: reusing daily SBF file SEPT1340.19_
 \scriptsize
     
 ```bash
-[amuls:~/amPython/rnxproc] [rnxproc]$ sbf_rinex.py -h
-usage: sbf_rinex.py [-h] [-s SBFDIR] -f FILE [-r RNXDIR] [-l LOGGING LOGGING]
+[amuls:~/amPython/rnxproc] [rnxproc]$ rinex.py --help
+usage: sbf_rinex.py [-h] -f SBFF [-r RNXDIR] [-l LOGGING LOGGING]
 
 sbf_rinex.py convert binary raw data from SBF to RINEX Obs & Nav files
 
 optional arguments:
   -h, --help            show this help message and exit
-  -s SBFDIR, --sbfdir SBFDIR
-                        SBF directory (default .)
-  -f FILE, --file FILE  Binary SBF file
+  -f SBFF, --sbff SBFF  Binary SBF file
   -r RNXDIR, --rnxdir RNXDIR
                         Directory for RINEX output (default .)
   -l LOGGING LOGGING, --logging LOGGING LOGGING
@@ -97,43 +95,34 @@ optional arguments:
 \tiny
     
 ```bash
-[amuls:~/amPython/rnxproc] [rnxproc]$ sbf_rinex.py --sbfdir /home/amuls/RxTURP/BEGPIOS/ASTX/19134 \
-        --file SEPT1340.19_ --rnxdir /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134
-INFO: sbf_rinex.py - sbf2rnx3: arguments processed: dRnx = \
-        {'dirs': \
-          {'sbf': '/home/amuls/RxTURP/BEGPIOS/ASTX/19134', \
-          'rnx': '/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134'}, \
-        'sbff': 'SEPT1340.19_'}
-INFO: sbf_rinex.py - checkValidityArgs: check existence of sbfDir /home/amuls/RxTURP/BEGPIOS/ASTX/19134
-INFO: sbf_rinex.py - checkValidityArgs: check existence of binary file /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_\
-        to convert
-INFO: sbf_rinex.py - checkValidityArgs: check existence of rnxdir /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134 \
-        and create if needed
+[amuls:~/amPython/rnxproc] [rnxproc]$ sbf_rinex.py --sbff /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ --rnxdir /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134
+INFO: sbf_rinex.py - sbf2rnx3: arguments processed: dRnx = {'dirs': {'sbf': '/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134', 'rnx': PosixPath('/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134')}, 'sbff': 'SEPT1340.19_'}
+INFO: sbf_rinex.py - checkValidityArgs: check existence of sbfDir /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134
+INFO: sbf_rinex.py - checkValidityArgs: check existence of binary file /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ to convert
+INFO: sbf_rinex.py - checkValidityArgs: check existence of rnxdir /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134 and create if needed
 INFO: location.py - locateProg: sbf2rin is /opt/Septentrio/RxTools/bin/sbf2rin
 INFO: sbf_rinex.py - sbf2rnx3: convert binary file to rinex
 INFO: sbf_rinex.py - sbf2rinex: RINEX conversion from SBF binary
 INFO: sbf_rinex.py - sbf2rinex: creating RINEX observation file
 INFO: amutils.py - run_subprocess_output: running
-/opt/Septentrio/RxTools/bin/sbf2rin -f /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -R3 \
-        -l -O BEL
+/opt/Septentrio/RxTools/bin/sbf2rin -f /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -R3 -l -O BEL
 Creating RINEX file: done                                                                      |  0%
 INFO: sbf_rinex.py - sbf2rinex: creating RINEX navigation file
 INFO: amutils.py - run_subprocess_output: running
-/opt/Septentrio/RxTools/bin/sbf2rin -f /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -n P -R3 \
-        -l -O BEL
+/opt/Septentrio/RxTools/bin/sbf2rin -f /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -n P -R3 -l -O BEL
 Creating RINEX file: done                                                                      |  0%
 INFO: sbf_rinex.py - sbf2rnx3: dRnx =
 {
     "dirs": {
-        "sbf": "/home/amuls/RxTURP/BEGPIOS/ASTX/19134",
-        "rnx": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134"
+        "sbf": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134",
+        "rnx": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134"
     },
     "sbff": "SEPT1340.19_",
     "bin": {
         "SBF2RIN": "/opt/Septentrio/RxTools/bin/sbf2rin"
     },
-    "obs3f": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx",
-    "nav3f": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx"
+    "obs3f": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx",
+    "nav3f": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx"
 }
 ```
     
@@ -187,58 +176,54 @@ INFO: sbf_daily.py - combine_sbf: working directory is /home/amuls/RxTURP/BEGPIO
 INFO: sbf_daily.py - combine_sbf: changed to directory /home/amuls/RxTURP/BEGPIOS/ASTX/19134
 INFO: sbf_daily.py - combine_sbf: combine SBF (six-)hourly files to daily SBF file
 INFO: sbf_daily.py - combine_sbf: reusing daily SBF file SEPT1340.19_
-INFO: >>>>>> prepare_sbf2rnx.py - process_data: obtained daily SBF file = SEPT1340.19_
-INFO: === prepare_sbf2rnx.py - sbf_rnx3: passing control to sbf_rinex.py  (options: --sbfdir /home/amuls/RxTURP/BEGPIOS/ASTX/19134 --file SEPT1340.19_ --rnxdir /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134) ===
-INFO: sbf_rinex.py - sbf2rnx3: arguments processed: dRnx = {'dirs': {'sbf': '/home/amuls/RxTURP/BEGPIOS/ASTX/19134', 'rnx': '/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134'}, 'sbff': 'SEPT1340.19_'}
-INFO: sbf_rinex.py - checkValidityArgs: check existence of sbfDir /home/amuls/RxTURP/BEGPIOS/ASTX/19134
-INFO: sbf_rinex.py - checkValidityArgs: check existence of binary file /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ to convert
-INFO: sbf_rinex.py - checkValidityArgs: check existence of rnxdir /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134 and create if needed
+INFO: >>>>>> prepare_sbf2rnx.py - prepare_rnx_data: obtained daily SBF file = SEPT1340.19_
+INFO: === prepare_sbf2rnx.py - sbf_rnx3: passing control to sbf_rinex.py  (options: --sbff /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ --rnxdir /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134) ===
+INFO: sbf_rinex.py - sbf2rnx3: arguments processed: dRnx = {'dirs': {'sbf': '/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134', 'rnx': PosixPath('/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134')}, 'sbff': 'SEPT1340.19_'}
+INFO: sbf_rinex.py - checkValidityArgs: check existence of sbfDir /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134
+INFO: sbf_rinex.py - checkValidityArgs: check existence of binary file /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ to convert
+INFO: sbf_rinex.py - checkValidityArgs: check existence of rnxdir /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134 and create if needed
 INFO: location.py - locateProg: sbf2rin is /opt/Septentrio/RxTools/bin/sbf2rin
 INFO: sbf_rinex.py - sbf2rnx3: convert binary file to rinex
 INFO: sbf_rinex.py - sbf2rinex: RINEX conversion from SBF binary
 INFO: sbf_rinex.py - sbf2rinex: creating RINEX observation file
 INFO: amutils.py - run_subprocess_output: running
-/opt/Septentrio/RxTools/bin/sbf2rin -f /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -R3 -l -O BEL
+/opt/Septentrio/RxTools/bin/sbf2rin -f /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -R3 -l -O BEL
 Creating RINEX file: done                                                                      |  0%
 INFO: sbf_rinex.py - sbf2rinex: creating RINEX navigation file
 INFO: amutils.py - run_subprocess_output: running
-/opt/Septentrio/RxTools/bin/sbf2rin -f /home/amuls/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -n P -R3 -l -O BEL
+/opt/Septentrio/RxTools/bin/sbf2rin -f /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134/SEPT1340.19_ -x RSCJI -s -D -v -n P -R3 -l -O BEL
 Creating RINEX file: done                                                                      |  0%
 INFO: sbf_rinex.py - sbf2rnx3: dRnx =
 {
     "dirs": {
-        "sbf": "/home/amuls/RxTURP/BEGPIOS/ASTX/19134",
-        "rnx": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134"
+        "sbf": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/19134",
+        "rnx": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134"
     },
     "sbff": "SEPT1340.19_",
     "bin": {
         "SBF2RIN": "/opt/Septentrio/RxTools/bin/sbf2rin"
     },
-    "obs3f": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx",
-    "nav3f": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx"
+    "obs3f": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx",
+    "nav3f": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx"
 }
-INFO: >>>>>> prepare_sbf2rnx.py - process_data: obtained RINEX observation file \
-          = /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx
-INFO: >>>>>> prepare_sbf2rnx.py - process_data: obtained RINEX navigation files \
-          = /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx
+INFO: >>>>>> prepare_sbf2rnx.py - prepare_rnx_data: obtained RINEX observation file = /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx
+INFO: >>>>>> prepare_sbf2rnx.py - prepare_rnx_data: obtained RINEX navigation files = /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx
 INFO: location.py - locateProg: rnx2crz is /home/amuls/bin/rnx2crz
 INFO: location.py - locateProg: gzip is /usr/bin/gzip
-INFO: compress_utils.py - compress_rnx_obs: Compressing RINEX observation /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx
+INFO: compress_utils.py - compress_rnx_obs: Compressing RINEX observation /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx
 INFO: amutils.py - run_subprocess: running
-/home/amuls/bin/rnx2crz -f -d /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx
-INFO: >>>>>> prepare_sbf2rnx.py - process_data: compressed RINEX observation file \
-          = /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.crx.Z
-INFO: compress_utils.py - gzip_compress: Compressing RINEX navigation /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx
+/home/amuls/bin/rnx2crz -f -d /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx
+INFO: >>>>>> prepare_sbf2rnx.py - prepare_rnx_data: compressed RINEX observation file = /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.crx.Z
+INFO: compress_utils.py - gzip_compress: Compressing RINEX navigation /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx
 INFO: amutils.py - run_subprocess: running
-/usr/bin/gzip -f /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx
-INFO: >>>>>> prepare_sbf2rnx.py - process_data: compressed RINEX navigation file \
-          = /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx.gz
-INFO: prepare_sbf2rnx.py - process_data: SBF preparation information =
+/usr/bin/gzip -f /media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx
+INFO: >>>>>> prepare_sbf2rnx.py - prepare_rnx_data: compressed RINEX navigation file = /home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx.gz
+INFO: prepare_sbf2rnx.py - prepare_rnx_data: SBF preparation information =
 {
     "dirs": {
         "root": "/home/amuls/RxTURP/BEGPIOS/",
         "sbf": "/home/amuls/RxTURP/BEGPIOS/ASTX/19134",
-        "rnx": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134"
+        "yydoy": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134"
     },
     "cli": {
         "marker": "ASTX",
@@ -248,8 +233,8 @@ INFO: prepare_sbf2rnx.py - process_data: SBF preparation information =
         "overwrite": false
     },
     "rnx": {
-        "obs3f": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx",
-        "nav3f": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx",
+        "obs3f": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx",
+        "nav3f": "/media/amuls/porsche/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx",
         "obs3fc": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.crx.Z",
         "nav3fc": "/home/amuls/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_MN.rnx.gz"
     },

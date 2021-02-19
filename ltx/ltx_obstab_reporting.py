@@ -43,7 +43,7 @@ def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: 
                     longtabu.add_row(('GNSS', ':', '{gnss:s} ({name:s}) '.format(gnss=gnss, name=gfzc.dict_GNSSs[gnss])))
                 else:
                     longtabu.add_row(('', ':', '{gnss:s} ({name:s}) '.format(gnss=gnss, name=gfzc.dict_GNSSs[gnss])))
-            for i, obst in enumerate(dCli['obstypes']):
+            for i, obst in enumerate(gfzc.lst_obstypes):
                 if i == 0:
                     longtabu.add_row(('Observable types', ':', '{obst:s} ({name:s}) '.format(obst=obst, name=gfzc.dict_obstypes[obst])))
                 else:

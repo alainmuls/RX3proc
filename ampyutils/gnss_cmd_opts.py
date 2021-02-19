@@ -61,3 +61,11 @@ class session_action(argparse.Action):
         if not (len(session) == 1 and (session.isalpha() or int(session) in range(0, 9))):
             raise argparse.ArgumentError(self, 'session can only be a single chararcter 0..9 or a..z, A..Z')
         setattr(namespace, self.dest, session)
+
+
+class freqtype_action(argparse.Action):
+    def __call__(self, parser, namespace, freqtypes, option_string=None):
+        for freqtype in freqtypes:
+            if freqtype not in gfzc.lst_freqs:
+                raise argparse.ArgumentError(self, 'select freq(s) out of {freqtypes:s}'.format(freqtypes='|'.join(gfzc.lst_freqs)))
+        setattr(namespace, self.dest, freqtypes)

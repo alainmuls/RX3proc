@@ -7,7 +7,7 @@ from termcolor import colored
 import logging
 import json
 from typing import Tuple
-import shutil
+from shutil import copyfile
 from nested_lookup import nested_lookup
 from datetime import datetime
 
@@ -16,7 +16,6 @@ from ampyutils import gnss_cmd_opts as gco
 
 from ampyutils import am_config as amc
 from ampyutils import amutils, location
-from plot import obsstat_plot
 from gfzrnx import rnxobs_analysis
 from ltx import ltx_obstab_reporting
 
@@ -93,91 +92,99 @@ def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: loggi
     return obs_tabf, obs_statf
 
 
-def rnx_tabular(argv):
+def check_arguments(logger: logging.Logger = None):
     """
-    rnx2obstab adds statistics to RINEX file, makes ::RX3:: format and crates the observation tabular file
+    check arhuments and change working directory
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+    # check & change to rnx path
+    if not amutils.changeDir(dGFZ['cli']['path']):
+        logger.error('{func:s}: changing to directory {dir:s} failed'.format(dir=dGFZ['cli']['path'], func=cFuncName))
+        sys.exit(amc.E_DIR_NOT_EXIST)
+
+    # check accessibilty of observation file
+    if not amutils.file_exists(fname=dGFZ['cli']['obsf'], logger=logger):
+        logger.error('{func:s}: observation file {file:s} not accessible'.format(file=dGFZ['cli']['obsf'], func=cFuncName))
+        sys.exit(amc.E_FILE_NOT_EXIST)
+
+    # create dir for storing the latex sections
+    dGFZ['ltx']['path'] = os.path.join(dGFZ['cli']['path'], 'ltx')
+    if not amutils.mkdir_p(dGFZ['ltx']['path']):
+        logger.error('{func:s}: cannot create directory {dir:s} failed'.format(dir=dGFZ['ltx']['path'], func=cFuncName))
+        sys.exit(amc.E_FAILURE)
+
+
+def rnx_tabular(argv) -> dict:
+    """
+    rnx2obstab creates observation tabular/statistics file for selected GNSSs
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # store parameters in dicttionaries
-    dGFZRNX = {}
-    dGFZRNX['info'] = {}
-    dGFZRNX['cli'] = {}
-    dGFZRNX['bin'] = {}
-    dGFZRNX['hdr'] = {}
-    dGFZRNX['ltx'] = {}
-    dGFZRNX['obstab'] = {}
+    global dGFZ
+    dGFZ = {}
+    dGFZ['info'] = {}
+    dGFZ['cli'] = {}
+    dGFZ['bin'] = {}
+    dGFZ['hdr'] = {}
+    dGFZ['ltx'] = {}
+    dGFZ['obstab'] = {}
 
     # treat command line options
     dCLI = {}
     rnx3obsf, dCLI['GNSSs'], logLevels = treatCmdOpts(argv)
     dCLI['obsf'] = os.path.basename(rnx3obsf)
     dCLI['path'] = os.path.dirname(rnx3obsf)
-    dGFZRNX['cli'] = dCLI
+    dGFZ['cli'] = dCLI
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
 
-    # get RINEX dir and RINEX file name separately
-    # dGFZRNX['path'], dGFZRNX['obsf'] = os.path.split(os.path.abspath(obsf))
+    # verify input
+    check_arguments(logger=logger)
 
     # external program
-    dGFZRNX['bin']['gfzrnx'] = location.locateProg(progName='gfzrnx', logger=logger)
-
-    # check & change to rnx path
-    if not amutils.changeDir(dGFZRNX['cli']['path']):
-        logger.error('{func:s}: changing to directory {dir:s} failed'.format(dir=dGFZRNX['path'], func=cFuncName))
-        sys.exit(amc.E_DIR_NOT_EXIST)
-
-    # check accessibilty of observation file
-    if not amutils.file_exists(fname=dGFZRNX['cli']['obsf'], logger=logger):
-        logger.error('{func:s}: observation file {file:s} not accessible'.format(file=dGFZRNX['cli']['obsf'], func=cFuncName))
-        sys.exit(amc.E_FILE_NOT_EXIST)
-
-    # create dir for storing the latex sections
-    dGFZRNX['ltx']['path'] = os.path.join(dGFZRNX['cli']['path'], 'ltx')
-    if not amutils.mkdir_p(dGFZRNX['ltx']['path']):
-        logger.error('{func:s}: cannot create directory {dir:s} failed'.format(dir=dGFZRNX['ltx']['path'], func=cFuncName))
-        sys.exit(amc.E_FAILURE)
+    dGFZ['bin']['gfzrnx'] = location.locateProg(progName='gfzrnx', logger=logger)
 
     # examine the header of the RX3 observation file
-    dGFZRNX['hdr'] = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZRNX['bin']['gfzrnx'], obs3f=dGFZRNX['cli']['obsf'], logger=logger)
+    dGFZ['hdr'] = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZ['bin']['gfzrnx'], obs3f=dGFZ['cli']['obsf'], logger=logger)
 
-    logger.info('{func:s}: dGFZRNX[hdr] =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor)))
+    logger.info('{func:s}: dGFZ[hdr] =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # extract information from the header useful for later usage
-    obs_date = nested_lookup(key='first', document=dGFZRNX['hdr'])[0]
-    dGFZRNX['info']['obs_date'] = datetime.strptime(obs_date.split('.')[0], '%Y %m %d %H %M %S').strftime('%d %B %Y')
-    print(dGFZRNX['cli']['obsf'])
-    dGFZRNX['info']['marker'] = dGFZRNX['cli']['obsf'][:9]
-    dGFZRNX['info']['yyyy'] = int(dGFZRNX['cli']['obsf'][12:16])
-    dGFZRNX['info']['doy'] = int(dGFZRNX['cli']['obsf'][16:19])
+    obs_date = nested_lookup(key='first', document=dGFZ['hdr'])[0]
+    dGFZ['info']['obs_date'] = datetime.strptime(obs_date.split('.')[0], '%Y %m %d %H %M %S').strftime('%d %B %Y')
+    print(dGFZ['cli']['obsf'])
+    dGFZ['info']['marker'] = dGFZ['cli']['obsf'][:9]
+    dGFZ['info']['yyyy'] = int(dGFZ['cli']['obsf'][12:16])
+    dGFZ['info']['doy'] = int(dGFZ['cli']['obsf'][16:19])
 
-    logger.info('{func:s}: dGFZRNX =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    logger.info('{func:s}: dGFZ =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    sec_script = ltx_obstab_reporting.obstab_script_information(dCli=dGFZRNX['cli'], dHdr=dGFZRNX['hdr'], dInfo=dGFZRNX['info'], script_name=os.path.basename(__file__))
+    sec_script = ltx_obstab_reporting.obstab_script_information(dCli=dGFZ['cli'], dHdr=dGFZ['hdr'], dInfo=dGFZ['info'], script_name=os.path.basename(__file__))
 
-    dGFZRNX['ltx']['script'] = os.path.join(dGFZRNX['ltx']['path'], 'script_info')
-    sec_script.generate_tex(dGFZRNX['ltx']['script'])
+    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
+    sec_script.generate_tex(dGFZ['ltx']['script'])
 
     # create the tabular observation file for the selected GNSSs
-    for gnss in dGFZRNX['cli']['GNSSs']:
-        dGFZRNX['obstab'][gnss] = {}
+    for gnss in dGFZ['cli']['GNSSs']:
+        dGFZ['obstab'][gnss] = {}
         # create names for obs_tab and obs_stat files for current gnss
         obs_tabf = 'obs_{gnss:s}_tabf'.format(gnss=gnss)
         obs_statf = 'obs_{gnss:s}_statf'.format(gnss=gnss)
-        dGFZRNX['obstab'][gnss][obs_tabf], dGFZRNX['obstab'][gnss][obs_statf] = create_tabular_observations(gfzrnx=dGFZRNX['bin']['gfzrnx'], obsf=dGFZRNX['cli']['obsf'], gnss=gnss, logger=logger)
+        dGFZ['obstab'][gnss][obs_tabf], dGFZ['obstab'][gnss][obs_statf] = create_tabular_observations(gfzrnx=dGFZ['bin']['gfzrnx'], obsf=dGFZ['cli']['obsf'], gnss=gnss, logger=logger)
 
         # plot the observation statistics
-        # obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZRNX['obstab'][obs_statf], gnss=gnss, gfzrnx=dGFZRNX['bin']['gfzrnx'], show_plot=show_plot, logger=logger)
+        # obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZ['obstab'][obs_statf], gnss=gnss, gfzrnx=dGFZ['bin']['gfzrnx'], show_plot=show_plot, logger=logger)
 
     # report to the user
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZRNX, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    shutil.copyfile(log_name, os.path.join(dGFZRNX['cli']['path'], '{:s}.log'.format(os.path.basename(__file__).replace('.', '_'))))
+    copyfile(log_name, os.path.join(dGFZ['cli']['path'], '{:s}.log'.format(os.path.basename(__file__).replace('.', '_'))))
     os.remove(log_name)
 
-    return dGFZRNX['obstab']
+    return dGFZ['obstab']
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
