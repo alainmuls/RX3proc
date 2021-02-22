@@ -6,21 +6,15 @@ import argparse
 from termcolor import colored
 import logging
 import json
-from typing import Tuple
-import shutil
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
-from numpy import linspace
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
 
 from ampyutils import am_config as amc
 from ampyutils import amutils
-from plot import obsstat_plot
-from gfzrnx import rnxobs_analysis
-from ltx import ltx_obstab_reporting
 from tle import tle_visibility, tle_plot
 
 __author__ = 'amuls'
