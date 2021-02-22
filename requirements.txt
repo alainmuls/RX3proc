@@ -1,6 +1,8 @@
+certifi==2020.12.5
 cycler==0.10.0
 flake8==3.8.4
 georinex==1.15.0
+jplephem==2.15
 kiwisolver==1.3.1
 matplotlib==3.3.3
 mccabe==0.6.1
@@ -18,7 +20,9 @@ PyLaTeX==1.4.1
 pyparsing==2.4.7
 python-dateutil==2.8.1
 pytz==2020.4
+sgp4==2.17
 six==1.15.0
+skyfield==1.37
 tabulate==0.8.7
 termcolor==1.1.0
 typing==3.7.4.3

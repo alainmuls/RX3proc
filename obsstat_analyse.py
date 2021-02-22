@@ -21,7 +21,7 @@ from ampyutils import amutils
 from plot import obsstat_plot
 from gfzrnx import rnxobs_analysis
 from ltx import ltx_obstab_reporting
-from tle import tle_visibility
+from tle import tle_visibility, tle_plot
 
 __author__ = 'amuls'
 
@@ -141,13 +141,14 @@ def rnxobs_analyse(argv):
     dfObsStat = read_obsstat(logger=logger)
     amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
 
-    # get list of unique PRNs
-    # lst_prns = dfObsStat.TYP.unique()
-    # print(lst_prns)
-
     # get the observation time spans based on TLE values
     dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.TYP.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
+    # store the observation info from TLE in CVS file
+    tle_name = '{base:s}.tle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
+    dfTLE.to_csv(tle_name, index=True)
+    # plot the TLE arcs
+    tle_plot.tle_plot_arcs(dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
