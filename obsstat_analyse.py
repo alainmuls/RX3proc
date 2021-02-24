@@ -41,7 +41,7 @@ def treatCmdOpts(argv):
 
     parser.add_argument('-i', '--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
 
-    parser.add_argument('-c', '--cutoff', help='curoff angle in degrees (default {mask:s})'.format(mask=colored('5', 'green')), default=5, type=int, required=False, action=gco.cutoff_action)
+    parser.add_argument('-c', '--cutoff', help='curoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
     parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
@@ -141,9 +141,16 @@ def rnxobs_analyse(argv):
     # store the observation info from TLE in CVS file
     tle_name = '{base:s}.tle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
     dfTLE.to_csv(tle_name, index=True)
-    # plot the TLE arcs
-    tle_plot.tle_plot_arcs(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
+    # # plot the TLE arcs
+    # tle_plot.tle_plot_arcs(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
+
+    # plot the TLE observation count
     tle_plot.tle_plot_obscount(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
+
+    amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
+
+    # combine the observation count and TLE count per PRN
+    sys.exit(44)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
