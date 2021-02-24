@@ -143,6 +143,7 @@ def rnxobs_analyse(argv):
     dfTLE.to_csv(tle_name, index=True)
     # plot the TLE arcs
     tle_plot.tle_plot_arcs(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
+    tle_plot.tle_plot_obscount(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
