@@ -116,9 +116,9 @@ def tle_plot_arcs(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot: bo
         plt.close(fig)
 
 
-def tle_plot_obscount(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
-    tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
+    obstle_plot_arcs plots count of observations wrt to number obtained from TLE
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -127,16 +127,35 @@ def tle_plot_obscount(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    gnss_id = dfTle.index.to_list()[0][0]
-    y_prns = [int(prn[1:]) for prn in dfTle.index.to_list()]
+    gnss_id = dfObsTle.TYP.iloc[0][0]
+    y_prns = [int(prn[1:]) for prn in dfObsTle.TYP.to_list()]
+    print('gnss_id = {!s}'.format(gnss_id))
+    print('y_prns = {!s}'.format(y_prns))
 
     # create colormap with nrcolors discrete colors
     prn_colors, title_font = amutils.create_colormap_font(nrcolors=len(y_prns), font_size=12)
 
+    # select the columns used for plotting
+    col_names = dfObsTle.columns.tolist()
+    print('col_names = {!s}'.format(col_names))
+    cols2keep = col_names[4:]
+    print('cols2keep = {!s}'.format(cols2keep))
+
+    print(dfObsTle.loc[:, cols2keep])
     # plot the TLE observation count
-    for y_prn, prn_color, (prn, tle_prn) in zip(y_prns, prn_colors, dfTle.iterrows()):
-        if len(tle_prn.tle_arc_count) > 0:
-            ax.plot([0, sum(tle_prn.tle_arc_count)], [y_prn, y_prn], linewidth=4, color=prn_color, linestyle='-')
+    for i, (y_prn, prn_color, prn) in enumerate(zip(y_prns, prn_colors, dfObsTle.TYP)):
+        print('y_prn = {!s}'.format(y_prn))
+        print('prn_color = {!s}'.format(prn_color))
+        print('prn = {!s}'.format(prn))
+        print('-' * 25)
+        print(dfObsTle.loc[:, cols2keep].iloc[i].to_list())
+        print(type(dfObsTle.loc[:, cols2keep].iloc[i]))
+
+        # if len(tle_prn.tle_arc_count) > 0:
+        #     ax.plot([0, sum(tle_prn.tle_arc_count)], [y_prn, y_prn], linewidth=4, color=prn_color, linestyle='-')
+
+        sys.exit(6)
+
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
     ax.yaxis.grid(b=True, which='major')

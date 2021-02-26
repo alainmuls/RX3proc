@@ -144,13 +144,19 @@ def rnxobs_analyse(argv):
     # # plot the TLE arcs
     # tle_plot.tle_plot_arcs(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
-    # plot the TLE observation count
-    tle_plot.tle_plot_obscount(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
-
-    amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
-
     # combine the observation count and TLE count per PRN
-    sys.exit(44)
+    dfTLEtmp = pd.DataFrame(columns=['TYP', 'tle_count'])
+    dfTLEtmp.TYP = dfTLE.index
+    for i, (prn, tle_prn) in enumerate(dfTLE.iterrows()):
+        dfTLEtmp.iloc[i].tle_count = sum(tle_prn.tle_arc_count)
+    dfObsTLE = pd.merge(dfObsStat, dfTLEtmp, on='TYP')
+    amutils.logHeadTailDataFrame(df=dfObsTLE, dfName='dfObsTLE', callerName=cFuncName, logger=logger)
+    # store the observation / TLE info  in CVS file
+    obsstat_name = '{base:s}.obstle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
+    dfObsTLE.to_csv(obsstat_name, index=False)
+
+    # plot the Observation and TLE observation count
+    tle_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
