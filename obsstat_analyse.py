@@ -16,6 +16,8 @@ from ampyutils import gnss_cmd_opts as gco
 from ampyutils import am_config as amc
 from ampyutils import amutils
 from tle import tle_visibility, tleobs_plot
+from ltx import ltx_obstab_reporting
+
 
 __author__ = 'amuls'
 
@@ -145,10 +147,10 @@ def rnxobs_analyse(argv):
     # tle_plot.tle_plot_arcs(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     # combine the observation count and TLE count per PRN
-    dfTLEtmp = pd.DataFrame(columns=['TYP', 'tle_count'])
+    dfTLEtmp = pd.DataFrame(columns=['TYP', 'TLE_count'])  #, dtype={'TYP':'object','TLE_count':'int'})
     dfTLEtmp.TYP = dfTLE.index
     for i, (prn, tle_prn) in enumerate(dfTLE.iterrows()):
-        dfTLEtmp.iloc[i].tle_count = sum(tle_prn.tle_arc_count)
+        dfTLEtmp.iloc[i].TLE_count = sum(tle_prn.tle_arc_count)
     dfObsTLE = pd.merge(dfObsStat, dfTLEtmp, on='TYP')
     amutils.logHeadTailDataFrame(df=dfObsTLE, dfName='dfObsTLE', callerName=cFuncName, logger=logger)
     # store the observation / TLE info  in CVS file
@@ -158,6 +160,11 @@ def rnxobs_analyse(argv):
     # plot the Observation and TLE observation count
     tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
     tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
+
+    sec_obsstat = ltx_obstab_reporting.obstab_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, script_name=os.path.basename(__file__))
+
+    # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
+    sec_obsstat.generate_tex('test.tex')
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))

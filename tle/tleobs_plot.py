@@ -133,7 +133,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
 
     # select the columns used for plotting
     col_names = dfObsTle.columns.tolist()
-    obstypes = col_names[4:]
+    obstypes =  [x for x in col_names[col_names.index('TYP') + 1:]]
 
     # determine widths of bars to use for each PRN
     dy_obstypes, bar_width = bars_info(nr_arcs=len(obstypes), logger=logger)

@@ -1,10 +1,12 @@
 import os
+import sys
 from pylatex import Subsection, LongTable, MultiColumn, NoEscape, Itemize, SubFigure, Figure, LongTabu, Subsubsection
 from datetime import datetime
 from pylatex.utils import bold
 import numpy as np
 from nested_lookup import nested_lookup
 import json
+import pandas as pd
 
 from gfzrnx import gfzrnx_constants as gfzc
 
@@ -15,7 +17,7 @@ from ltx import ltx_gfzrnx_report
 __author__ = 'amuls'
 
 
-def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: str):
+def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: str) -> Subsection:
     """
     obstab_script_information creates the section with information about the script obstab_analyze
     """
@@ -57,6 +59,47 @@ def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: 
 
     return ssec
 
+
+def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, script_name: str) -> Subsection:
+    """
+    obstab_analyse summarises the observations compared to TLE information obtained from file obsstatf
+    """
+    ssec = Subsection('Observation statistics')
+    # determine the GNSS system and the obstypes (will always come from SNR)
+    col_names = dfObsTle.columns
+    obs_types = col_names
+    # select the columns used for plotting
+    col_names = dfObsTle.columns.tolist()
+    GNSS = col_names[col_names.index('TYP') - 1]
+    obstypes =  [x for x in col_names[col_names.index('TYP') + 1:]]
+    print('GNSS = {!s}'.format(GNSS))
+    print('obstypes = {!s}'.format(obstypes))
+    print(', '.join(obstypes))
+
+    # determine align formats for langtabu
+    fmt_tabu = 'l|' + 'r' * len(obstypes)
+
+    ssec.append('The following observations for {gnss:s} were logged: {obst:s}'.format(gnss=gfzc.dict_GNSSs[GNSS], obst=', '.join(obstypes)))
+    with ssec.create(LongTabu(fmt_tabu, pos='l', col_space='2pt')) as longtabu:
+        longtabu.add_row(['PRN'] + obstypes, mapper=[bold])  # header row
+        longtabu.add_hline()
+        longtabu.end_table_header()
+        longtabu.add_row(['PRN'] + obstypes, mapper=[bold])  # header row
+
+        # for name, values in dfObsTle.iteritems():
+        #     print('{name!s}: {value!s}'.format(name=name, value=values))
+
+        for index, row in dfObsTle.iterrows():
+            longtabu.add_row([row.TYP] + [int(x) for x in row[obstypes].tolist()])
+
+        longtabu.add_hline()
+
+    return ssec
+
+
+
+
+# OLD STUFF ????
 
 def obstab_files_created(dir_yydoy: str, rnx_obs3f: str, rnx_nav3f: str) -> Subsection:
     """
