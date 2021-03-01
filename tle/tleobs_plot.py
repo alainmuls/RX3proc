@@ -7,6 +7,7 @@ import numpy as np
 import logging
 from datetime import datetime
 from matplotlib import dates
+from typing import Tuple
 
 from ampyutils import amutils
 from plot import plot_utils
@@ -129,32 +130,29 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, sho
 
     gnss_id = dfObsTle.TYP.iloc[0][0]
     y_prns = [int(prn[1:]) for prn in dfObsTle.TYP.to_list()]
-    print('gnss_id = {!s}'.format(gnss_id))
-    print('y_prns = {!s}'.format(y_prns))
-
-    # create colormap with nrcolors discrete colors
-    prn_colors, title_font = amutils.create_colormap_font(nrcolors=len(y_prns), font_size=12)
 
     # select the columns used for plotting
     col_names = dfObsTle.columns.tolist()
-    print('col_names = {!s}'.format(col_names))
-    cols2keep = col_names[4:]
-    print('cols2keep = {!s}'.format(cols2keep))
+    obstypes = col_names[4:]
 
-    print(dfObsTle.loc[:, cols2keep])
+    # determine widths of bars to use for each PRN
+    dy_obstypes, bar_width = bars_info(nr_arcs=len(obstypes), logger=logger)
+
+    # create colormap with nrcolors discrete colors
+    bar_colors, title_font = amutils.create_colormap_font(nrcolors=len(obstypes), font_size=12)
+
     # plot the TLE observation count
-    for i, (y_prn, prn_color, prn) in enumerate(zip(y_prns, prn_colors, dfObsTle.TYP)):
-        print('y_prn = {!s}'.format(y_prn))
-        print('prn_color = {!s}'.format(prn_color))
-        print('prn = {!s}'.format(prn))
-        print('-' * 25)
-        print(dfObsTle.loc[:, cols2keep].iloc[i].to_list())
-        print(type(dfObsTle.loc[:, cols2keep].iloc[i]))
+    for i, (y_prn, prn) in enumerate(zip(y_prns, dfObsTle.TYP)):
+        for j, (obst, dy_obst, bar_color) in enumerate(zip(obstypes, dy_obstypes, bar_colors)):
+            if i == 0:
+                ax.barh(y=y_prn + dy_obst, width=dfObsTle.iloc[i][obst], height=bar_width, color=bar_color, label=obst)
+            else:
+                ax.barh(y=y_prn + dy_obst, width=dfObsTle.iloc[i][obst], height=bar_width, color=bar_color)
 
         # if len(tle_prn.tle_arc_count) > 0:
         #     ax.plot([0, sum(tle_prn.tle_arc_count)], [y_prn, y_prn], linewidth=4, color=prn_color, linestyle='-')
 
-        sys.exit(6)
+        # sys.exit(6)
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
@@ -163,17 +161,17 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, sho
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)
-    ax.set_xlabel('TLE Observations Count [-]', fontdict=title_font)
+    ax.set_xlabel('Observations Count [-]', fontdict=title_font)
 
     # plot title
-    plt.title('TLE Observations Count for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
+    plt.title('Observations Count for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
 
     # setticks on Y axis to represent the PRNs
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
     tick_labels = []
     for i in np.arange(1, y_prns[-1] + 1):
         tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
-        if tick_prn in dfTle.index.to_list():
+        if tick_prn in dfObsTle.TYP.to_list():
             tick_labels.append(tick_prn)
         else:
             tick_labels.append('')
@@ -185,7 +183,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, sho
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
     for ext in ['pdf', 'png', 'eps']:
-        plt_name = os.path.join('png', '{basen:s}-TLEarcs.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+        plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
@@ -193,3 +191,28 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, sho
         plt.show(block=True)
     else:
         plt.close(fig)
+
+
+def bars_info(nr_arcs: int, logger: logging.Logger) -> Tuple[list, int]:
+    """
+    bars_info determines the width of an individual bar, the spaces between the arc bars, and localtion in delta-x-coordinates of beginning of each PRN arcs
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+    logger.info('{func:s}: determining the information for the bars'.format(func=cFuncName))
+
+    # the bars for all arcs for 1 PRN may span over 0.8 units (from [-0.4 => 0.4]), including the spaces between the different arcs
+    width_prn_arcs = 0.8
+    dx_start = -0.4  # start of the bars relative to integer of PRN
+    width_space = 0.02  # space between the different arcs for 1 PRN
+
+    # substract width-spaces needed for nr_arcs
+    width_arcs = width_prn_arcs - (nr_arcs - 1) * width_space
+
+    # the width taken by 1 arc for 1 prn is
+    width_arc = width_arcs / nr_arcs
+
+    # get the delta-x to apply to the integer value that corresponds to a PRN
+    dx_obs = [dx_start + i * (width_space + width_arc) for i in np.arange(nr_arcs)]
+
+    return dx_obs, width_arc
+

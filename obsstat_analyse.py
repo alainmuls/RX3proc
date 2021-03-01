@@ -15,7 +15,7 @@ from ampyutils import gnss_cmd_opts as gco
 
 from ampyutils import am_config as amc
 from ampyutils import amutils
-from tle import tle_visibility, tle_plot
+from tle import tle_visibility, tleobs_plot
 
 __author__ = 'amuls'
 
@@ -156,7 +156,7 @@ def rnxobs_analyse(argv):
     dfObsTLE.to_csv(obsstat_name, index=False)
 
     # plot the Observation and TLE observation count
-    tle_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
+    tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
