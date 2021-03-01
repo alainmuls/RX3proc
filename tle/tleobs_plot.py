@@ -117,7 +117,7 @@ def tle_plot_arcs(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot: bo
         plt.close(fig)
 
 
-def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None):
     """
     obstle_plot_arcs plots count of observations wrt to number obtained from TLE
     """
@@ -143,16 +143,22 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, sho
 
     # plot the TLE observation count
     for i, (y_prn, prn) in enumerate(zip(y_prns, dfObsTle.TYP)):
-        for j, (obst, dy_obst, bar_color) in enumerate(zip(obstypes, dy_obstypes, bar_colors)):
-            if i == 0:
-                ax.barh(y=y_prn + dy_obst, width=dfObsTle.iloc[i][obst], height=bar_width, color=bar_color, label=obst)
+        for j, (obst, dy_obst, bar_color) in enumerate(zip(list(reversed(obstypes)), list(reversed(dy_obstypes)), list(reversed(bar_colors)))):
+            prn_width = dfObsTle.iloc[i][obst]
+            print('prn_width = {!s}'.format(prn_width))
+            if not reduce2percentage:
+                if i == 0:
+                    ax.barh(y=y_prn + dy_obst, width=prn_width, height=bar_width, color=bar_color, label=obst)
+                else:
+                    ax.barh(y=y_prn + dy_obst, width=prn_width, height=bar_width, color=bar_color)
             else:
-                ax.barh(y=y_prn + dy_obst, width=dfObsTle.iloc[i][obst], height=bar_width, color=bar_color)
-
-        # if len(tle_prn.tle_arc_count) > 0:
-        #     ax.plot([0, sum(tle_prn.tle_arc_count)], [y_prn, y_prn], linewidth=4, color=prn_color, linestyle='-')
-
-        # sys.exit(6)
+                if j == 0:
+                    tle_width = prn_width / 100
+                if tle_width != 0:
+                    if i == 0:
+                        ax.barh(y=y_prn + dy_obst, width=prn_width / tle_width, height=bar_width, color=bar_color, label=obst)
+                    else:
+                        ax.barh(y=y_prn + dy_obst, width=prn_width / tle_width, height=bar_width, color=bar_color)
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
@@ -161,7 +167,10 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, sho
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)
-    ax.set_xlabel('Observations Count [-]', fontdict=title_font)
+    if not reduce2percentage:
+        ax.set_xlabel('Observations Count [-]', fontdict=title_font)
+    else:
+        ax.set_xlabel('Observations Count [%]', fontdict=title_font)
 
     # plot title
     plt.title('Observations Count for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
