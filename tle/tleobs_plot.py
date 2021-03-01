@@ -145,7 +145,6 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     for i, (y_prn, prn) in enumerate(zip(y_prns, dfObsTle.TYP)):
         for j, (obst, dy_obst, bar_color) in enumerate(zip(list(reversed(obstypes)), list(reversed(dy_obstypes)), list(reversed(bar_colors)))):
             prn_width = dfObsTle.iloc[i][obst]
-            print('prn_width = {!s}'.format(prn_width))
             if not reduce2percentage:
                 if i == 0:
                     ax.barh(y=y_prn + dy_obst, width=prn_width, height=bar_width, color=bar_color, label=obst)
@@ -192,7 +191,10 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
     for ext in ['pdf', 'png', 'eps']:
-        plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+        if not reduce2percentage:
+            plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+        else:
+            plt_name = os.path.join('png', '{basen:s}-ObsTLEperc.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
