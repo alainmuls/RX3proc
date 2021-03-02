@@ -230,6 +230,8 @@ drwxrwxr-x 2 amuls amuls      4096 Mar  2 14:37 ltx
 -rw-rw-r-- 1 amuls amuls      1172 Mar  2 14:41 SEPT00BEL_R_20191340000_01D_01S_MO-obs.json
 -rw-rw-r-- 1 amuls amuls 312972740 Mar  2 14:10 SEPT00BEL_R_20191340000_01D_01S_MO.rnx
 -rw-rw-r-- 1 amuls amuls    711736 Mar  2 14:10 SEPT00BEL_R_20191340000_01D_MN.rnx
+-rw-rw-r-- 1 amuls amuls     97118 Mar  2 16:57 obsstat_analyse_py.log
+-rw-rw-r-- 1 amuls amuls       834 Mar  2 16:57 obsstat_analyse.json
 
 ./ltx:
 total 4

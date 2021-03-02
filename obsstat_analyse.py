@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
+from shutil import copyfile
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -32,7 +33,7 @@ def treatCmdOpts(argv):
     baseName = os.path.basename(__file__)
     amc.cBaseName = colored(baseName, 'yellow')
 
-    helpTxt = amc.cBaseName + ' analyses observation tabular/statistics file for selected GNSSs'
+    helpTxt = amc.cBaseName + ' analyses observation statistics file for selected GNSSs'
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
@@ -43,7 +44,7 @@ def treatCmdOpts(argv):
 
     parser.add_argument('-i', '--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
 
-    parser.add_argument('-c', '--cutoff', help='curoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
+    parser.add_argument('-c', '--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
     parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
@@ -91,7 +92,7 @@ def check_arguments(logger: logging.Logger = None):
     dStat['time']['date'] = datetime.strptime('{year:04d}-{doy:03d}'.format(year=dStat['time']['YYYY'], doy=dStat['time']['DOY']), "%Y-%j")
 
 
-def read_obsstat(logger: logging.Logger = None):
+def read_obsstat(logger: logging.Logger = None) -> pd.DataFrame:
     """
     read_obsstat reads the SNR for the selected frequencies into a dataframe
     """
@@ -104,7 +105,6 @@ def read_obsstat(logger: logging.Logger = None):
 
     # select the SNR colmuns for the selected frequencies
     col_names = dfTmp.columns.tolist()
-    print(col_names)
     cols2keep = col_names[:4]
     for freq in dStat['cli']['freqs']:
         cols2keep += [col for col in col_names[4:] if col.startswith('S{freq:s}'.format(freq=freq))]
@@ -112,9 +112,9 @@ def read_obsstat(logger: logging.Logger = None):
     return dfTmp[cols2keep]
 
 
-def rnxobs_analyse(argv):
+def obsstat_analyse(argv):
     """
-    rnxobs_analyse analyses the created OBSSTAT files and compares with TLE data
+    obsstat_analyse analyses the created OBSSTAT files and compares with TLE data
     """
 
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
@@ -169,6 +169,15 @@ def rnxobs_analyse(argv):
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
+    # store the json structure
+    jsonName = os.path.join(dStat['dir'], '{scrname:s}.json'.format(scrname=os.path.splitext(os.path.basename(__file__))[0]))
+    with open(jsonName, 'w+') as f:
+        json.dump(dStat, f, ensure_ascii=False, indent=4, default=amutils.json_convertor)
+
+    # clean up
+    copyfile(log_name, os.path.join(dStat['dir'], '{scrname:s}.log'.format(scrname=os.path.basename(__file__).replace('.', '_'))))
+    os.remove(log_name)
+
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    rnxobs_analyse(sys.argv)
+    obsstat_analyse(sys.argv)
