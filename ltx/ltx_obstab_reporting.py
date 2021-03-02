@@ -23,6 +23,8 @@ def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: 
     """
     info_report = ltx_gfzrnx_report.report_information(dInfo=dInfo)
 
+    n = 10  # max elements per line in longtabu
+
     print('dHdr information =\n{json!s}'.format(json=json.dumps(dHdr, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     ssec = Subsection('Script details')
@@ -38,19 +40,59 @@ def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: 
         with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
             longtabu.add_row(('RINEX root directory', ':', os.path.expanduser(dCli['path'])))
             longtabu.add_row(('RINEX observation file', ':', dCli['obsf']))
+            longtabu.add_row(('RINEX version', ':', dHdr['file']['version']))
             longtabu.add_row(('Marker', ':', dInfo['marker']))
             longtabu.add_row(('Year/day-of-year', ':', '{yyyy:04d}/{doy:03d}'.format(yyyy=dInfo['yyyy'], doy=dInfo['doy'])))
+            longtabu.add_empty_row()
+
+    with ssec.create(Subsubsection(title='Observation header information', numbering=True)) as sssec:
+        with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+            # add start / end DTG and interval
+            epoch_first = nested_lookup(key='first', document=dHdr)[0]
+            epoch_last = nested_lookup(key='last', document=dHdr)[0]
+            interval = float(nested_lookup(key='interval', document=dHdr)[0])
+
+            longtabu.add_row(('First epoch', ':', datetime.strptime(epoch_first.split('.')[0], '%Y %m %d %H %M %S').strftime('%Y/%m/%d %H:%M:%S')))
+            longtabu.add_row(('Last epoch', ':', datetime.strptime(epoch_last.split('.')[0], '%Y %m %d %H %M %S').strftime('%Y/%m/%d %H:%M:%S')))
+            longtabu.add_row(('Interval', ':', '{intv:.1f}'.format(intv=interval)))
+            longtabu.add_empty_row()
+
             for i, gnss in enumerate(dCli['GNSSs']):
                 if i == 0:
                     longtabu.add_row(('GNSS', ':', '{gnss:s} ({name:s}) '.format(gnss=gnss, name=gfzc.dict_GNSSs[gnss])))
                 else:
                     longtabu.add_row(('', ':', '{gnss:s} ({name:s}) '.format(gnss=gnss, name=gfzc.dict_GNSSs[gnss])))
+
+            # add the frequencies
+            for gnss, sysfreq in dHdr['file']['sysfrq'].items():
+                if gnss in dCli['GNSSs']:
+                    longtabu.add_row(('Frequencies {syst:s}'.format(syst=gnss), ':', '{freq:s}'.format(freq=', '.join(sysfreq))))
+            longtabu.add_empty_row()
+
+            # add observable types available
             for i, obst in enumerate(gfzc.lst_obstypes):
                 if i == 0:
                     longtabu.add_row(('Observable types', ':', '{obst:s} ({name:s}) '.format(obst=obst, name=gfzc.dict_obstypes[obst])))
                 else:
                     longtabu.add_row(('', ':', '{obst:s} ({name:s}) '.format(obst=obst, name=gfzc.dict_obstypes[obst])))
-            # longtabu.add_empty_row()
+            longtabu.add_empty_row()
+
+    with ssec.create(Subsubsection(title='Logged observables', numbering=True)) as sssec:
+        # add info about observable types logged
+        with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+            for gnss, obstypes in dHdr['file']['sysobs'].items():
+                if gnss in dCli['GNSSs']:
+                    if len(obstypes) > n:
+                        subobstypes = [obstypes[i * n:(i + 1) * n] for i in range((len(obstypes) + n - 1) // n)]
+                        for i, subsubobstypes in enumerate(subobstypes):
+                            if i == 0:
+                                longtabu.add_row(('Observable types {syst:s}'.format(syst=gnss), ':', '{obst:s}'.format(obst=', '.join(subsubobstypes))))
+                            else:
+                                longtabu.add_row(('', '', '{obst:s}'.format(obst=', '.join(subsubobstypes))))
+                    else:
+                        longtabu.add_row(('Observable types {syst:s}'.format(syst=gnss), ':', '{obst:s}'.format(obst=', '.join(obstypes))))
+            longtabu.add_empty_row()
+
 
     # print('ssec = \n{!s}'.format(ssec))
     # print('-' * 25)
@@ -110,7 +152,7 @@ def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_na
             longtabu.add_hline()
 
         # add figures representing the observations
-        ssec.append(NoEscape(r'Figure \vref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the Two Line Elements (TLE). The relatove observation count is represented in ' + r'Figure \vref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
+        ssec.append(NoEscape(r'Figure \vref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the Two Line Elements (TLE). The relative observation count is represented in ' + r'Figure \vref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['obs_count'], width=NoEscape(r'0.8\textwidth'), placement=NoEscape(r'\centering'))
             # plot.add_caption('Observation count per navigation signal')
@@ -119,13 +161,6 @@ def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_na
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['obs_perc'], width=NoEscape(r'0.8\textwidth'), placement=NoEscape(r'\centering'))
             plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
-
-
-
-
-
-
-
 
     return ssec
 

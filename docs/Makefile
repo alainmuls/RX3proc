@@ -1,14 +1,15 @@
 # main Makefile calling other Makefiles
 
 # dependencies for a chapter
-MDFILES := $(wildcard ./*.mdfiles)
-MDBASENAMES := $(basename $(MDFILES))
+MDFILE := $(wildcard ./*.mdfiles)
+MDBASENAMES := $(basename $(MDFILE))
 
-MDDIRS := $(dir $(MDFILES))
+MDDIRS := $(dir $(MDFILE))
+MD_FILES=$(shell cat $(MDFILE))
 
 # pdf:
 # 	@echo "Processing markdown files to PDF:"
-# 		for file in $(MDFILES); \
+# 		for file in $(MDFILE); \
 # 		do \
 # 			echo "------------" \
 # 			echo $$file ; \
@@ -18,7 +19,7 @@ MDDIRS := $(dir $(MDFILES))
 
 pdf:
 	@echo "Processing markdown files to PDF:"
-		for file in $(MDFILES); \
+		for file in $(MDFILE); \
 		do \
 			echo "------------" ; \
 			echo `tput setaf 2` ; \
@@ -30,7 +31,7 @@ pdf:
 
 docx:
 	@echo "Processing markdown files to DOCX:"
-		for file in $(MDFILES); \
+		for file in $(MDFILE); \
 		do \
 			echo "------------" ; \
 			echo `tput setaf 2` ; \
@@ -42,7 +43,7 @@ docx:
 
 html:
 	@echo "Processing markdown files to HTML:"
-		for file in $(MDFILES); \
+		for file in $(MDFILE); \
 		do \
 			echo "------------" ; \
 			echo `tput setaf 2` ; \
@@ -65,6 +66,7 @@ clean:
 		done
 
 files:
-	@echo "MDFILES = "$(MDFILES)
+	@echo "MDFILE = "$(MDFILE)
 	@echo "MDDIRS = "$(MDDIRS)
 	@echo "MDBASENAMES = "$(MDBASENAMES)
+	@echo "MD_FILES = "$(MD_FILES)

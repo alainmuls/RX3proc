@@ -144,8 +144,6 @@ def rnxobs_analyse(argv):
     # store the observation info from TLE in CVS file
     tle_name = '{base:s}.tle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
     dfTLE.to_csv(tle_name, index=True)
-    # # plot the TLE arcs
-    # tle_plot.tle_plot_arcs(obsstatf=dStat['obsstatf'], dfTle=dfTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     # combine the observation count and TLE count per PRN
     dfTLEtmp = pd.DataFrame(columns=['TYP', 'TLE_count'])  #, dtype={'TYP':'object','TLE_count':'int'})
@@ -165,8 +163,7 @@ def rnxobs_analyse(argv):
     sec_obsstat = ltx_obstab_reporting.obstab_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
 
     # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
-    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], 'obsstat')
-
+    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], '02_obs_stat')
     sec_obsstat.generate_tex(dStat['ltx']['obsstat'])
 
     # report to the user

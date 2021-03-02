@@ -1,18 +1,3 @@
-### Converting (six-)hourly SBF files to (compressed) RINEX v3.x files
-
-| __Script__             | __Task__                                                             |
-| :----------------:     | :-----------------------------------------------                     |
-| __sbf_daily.py__       | Combine (six-)hourly SBF files to daily files                        |
-| __sbf_rinex.py__       | Convert SBF daily file to RINEX v3.X observation & navigation file   |
-| __prepare_sbf2rnx.py__ | Combines above scripts and offers to get compressed RINEX v3.x files |
-
-### Combining (15 minutes) P3RS2 RINEX files into daily RINEX v3.x files
-
-| __Script__           | __Task__                                                               |
-| :----------------:   | :-----------------------------------------------                       |
-| __rnx15_combine.py__ | Combines 15 minutes RINEX files frim P3RS2                             |
-| __prepare_rnx15.py__ | Usage above script and add possibility for compressed RINEX v3.x files |
-
 
 \newpage
 

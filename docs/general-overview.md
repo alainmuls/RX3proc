@@ -62,3 +62,25 @@ total 1740
 ## Purpose
 
 `rnxproc` provides several python scripts which can be run in stand alone mode or be called from other python scripts. The purpose is to create  scripts performing a specific task. Some tasks will be grouped in a more general (super-)script to perform several elementary steps in a row.
+
+### Converting (six-)hourly SBF files to (compressed) RINEX v3.x files
+
+| __Script__             | __Task__                                                             |
+| :----------------:     | :-----------------------------------------------                     |
+| __sbf_daily.py__       | Combine (six-)hourly SBF files to daily files                        |
+| __sbf_rinex.py__       | Convert SBF daily file to RINEX v3.X observation & navigation file   |
+| \color{blue}{prepare\_sbf2rnx.py} | \color{blue}{Combines above scripts and offers to get compressed RINEX v3.x files} |
+
+### Combining (15 minutes) P3RS2 RINEX files into daily RINEX v3.x files
+
+| __Script__           | __Task__                                                               |
+| :----------------:   | :-----------------------------------------------                       |
+| __rnx15_combine.py__ | Combines 15 minutes RINEX files frim P3RS2                             |
+| \color{blue}{prepare\_rnx15.py} | \color{blue}{Uses above script and add possibility for compressed RINEX v3.x files} |
+
+### Converting and analysing RINEX files to observation tabular and statistics files
+
+| __Script__             | __Task__                                                       |
+| :----------------:     | :-----------------------------------------------               |
+| __rnxobs_tabular.py__  | creates observation tabular/statistics file for selected GNSSs |
+| __obsstat_analyse.py__ | analyses observation statistics file for selected GNSSs        |

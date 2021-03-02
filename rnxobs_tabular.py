@@ -164,7 +164,7 @@ def rnx_tabular(argv) -> dict:
 
     sec_script = ltx_obstab_reporting.obstab_script_information(dCli=dGFZ['cli'], dHdr=dGFZ['hdr'], dInfo=dGFZ['info'], script_name=os.path.basename(__file__))
 
-    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
+    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], '01_script_info')
     sec_script.generate_tex(dGFZ['ltx']['script'])
 
     # create the tabular observation file for the selected GNSSs
