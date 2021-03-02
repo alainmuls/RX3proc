@@ -117,7 +117,7 @@ def tle_plot_arcs(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot: bo
         plt.close(fig)
 
 
-def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None):
+def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
     """
     obstle_plot_arcs plots count of observations wrt to number obtained from TLE
     """
@@ -202,6 +202,8 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
         plt.show(block=True)
     else:
         plt.close(fig)
+
+    return plt_name
 
 
 def bars_info(nr_arcs: int, logger: logging.Logger) -> Tuple[list, int]:

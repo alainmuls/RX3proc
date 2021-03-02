@@ -124,6 +124,7 @@ def rnxobs_analyse(argv):
     dStat['cli'] = {}
     dStat['time'] = {}
     dStat['ltx'] = {}
+    dStat['plots'] = {}
 
     dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['time']['interval'], dStat['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
 
@@ -158,13 +159,15 @@ def rnxobs_analyse(argv):
     dfObsTLE.to_csv(obsstat_name, index=False)
 
     # plot the Observation and TLE observation count
-    tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
-    tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
+    dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
+    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
 
-    sec_obsstat = ltx_obstab_reporting.obstab_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, script_name=os.path.basename(__file__))
+    sec_obsstat = ltx_obstab_reporting.obstab_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
 
     # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
-    sec_obsstat.generate_tex('test.tex')
+    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], 'obsstat')
+
+    sec_obsstat.generate_tex(dStat['ltx']['obsstat'])
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))

@@ -60,43 +60,74 @@ def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: 
     return ssec
 
 
-def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, script_name: str) -> Subsection:
+def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_name: str) -> Subsection:
     """
     obstab_analyse summarises the observations compared to TLE information obtained from file obsstatf
     """
     ssec = Subsection('Observation statistics')
-    # determine the GNSS system and the obstypes (will always come from SNR)
-    col_names = dfObsTle.columns
-    obs_types = col_names
+
     # select the columns used for plotting
     col_names = dfObsTle.columns.tolist()
     GNSS = col_names[col_names.index('TYP') - 1]
-    obstypes =  [x for x in col_names[col_names.index('TYP') + 1:]]
+    obstypes = [x for x in col_names[col_names.index('TYP') + 1:]]
     print('GNSS = {!s}'.format(GNSS))
     print('obstypes = {!s}'.format(obstypes))
     print(', '.join(obstypes))
 
-    # determine align formats for langtabu
-    fmt_tabu = 'l|' + 'r' * len(obstypes)
+    # we only look at the SNR values since the same value for C/L/D, thus remove starting S
+    obst_txt = ['+{:s}'.format(x[1:]) for x in obstypes[:-1]]
+    obst_txt.append(obstypes[-1])
 
-    ssec.append('The following observations for {gnss:s} were logged: {obst:s}'.format(gnss=gfzc.dict_GNSSs[GNSS], obst=', '.join(obstypes)))
-    with ssec.create(LongTabu(fmt_tabu, pos='l', col_space='2pt')) as longtabu:
-        longtabu.add_row(['PRN'] + obstypes, mapper=[bold])  # header row
-        longtabu.add_hline()
-        longtabu.end_table_header()
-        longtabu.add_row(['PRN'] + obstypes, mapper=[bold])  # header row
+    ssec.append('The following observations for {gnss:s} were logged: {obst:s}'.format(gnss=gfzc.dict_GNSSs[GNSS], obst=', '.join(obst_txt)))
 
-        # for name, values in dfObsTle.iteritems():
-        #     print('{name!s}: {value!s}'.format(name=name, value=values))
+    with ssec.create(Subsubsection(title='Observables count per navigation signal', numbering=True)) as sssec:
+        # add timing and observation count info
+        sssec.append('The percentages for each navigation signal are calculated by using the possible number of observations obtained from TLEs for each individual satellite.')
 
-        for index, row in dfObsTle.iterrows():
-            longtabu.add_row([row.TYP] + [int(x) for x in row[obstypes].tolist()])
+        # determine align formats for langtabu
+        fmt_tabu = 'l|' + 'r' * (len(obstypes) - 1) + '|r'
 
-        longtabu.add_hline()
+        with sssec.create(LongTabu(fmt_tabu, pos='l', col_space='2pt')) as longtabu:
+            longtabu.add_row(['PRN'] + obst_txt, mapper=[bold])  # header row
+            longtabu.add_hline()
+            longtabu.end_table_header()
+            longtabu.add_row(['PRN'] + obst_txt, mapper=[bold])  # header row
+
+            # for name, values in dfObsTle.iteritems():
+            #     print('{name!s}: {value!s}'.format(name=name, value=values))
+
+            for index, row in dfObsTle.iterrows():
+                longtabu.add_row([row.TYP] + [int(x) for x in row[obstypes].tolist()])
+
+                # add percentage in the following row if TLE_count differs 0
+                tle_obs = row[obstypes[-1]] / 100
+                print('tle_obs = {:f}'.format(tle_obs))
+                if tle_obs > 0:
+                    longtabu.add_row([''] + ['{:.1f}% '.format(float(x / tle_obs)) for x in row[obstypes[:-1]].tolist()] + [''])
+                else:
+                    longtabu.add_row([''] + ['---'] * len(obstypes[:-1]) + [''])  # add emty row
+
+            longtabu.add_hline()
+
+        # add figures representing the observations
+        ssec.append(NoEscape(r'Figure \vref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the Two Line Elements (TLE). The relatove observation count is represented in ' + r'Figure \vref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
+        with sssec.create(Figure(position='htbp')) as plot:
+            plot.add_image(plots['obs_count'], width=NoEscape(r'0.8\textwidth'), placement=NoEscape(r'\centering'))
+            # plot.add_caption('Observation count per navigation signal')
+            plot.add_caption(NoEscape(r'\label{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Observables overview for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
+
+        with sssec.create(Figure(position='htbp')) as plot:
+            plot.add_image(plots['obs_perc'], width=NoEscape(r'0.8\textwidth'), placement=NoEscape(r'\centering'))
+            plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
+
+
+
+
+
+
+
 
     return ssec
-
-
 
 
 # OLD STUFF ????
