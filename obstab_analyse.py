@@ -98,7 +98,25 @@ def read_obstab(logger: logging.Logger = None) -> pd.DataFrame:
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    dfTmp = pd.read_csv(dTab['obstabf'], delimiter=',')
+    # determine what the columnheaders will be
+    hdr_count = -1
+    hdr_columns = []
+    with open(dTab['obstabf']) as fin:
+        for line in fin:
+            print(line.strip())
+            hdr_count += 1
+            if line.strip().startswith('OBS'):
+                break
+            else:
+                if line.strip() != '#HD,G,DATE,TIME,PRN':
+                    hdr_line = line.strip()
+
+    # split up on comma into a list
+    hdr_columns = hdr_line.split(',')
+    print('hdr_columns = {!s}'.format(hdr_columns))
+    print('hdr_count = {!s}'.format(hdr_count))
+
+    dfTmp = pd.read_csv(dTab['obstabf'], delimiter=',', skiprows=hdr_count, names=hdr_columns, header=None)
 
     if logger is not None:
         amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
@@ -111,6 +129,7 @@ def read_obstab(logger: logging.Logger = None) -> pd.DataFrame:
     #     cols2keep += [col for col in col_names[4:] if col.startswith('S{freq:s}'.format(freq=freq))]
 
     # return dfTmp[cols2keep]
+    sys.exit(9)
 
 
 def obstab_analyse(argv):
