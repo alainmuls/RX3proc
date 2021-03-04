@@ -107,7 +107,7 @@ def read_obsstat(logger: logging.Logger = None) -> pd.DataFrame:
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     dfTmp = pd.read_csv(dStat['obsstatf'], delim_whitespace=True)
-
+    dfTmp.rename(columns={'PRN': 'PRN'}, inplace=True)
     if logger is not None:
         amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
 
@@ -118,6 +118,17 @@ def read_obsstat(logger: logging.Logger = None) -> pd.DataFrame:
         cols2keep += [col for col in col_names[4:] if col.startswith('S{freq:s}'.format(freq=freq))]
 
     return dfTmp[cols2keep]
+
+
+def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsdb: str, logger: logging.Logger = None):
+    """cvdb: str
+    cvsdb_update_obstle updates the observation vs TLE statistics
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+    # create the ID part for adding to CVSDB
+
+    pass
 
 
 def obsstat_analyse(argv):
@@ -147,18 +158,18 @@ def obsstat_analyse(argv):
     amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
 
     # get the observation time spans based on TLE values
-    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.TYP.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
+    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
     # store the observation info from TLE in CVS file
     tle_name = '{base:s}.tle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
     dfTLE.to_csv(tle_name, index=True)
 
     # combine the observation count and TLE count per PRN
-    dfTLEtmp = pd.DataFrame(columns=['TYP', 'TLE_count'])  # , dtype={'TYP':'object','TLE_count':'int'})
-    dfTLEtmp.TYP = dfTLE.index
+    dfTLEtmp = pd.DataFrame(columns=['PRN', 'TLE_count'])  # , dtype={'PRN':'object','TLE_count':'int'})
+    dfTLEtmp.PRN = dfTLE.index
     for i, (prn, tle_prn) in enumerate(dfTLE.iterrows()):
         dfTLEtmp.iloc[i].TLE_count = sum(tle_prn.tle_arc_count)
-    dfObsTLE = pd.merge(dfObsStat, dfTLEtmp, on='TYP')
+    dfObsTLE = pd.merge(dfObsStat, dfTLEtmp, on='PRN')
     amutils.logHeadTailDataFrame(df=dfObsTLE, dfName='dfObsTLE', callerName=cFuncName, logger=logger)
     # store the observation / TLE info  in CVS file
     obsstat_name = '{base:s}.obstle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
@@ -166,7 +177,8 @@ def obsstat_analyse(argv):
 
     # store the information in cvsdb
     cvsdb_ops.cvsdb_open(cvsdb_name=dStat['cli']['cvsdb'], logger=logger)
-    sys.exit(6)
+    cvsdb_update_obstle(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], cvsdb=dStat['cli']['cvsdb'], logger=logger)
+    # sys.exit(6)
 
     # plot the Observation and TLE observation count
     dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)

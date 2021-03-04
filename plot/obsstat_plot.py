@@ -27,11 +27,11 @@ def obsstat_plot_obscount(obs_statf: str, gnss: str, gfzrnx: str, show_plot: boo
     amutils.logHeadTailDataFrame(df=df_obsstat, dfName='df_obsstat', logger=logger, callerName=cFuncName)
 
     # get the number of SVs and the observation types for Cxx only
-    lst_prns = df_obsstat.TYP.unique()
+    lst_prns = df_obsstat.PRN.unique()
 
     # get the list of observables
     lst_cols = df_obsstat.columns.tolist()
-    lst_obst = [x for x in lst_cols[lst_cols.index('TYP') + 1:] if x.startswith('C')]
+    lst_obst = [x for x in lst_cols[lst_cols.index('PRN') + 1:] if x.startswith('C')]
     nr_bars = len(lst_obst)
 
     # set up the plot
@@ -51,9 +51,9 @@ def obsstat_plot_obscount(obs_statf: str, gnss: str, gfzrnx: str, show_plot: boo
     for i, prn in enumerate(lst_prns):
         for j, obst_used in enumerate(lst_obst):
             if i == 0:
-                ax.barh(y=y_prns[i] + dy_obs[j], width=df_obsstat[df_obsstat.TYP == prn][obst_used], height=bar_width, color=bar_colors[j], label=obst_used)
+                ax.barh(y=y_prns[i] + dy_obs[j], width=df_obsstat[df_obsstat.PRN == prn][obst_used], height=bar_width, color=bar_colors[j], label=obst_used)
             else:
-                ax.barh(y=y_prns[i] + dy_obs[j], width=df_obsstat[df_obsstat.TYP == prn][obst_used], height=bar_width, color=bar_colors[j])
+                ax.barh(y=y_prns[i] + dy_obs[j], width=df_obsstat[df_obsstat.PRN == prn][obst_used], height=bar_width, color=bar_colors[j])
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')

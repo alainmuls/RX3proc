@@ -128,12 +128,12 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    gnss_id = dfObsTle.TYP.iloc[0][0]
-    y_prns = [int(prn[1:]) for prn in dfObsTle.TYP.to_list()]
+    gnss_id = dfObsTle.PRN.iloc[0][0]
+    y_prns = [int(prn[1:]) for prn in dfObsTle.PRN.to_list()]
 
     # select the columns used for plotting
     col_names = dfObsTle.columns.tolist()
-    obstypes =  [x for x in col_names[col_names.index('TYP') + 1:]]
+    obstypes =  [x for x in col_names[col_names.index('PRN') + 1:]]
 
     # determine widths of bars to use for each PRN
     dy_obstypes, bar_width = bars_info(nr_arcs=len(obstypes), logger=logger)
@@ -142,7 +142,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     bar_colors, title_font = amutils.create_colormap_font(nrcolors=len(obstypes), font_size=12)
 
     # plot the TLE observation count
-    for i, (y_prn, prn) in enumerate(zip(y_prns, dfObsTle.TYP)):
+    for i, (y_prn, prn) in enumerate(zip(y_prns, dfObsTle.PRN)):
         for j, (obst, dy_obst, bar_color) in enumerate(zip(list(reversed(obstypes)), list(reversed(dy_obstypes)), list(reversed(bar_colors)))):
             prn_width = dfObsTle.iloc[i][obst]
             if not reduce2percentage:
@@ -179,7 +179,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     tick_labels = []
     for i in np.arange(1, y_prns[-1] + 1):
         tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
-        if tick_prn in dfObsTle.TYP.to_list():
+        if tick_prn in dfObsTle.PRN.to_list():
             tick_labels.append(tick_prn)
         else:
             tick_labels.append('')

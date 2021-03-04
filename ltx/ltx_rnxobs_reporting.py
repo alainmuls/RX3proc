@@ -107,8 +107,8 @@ def obsstat_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_n
 
     # select the columns used for plotting
     col_names = dfObsTle.columns.tolist()
-    GNSS = col_names[col_names.index('TYP') - 1]
-    obstypes = [x for x in col_names[col_names.index('TYP') + 1:]]
+    GNSS = col_names[col_names.index('PRN') - 1]
+    obstypes = [x for x in col_names[col_names.index('PRN') + 1:]]
     # print('GNSS = {!s}'.format(GNSS))
     # print('obstypes = {!s}'.format(obstypes))
     # print(', '.join(obstypes))
@@ -136,7 +136,7 @@ def obsstat_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_n
             #     print('{name!s}: {value!s}'.format(name=name, value=values))
 
             for index, row in dfObsTle.iterrows():
-                longtabu.add_row([row.TYP] + [int(x) for x in row[obstypes].tolist()])
+                longtabu.add_row([row.PRN] + [int(x) for x in row[obstypes].tolist()])
 
                 # add percentage in the following row if TLE_count differs 0
                 tle_obs = row[obstypes[-1]] / 100
