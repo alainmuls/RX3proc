@@ -162,7 +162,7 @@ def rnx_tabular(argv) -> dict:
 
     logger.info('{func:s}: dGFZ =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    sec_script = ltx_obstab_reporting.obstab_script_information(dCli=dGFZ['cli'], dHdr=dGFZ['hdr'], dInfo=dGFZ['info'], script_name=os.path.basename(__file__))
+    sec_script = ltx_obstab_reporting.rnxobs_script_information(dCli=dGFZ['cli'], dHdr=dGFZ['hdr'], dInfo=dGFZ['info'], script_name=os.path.basename(__file__))
 
     dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], '01_script_info')
     sec_script.generate_tex(dGFZ['ltx']['script'])

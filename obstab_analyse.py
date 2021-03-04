@@ -41,6 +41,7 @@ def treatCmdOpts(argv):
     parser.add_argument('-o', '--obstab', help='observation tabular file', type=str, required=True)
 
     parser.add_argument('-f', '--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
+    parser.add_argument('-t', '--types_obs', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
 
     parser.add_argument('-i', '--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
 
@@ -54,7 +55,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obstab, args.freqs, args.interval, args.cutoff, args.plot, args.logging
+    return args.obstab, args.freqs, args.types_obs, args.interval, args.cutoff, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -92,7 +93,7 @@ def check_arguments(logger: logging.Logger = None):
     dTab['time']['date'] = datetime.strptime('{year:04d}-{doy:03d}'.format(year=dTab['time']['YYYY'], doy=dTab['time']['DOY']), "%Y-%j")
 
 
-def read_obstab(logger: logging.Logger = None) -> pd.DataFrame:
+def read_obstab(obstabf: str, dCli: dict, logger: logging.Logger = None) -> pd.DataFrame:
     """
     read_obstab reads the SNR for the selected frequencies into a dataframe
     """
@@ -101,9 +102,9 @@ def read_obstab(logger: logging.Logger = None) -> pd.DataFrame:
     # determine what the columnheaders will be
     hdr_count = -1
     hdr_columns = []
-    with open(dTab['obstabf']) as fin:
+    with open(obstabf) as fin:
         for line in fin:
-            print(line.strip())
+            # print(line.strip())
             hdr_count += 1
             if line.strip().startswith('OBS'):
                 break
@@ -113,23 +114,28 @@ def read_obstab(logger: logging.Logger = None) -> pd.DataFrame:
 
     # split up on comma into a list
     hdr_columns = hdr_line.split(',')
-    print('hdr_columns = {!s}'.format(hdr_columns))
-    print('hdr_count = {!s}'.format(hdr_count))
+    # print('hdr_columns = {!s}'.format(hdr_columns))
+    # print('hdr_columns[2:4] = {!s}'.format(hdr_columns[2:4]))
+    # print('hdr_count = {!s}'.format(hdr_count))
 
-    dfTmp = pd.read_csv(dTab['obstabf'], delimiter=',', skiprows=hdr_count, names=hdr_columns, header=None)
+    # keep the header columns selected by --freqs and --obstypes options
+    obstypes = hdr_columns[2:5]
+    for obst in dCli['obs_types']:
+        for freq in dCli['freqs']:
+            obsfreq = '{obst:s}{freq:s}'.format(obst=obst, freq=freq)
+            obstypes.append([obstid for obstid in hdr_columns[2:] if obstid.startswith(obsfreq)][0])
 
-    if logger is not None:
-        amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
+    logger.info('{func:s}: loading from {tab:s}: {cols:s}'.format(tab=obstabf, cols=colored(', '.join(obstypes), 'green'), func=cFuncName))
 
-    # select the SNR colmuns for the selected frequencies
-    # col_names = dfTmp.columns.tolist()
-    # print(col_names)
-    # cols2keep = col_names[:4]
-    # for freq in dTab['cli']['freqs']:
-    #     cols2keep += [col for col in col_names[4:] if col.startswith('S{freq:s}'.format(freq=freq))]
+    dfTmp = pd.read_csv(obstabf, delimiter=',', skiprows=hdr_count, names=hdr_columns, header=None, parse_dates=[hdr_columns[2:4]], usecols=obstypes)
 
-    # return dfTmp[cols2keep]
-    sys.exit(9)
+    # TEST BEGIN for testing remove some lines for SV E02
+    indexs = dfTmp[dfTmp['PRN'] == 'E02'].index
+    print('dropping indexs = {!s}'.format(indexs[5:120]))
+    dfTmp.drop(indexs[5:120], inplace=True)
+    # END TEST
+
+    return dfTmp
 
 
 def obstab_analyse(argv):
@@ -146,7 +152,7 @@ def obstab_analyse(argv):
     dTab['ltx'] = {}
     dTab['plots'] = {}
 
-    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['time']['interval'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
+    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['obs_types'], dTab['time']['interval'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
@@ -155,7 +161,7 @@ def obstab_analyse(argv):
     check_arguments(logger=logger)
 
     # read obsstat into a dataframe and select the SNR for the selected frequencies
-    dfObsTab = read_obstab(logger=logger)
+    dfObsTab = read_obstab(obstabf=dTab['obstabf'], dCli=dTab['cli'], logger=logger)
     amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
 
 

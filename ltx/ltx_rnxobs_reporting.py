@@ -1,31 +1,28 @@
 import os
-import sys
 from pylatex import Subsection, LongTable, MultiColumn, NoEscape, Itemize, SubFigure, Figure, LongTabu, Subsubsection
 from datetime import datetime
 from pylatex.utils import bold
 import numpy as np
 from nested_lookup import nested_lookup
-import json
 import pandas as pd
 
 from gfzrnx import gfzrnx_constants as gfzc
 
 from ampyutils import am_config as amc
-from ampyutils import amutils
 from ltx import ltx_gfzrnx_report
 
 __author__ = 'amuls'
 
 
-def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: str) -> Subsection:
+def rnxobs_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: str) -> Subsection:
     """
-    obstab_script_information creates the section with information about the script obstab_analyze
+    rnxobs_script_information creates the section with information about the script obstab_analyze
     """
     info_report = ltx_gfzrnx_report.report_information(dInfo=dInfo)
 
     n = 10  # max elements per line in longtabu
 
-    print('dHdr information =\n{json!s}'.format(json=json.dumps(dHdr, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    # print('dHdr information =\n{json!s}'.format(json=json.dumps(dHdr, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     ssec = Subsection('Script details')
     with ssec.create(Subsubsection(title='Program information', numbering=True)) as sssec:
@@ -102,9 +99,9 @@ def obstab_script_information(dCli: dict, dHdr: dict, dInfo: dict, script_name: 
     return ssec
 
 
-def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_name: str) -> Subsection:
+def obsstat_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_name: str) -> Subsection:
     """
-    obstab_analyse summarises the observations compared to TLE information obtained from file obsstatf
+    obsstat_analyse summarises the observations compared to TLE information obtained from file obsstatf
     """
     ssec = Subsection('Observation statistics')
 
@@ -112,9 +109,9 @@ def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_na
     col_names = dfObsTle.columns.tolist()
     GNSS = col_names[col_names.index('TYP') - 1]
     obstypes = [x for x in col_names[col_names.index('TYP') + 1:]]
-    print('GNSS = {!s}'.format(GNSS))
-    print('obstypes = {!s}'.format(obstypes))
-    print(', '.join(obstypes))
+    # print('GNSS = {!s}'.format(GNSS))
+    # print('obstypes = {!s}'.format(obstypes))
+    # print(', '.join(obstypes))
 
     # we only look at the SNR values since the same value for C/L/D, thus remove starting S
     obst_txt = ['+{:s}'.format(x[1:]) for x in obstypes[:-1]]
@@ -143,7 +140,7 @@ def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_na
 
                 # add percentage in the following row if TLE_count differs 0
                 tle_obs = row[obstypes[-1]] / 100
-                print('tle_obs = {:f}'.format(tle_obs))
+                # print('tle_obs = {:f}'.format(tle_obs))
                 if tle_obs > 0:
                     longtabu.add_row([''] + ['{:.1f}% '.format(float(x / tle_obs)) for x in row[obstypes[:-1]].tolist()] + [''])
                 else:
@@ -163,6 +160,11 @@ def obstab_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_na
             plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
     return ssec
+
+
+
+
+
 
 
 # OLD STUFF ????

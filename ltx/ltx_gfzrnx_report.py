@@ -8,7 +8,7 @@ import logging
 from pylatex import Document, Section
 
 from ampyutils import am_config as amc
-from ltx import ltx_report, ltx_obstab_reporting, ltx_titlepage, ltx_navtab_reporting
+from ltx import ltx_report, ltx_rnxobs_reporting, ltx_titlepage, ltx_navtab_reporting
 
 
 def report_information(dInfo: dict, logger: logging.Logger = None) -> dict:
@@ -68,13 +68,13 @@ def create_obstab_report(ltxdoc: Document, logger: logging.Logger = None) -> Doc
     # add analysis section for the observations
     ltxdoc.append(Section(title='Creation of RINEX files for {marker:s}'.format(marker=amc.dRTK['cli']['marker'])))
     # report the information from CLI options in a subsection
-    ltxdoc.append(ltx_obstab_reporting.obstab_script_information(dCLI=amc.dRTK['cli'], script_name=os.path.basename(__file__)))
+    ltxdoc.append(ltx_rnxobs_reporting.rnxobs_script_information(dCLI=amc.dRTK['cli'], script_name=os.path.basename(__file__)))
 
     # add subsection of created RINEX files
     rnx_obs3f = nested_lookup(key='obs3f', document=amc.dRTK)[0]
     rnx_nav3f = nested_lookup(key='nav3f', document=amc.dRTK)[0]
     dir_yydoy = nested_lookup(key='yydoy', document=amc.dRTK)[0]
-    ltxdoc.append(ltx_obstab_reporting.obstab_files_created(dir_yydoy=dir_yydoy, rnx_obs3f=rnx_obs3f, rnx_nav3f=rnx_nav3f))
+    ltxdoc.append(ltx_rnxobs_reporting.obstab_files_created(dir_yydoy=dir_yydoy, rnx_obs3f=rnx_obs3f, rnx_nav3f=rnx_nav3f))
 
     # start of analysis of RINEX observation file
     ltxdoc.append(Section(title='Analysis of RINEX observation files'))
@@ -86,11 +86,11 @@ def create_obstab_report(ltxdoc: Document, logger: logging.Logger = None) -> Doc
     sysfreqs = nested_lookup(key='sysfrq', document=amc.dRTK)[0]
     sysprns = nested_lookup(key='PRNs', document=amc.dRTK)[0]
     sysspan = nested_lookup(key='t_span', document=amc.dRTK)[0]
-    ltxdoc.append(ltx_obstab_reporting.obstab_rinex_information(GNSSsysts=GNSSs, sysobss=sysobs, sysfreqs=sysfreqs, sysprns=sysprns, sysspan=sysspan))
+    ltxdoc.append(ltx_rnxobs_reporting.obstab_rinex_information(GNSSsysts=GNSSs, sysobss=sysobs, sysfreqs=sysfreqs, sysprns=sysprns, sysspan=sysspan))
 
     plots = nested_lookup(key='plt', document=amc.dRTK)[0]
     for gnss in amc.dRTK['cli']['GNSSs']:
-        ltxdoc.append(ltx_obstab_reporting.obstab_obst_summary(gnss=gnss, cli_obsts=amc.dRTK['cli']['obstypes'], obs_plots=plots))
+        ltxdoc.append(ltx_rnxobs_reporting.obstab_obst_summary(gnss=gnss, cli_obsts=amc.dRTK['cli']['obstypes'], obs_plots=plots))
 
     return ltxdoc
 

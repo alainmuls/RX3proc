@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import sys
 import os
+import stat
 from termcolor import colored
 import webcolors
 import gzip
@@ -543,3 +544,10 @@ def txt_lines_with(fname: str, substr: str):
     """
     f_contents = open(fname, 'r').read()
     return get_lines_with(f_contents, substr)
+
+
+def path_writable(path: str) -> bool:
+    """
+    check whether a directory is writable
+    """
+    return os.access(path, os.W_OK)

@@ -17,8 +17,8 @@ from ampyutils import gnss_cmd_opts as gco
 from ampyutils import am_config as amc
 from ampyutils import amutils
 from tle import tle_visibility, tleobs_plot
-from ltx import ltx_obstab_reporting
-
+from ltx import ltx_rnxobs_reporting
+from cvsdb import cvsdb_ops
 
 __author__ = 'amuls'
 
@@ -46,6 +46,8 @@ def treatCmdOpts(argv):
 
     parser.add_argument('-c', '--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
+    parser.add_argument('-d', '--dbcvs', help='Add information to CVS database (default {cvsdb:s})'.format(cvsdb=colored(gco.CVSDB_OBSTLE, 'green')), required=False, type=str, default=gco.CVSDB_OBSTLE)
+
     parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
     parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
@@ -54,7 +56,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obsstat, args.freqs, args.interval, args.cutoff, args.plot, args.logging
+    return args.obsstat, args.freqs, args.interval, args.cutoff, args.dbcvs, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -83,7 +85,13 @@ def check_arguments(logger: logging.Logger = None):
     if not amutils.mkdir_p(dStat['ltx']['path']):
         if logger is not None:
             logger.error('{func:s}: cannot create directory {dir:s} failed'.format(dir=dStat['ltx']['path'], func=cFuncName))
-        sys.exit(amc.E_FAILURE)
+        sys.exit(amc.E_CREATE_DIR_ERROR)
+
+    # check for accessibility of CVS database
+    if not amutils.path_writable(os.path.dirname(dStat['cli']['cvsdb'])):
+        if logger is not None:
+            logger.error('{func:s}: cannot write to directory {dir:s} failed'.format(dir=colored(os.path.dirname(dStat['cli']['cvsdb']), 'red'), func=cFuncName))
+        sys.exit(amc.E_PATH_NOT_WRITABLE)
 
     # extract YY and DOY from filename
     dStat['time']['YYYY'] = int(dStat['obsstatf'][12:16])
@@ -126,7 +134,7 @@ def obsstat_analyse(argv):
     dStat['ltx'] = {}
     dStat['plots'] = {}
 
-    dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['time']['interval'], dStat['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
+    dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['time']['interval'], dStat['cli']['mask'], dStat['cli']['cvsdb'], show_plot, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
@@ -146,7 +154,7 @@ def obsstat_analyse(argv):
     dfTLE.to_csv(tle_name, index=True)
 
     # combine the observation count and TLE count per PRN
-    dfTLEtmp = pd.DataFrame(columns=['TYP', 'TLE_count'])  #, dtype={'TYP':'object','TLE_count':'int'})
+    dfTLEtmp = pd.DataFrame(columns=['TYP', 'TLE_count'])  # , dtype={'TYP':'object','TLE_count':'int'})
     dfTLEtmp.TYP = dfTLE.index
     for i, (prn, tle_prn) in enumerate(dfTLE.iterrows()):
         dfTLEtmp.iloc[i].TLE_count = sum(tle_prn.tle_arc_count)
@@ -156,11 +164,15 @@ def obsstat_analyse(argv):
     obsstat_name = '{base:s}.obstle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
     dfObsTLE.to_csv(obsstat_name, index=False)
 
+    # store the information in cvsdb
+    cvsdb_ops.cvsdb_open(cvsdb_name=dStat['cli']['cvsdb'], logger=logger)
+    sys.exit(6)
+
     # plot the Observation and TLE observation count
     dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
     dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
 
-    sec_obsstat = ltx_obstab_reporting.obstab_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
+    sec_obsstat = ltx_rnxobs_reporting.obsstat_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
 
     # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
     dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], '02_obs_stat')
