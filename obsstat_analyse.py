@@ -107,7 +107,7 @@ def read_obsstat(logger: logging.Logger = None) -> pd.DataFrame:
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     dfTmp = pd.read_csv(dStat['obsstatf'], delim_whitespace=True)
-    dfTmp.rename(columns={'PRN': 'PRN'}, inplace=True)
+    dfTmp.rename(columns={'TYP': 'PRN'}, inplace=True)
     if logger is not None:
         amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
 
@@ -127,7 +127,31 @@ def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsd
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # create the ID part for adding to CVSDB
+    hdr_data = '{YYYY:04d},{DOY:03d},{rx:s},{gnss:s}'.format(YYYY=dTime['YYYY'], DOY=dTime['DOY'], rx=dfObsTle.columns[1], gnss=dfObsTle.columns[2])
+    print('hdr_data = {!s}'.format(hdr_data))
 
+    # iterate over all examined obstypes
+    for obst in dfObsTle.columns[4:-1]:
+        hdr_data += ',{obst:s}'.format(obst=obst)
+        print(hdr_data)
+
+        obs_data = [','] * 36  # contains CVS fields of observation counts per PRN, field 0 is sum of all SVs, field xx is for PRNxx
+        # print(obs_data)
+        # print(','.join(obs_data))
+        # print(len(''.join(obs_data)))
+        tleobs_data = []  # percentage of observation count wrt TLE per PRN
+        for SVPRN in dfObsTle.PRN:
+            prn = int(SVPRN[1:])
+            print(SVPRN)
+            print(prn)
+            print('dfObsTle.loc[dfObsTle.PRN == SVPRN] = {!s}'.format(dfObsTle.loc[dfObsTle.PRN == SVPRN]))
+            print('dfObsTle.loc[dfObsTle.PRN == SVPRN][obst] = {!s}'.format(dfObsTle.loc[dfObsTle.PRN == SVPRN][obst]))
+            obs_data[prn] = dfObsTle.loc[dfObsTle.PRN == SVPRN][obst]
+            sys.exit(4)
+        print(obs_data)
+
+    sys.exit(6)
+    # STP,SEPT,E,PRN,S1C,S5Q,TLE_count
     pass
 
 
