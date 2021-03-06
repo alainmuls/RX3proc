@@ -8,6 +8,7 @@ import logging
 import json
 from datetime import datetime
 from pathlib import Path
+import numpy as np
 import pandas as pd
 from shutil import copyfile
 
@@ -127,31 +128,40 @@ def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsd
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # create the ID part for adding to CVSDB
-    hdr_data = '{YYYY:04d},{DOY:03d},{rx:s},{gnss:s}'.format(YYYY=dTime['YYYY'], DOY=dTime['DOY'], rx=dfObsTle.columns[1], gnss=dfObsTle.columns[2])
-    print('hdr_data = {!s}'.format(hdr_data))
+    hdr_data = ['{YYYY:04d}'.format(YYYY=dTime['YYYY']),
+                '{DOY:03d}'.format(DOY=dTime['DOY']),
+                '{rx:s}'.format(rx=dfObsTle.columns[1]),
+                '{gnss:s}'.format(gnss=dfObsTle.columns[2])]
+    # print('hdr_data = {!s}'.format(hdr_data))
 
     # iterate over all examined obstypes
     for obst in dfObsTle.columns[4:-1]:
-        hdr_data += ',{obst:s}'.format(obst=obst)
-        print(hdr_data)
+        # hdr_data += ',{obst:s}'.format(obst=obst)
 
-        obs_data = [','] * 36  # contains CVS fields of observation counts per PRN, field 0 is sum of all SVs, field xx is for PRNxx
-        # print(obs_data)
-        # print(','.join(obs_data))
-        # print(len(''.join(obs_data)))
-        tleobs_data = []  # percentage of observation count wrt TLE per PRN
+        obs_data = [np.NaN] * 37  # contains CVS fields of observation counts per PRN, field 0 is sum of all SVs, field xx is for PRNxx
+        tleobs_data = [np.NaN] * 37   # percentage of observation count wrt TLE per PRN
+
+        # note which observable is on this line
+        obs_data[0] = '{:s}'.format(obst)
+        tleobs_data[0] = '{:s}_tle'.format(obst)
+
         for SVPRN in dfObsTle.PRN:
             prn = int(SVPRN[1:])
-            print(SVPRN)
-            print(prn)
-            print('dfObsTle.loc[dfObsTle.PRN == SVPRN] = {!s}'.format(dfObsTle.loc[dfObsTle.PRN == SVPRN]))
-            print('dfObsTle.loc[dfObsTle.PRN == SVPRN][obst] = {!s}'.format(dfObsTle.loc[dfObsTle.PRN == SVPRN][obst]))
-            obs_data[prn] = dfObsTle.loc[dfObsTle.PRN == SVPRN][obst]
-            sys.exit(4)
-        print(obs_data)
 
-    sys.exit(6)
-    # STP,SEPT,E,PRN,S1C,S5Q,TLE_count
+            # the data for the absolute values
+            obs_data[prn] = dfObsTle.loc[dfObsTle.PRN == SVPRN][obst] .values[0]
+
+            # the data for the relative to TLE values
+            tleobs_data[prn] = float('{:.1f}'.format(obs_data[prn] / dfObsTle.loc[dfObsTle.PRN == SVPRN][dfObsTle.columns[-1]] .values[0] * 100))
+
+        # print(hdr_data + obs_data)
+        # print(hdr_data + tleobs_data)
+
+        # update the cvsdb with absolute and relative values
+        cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=hdr_data + obs_data, id_fields=len(hdr_data) + 1, logger=logger)
+        cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=hdr_data + tleobs_data, id_fields=len(hdr_data) + 1, logger=logger)
+
+    sys.exit(5)
     pass
 
 
