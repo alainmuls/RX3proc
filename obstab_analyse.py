@@ -17,7 +17,7 @@ from ampyutils import gnss_cmd_opts as gco
 from ampyutils import am_config as amc
 from ampyutils import amutils
 from tle import tle_visibility, tleobs_plot
-from ltx import ltx_obstab_reporting
+from ltx import ltx_rnxobs_reporting
 
 
 __author__ = 'amuls'
@@ -129,18 +129,25 @@ def read_obstab(obstabf: str, dCli: dict, logger: logging.Logger = None) -> pd.D
 
     dfTmp = pd.read_csv(obstabf, delimiter=',', skiprows=hdr_count, names=hdr_columns, header=None, parse_dates=[hdr_columns[2:4]], usecols=obstypes)
 
-    # TEST BEGIN for testing remove some lines for SV E02
+    # XXX TEST BEGIN for testing remove some lines for SV E02
     indexs = dfTmp[dfTmp['PRN'] == 'E02'].index
     print('dropping indexs = {!s}'.format(indexs[5:120]))
     dfTmp.drop(indexs[5:120], inplace=True)
-    # END TEST
+    # END XXX TEST
 
     return dfTmp
 
 
+def analyse_obsprn(dfobsPrn: pd.DataFrame, prn_list: list, logger: logging.Logger):
+    """
+    analyse_obsprn analyses the observations for the gicen PRNs and detemines a loss in SNR if asked.
+    """
+    pass
+
+
 def obstab_analyse(argv):
     """
-    obstab_analyse analyses the created OBSTAB files and compares with TLE data
+    obstab_analyse analyses the created OBSTAB files and compares with TLE data.
     """
 
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
@@ -164,6 +171,13 @@ def obstab_analyse(argv):
     dfObsTab = read_obstab(obstabf=dTab['obstabf'], dCli=dTab['cli'], logger=logger)
     amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
 
+    # read the TLE orbits from CVS file
+    tlecvs_name = '{base:s}.tle'.format(base=os.path.splitext(dTab['obstabf'])[0])
+    dfTLE = pd.read_csv(tlecvs_name, delimiter=',', header=1)
+    amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
+
+    # analyse_obsprn(dfobsPrn=dfObsTab, prn_list=[])
+    # tleobs_plot.tle_plot_arcs()
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))

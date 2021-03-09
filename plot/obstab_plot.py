@@ -17,20 +17,9 @@ from gfzrnx import gfzrnx_constants as gfzc
 __author__ = 'amuls'
 
 
-# def autolabel(rects):
-#     """Attach a text label above each bar in *rects*, displaying its height."""
-#     for rect in rects:
-#         height = rect.get_height()
-#         ax.annotate('{}'.format(height),
-#                     xy=(rect.get_x() + rect.get_width() / 2, height),
-#                     xytext=(0, 3),  # 3 points vertical offset
-#                     textcoords="offset points",
-#                     ha='center', va='bottom')
-
-
-def obstab_plot_obscount(yyyy: int, doy: int, gnss: str, dprns: dict, obsts_cli: list, obsts_used: list, obs_epochs: dict, dir_gfzplt: str, obstab_name: str, show_plot: bool = False, logger: logging.Logger = None) -> str:
+def obstab_plot_obstimelines(dfObsTab: pd.DataFrame, lst_prns: list, dTime: dict, show_plot: bool = False, logger: logging.Logger = None) -> str:
     """
-    obstab_plot_obscount plots the number of observales per PRN
+    obstab_plot_obstimelines plots the timeline of observales per PRN
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -39,100 +28,7 @@ def obstab_plot_obscount(yyyy: int, doy: int, gnss: str, dprns: dict, obsts_cli:
     # plt.style.use('seaborn-darkgrid')
 
     # determine how many PRNs are observed used as coordinate
-    y_prns = np.arange(len(dprns[gnss]))  # location of the PRNs
-
-    # determine how many bars per PRN, that is how many observables of one type found
-    obst_cli = obsts_cli[0]  # in enumerate(obsts_cli):
-    obst_bars = [obst_used for obst_used in obsts_used if obst_used[0].lower() == obst_cli.lower()]
-    nr_bars = len(obst_bars)
-
-    fig, ax = plt.subplots(figsize=(10, 7))
-
-    dy_obs, bar_width = bars_info(nr_arcs=nr_bars, logger=logger)
-
-    # create colormap with nrcolors discrete colors
-    bar_colors, title_font = amutils.create_colormap_font(nrcolors=nr_bars, font_size=12)
-
-    for i, prn in enumerate(dprns[gnss]):
-        for j, obst_used in enumerate(obst_bars):
-            if i == 0:
-                ax.barh(y=y_prns[i] + dy_obs[j], width=obs_epochs[prn][obst_used], height=bar_width, color=bar_colors[j], label=obst_used)
-            else:
-                ax.barh(y=y_prns[i] + dy_obs[j], width=obs_epochs[prn][obst_used], height=bar_width, color=bar_colors[j])
-
-    # draw line with the maximum possible observables in this file
-    # ax.axvline(x=max_epochs, color='red', linestyle='--')
-
-    # beautify plot
-    ax.xaxis.grid(b=True, which='major')
-    ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='best', markerscale=4)
-
-    # ax.set_xlabel('PRN', fontdict=title_font)
-    ax.set_ylabel('PRNs', fontdict=title_font)
-    ax.set_xlabel('# observations [-]', fontdict=title_font)
-    ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
-
-    # setticks on Y axis to represent the PRNs
-    ax.yaxis.set_ticks(np.arange(0, len(dprns[gnss])))
-    ax.set_yticklabels(dprns[gnss])
-
-    # plot title
-    plt.title('Observations for GNSS {gnss:s} on {yy:02d}/{doy:03d}'.format(gnss=gnss, yy=(yyyy % 100), doy=doy))
-
-    fig.tight_layout()
-
-    # save the plot in subdir png of GNSSSystem
-    plt_name = '{basen:s}-{gnss:s}-obscount.pdf'.format(basen=obstab_name.split('.')[0], gnss=gnss)
-    fig.savefig(os.path.join(dir_gfzplt, plt_name), dpi=200)
-    logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
-
-    if show_plot:
-        plt.show(block=True)
-    else:
-        plt.close(fig)
-
-    return plt_name
-
-
-def bars_info(nr_arcs: int, logger: logging.Logger) -> Tuple[list, int]:
-    """
-    bars_info determines the width of an individual bar, the spaces between the arc bars, and localtion in delta-x-coordinates of beginning of each PRN arcs
-    """
-    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
-    logger.info('{func:s}: determining the information for the bars'.format(func=cFuncName))
-
-    # the bars for all arcs for 1 PRN may span over 0.8 units (from [-0.4 => 0.4]), including the spaces between the different arcs
-    width_prn_arcs = 0.8
-    dx_start = -0.4  # start of the bars relative to integer of PRN
-    width_space = 0.1  # space between the different arcs for 1 PRN
-
-    # substract width-spaces needed for nr_arcs
-    width_arcs = width_prn_arcs - (nr_arcs - 1) * width_space
-
-    # the width taken by 1 arc for 1 prn is
-    width_arc = width_arcs / nr_arcs
-
-    # get the delta-x to apply to the integer value that corresponds to a PRN
-    dx_obs = [dx_start + i * (width_space + width_arc) for i in np.arange(nr_arcs)]
-
-    return dx_obs, width_arc
-
-
-def obstab_plot_obstimelines(yyyy: int, doy: int, gnss: str, dfobs: pd.DataFrame, dprns: dict, obsts_cli: list, obsts_used: list, obs_epochs: dict, dir_gfzplt: str, obstab_name: str, show_plot: bool = False, logger: logging.Logger = None) -> str:
-    """
-    obstab_plot_obstimelines plots the number of observales per PRN
-    """
-    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
-
-    amutils.logHeadTailDataFrame(df=dfobs, dfName='dfobs[{gnss:s}]'.format(gnss=gnss), logger=logger, callerName=cFuncName)
-
-    # set up the plot
-    plt.style.use('ggplot')
-    # plt.style.use('seaborn-darkgrid')
-
-    # determine how many PRNs are observed used as coordinate
-    y_prns = np.arange(len(dprns[gnss]))  # location of the PRNs
+    y_prns = np.arange(len())  # location of the PRNs
 
     # determine how many bars per PRN, that is how many observables of one type found
     obst_cli = obsts_cli[0]  # in enumerate(obsts_cli), all observables have the same timeline
