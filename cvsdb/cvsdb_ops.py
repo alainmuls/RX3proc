@@ -42,15 +42,17 @@ def cvsdb_update_line(cvsdb_name: str, line_data: str, id_fields: int, logger: l
                 print('join = {}'.format(','.join(map(str, line_data[:id_fields]))))
                 print('comp = {}'.format(line.rstrip().startswith(','.join(map(str, line_data[:id_fields])))))
                 if line.rstrip().startswith(','.join(map(str, line_data[:id_fields]))):
+                    print('overwrite this line')
                     fout.write(','.join(map(str, line_data)) + '\n')
                     cvsdb_updated = True
                 else:
+                    print('use old line')
                     fout.write(line)
-                print('upd  = {}\n'.format(cvsdb_updated))
+            print('upd  = {}\n'.format(cvsdb_updated))
 
         # if update has not happened, than add the line to the database
         if not cvsdb_updated:
-            print('adding line_data {:s}'.format(line_data))
+            print('adding line_data {!s}'.format(line_data))
             fout.write(','.join(map(str, line_data)) + '\n')
         else:
             print('nothing todo')

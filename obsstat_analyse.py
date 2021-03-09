@@ -128,10 +128,16 @@ def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsd
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # create the ID part for adding to CVSDB
-    hdr_data = ['{YYYY:04d}'.format(YYYY=dTime['YYYY']),
-                '{DOY:03d}'.format(DOY=dTime['DOY']),
-                '{rx:s}'.format(rx=dfObsTle.columns[1]),
-                '{gnss:s}'.format(gnss=dfObsTle.columns[2])]
+    obshdr_data = ['{YYYY:04d}'.format(YYYY=dTime['YYYY']),
+                   '{DOY:03d}'.format(DOY=dTime['DOY']),
+                   '{rx:s}'.format(rx=dfObsTle.columns[1]),
+                   '{gnss:s}'.format(gnss=dfObsTle.columns[2]),
+                   "OBS"]
+    tlehdr_data = ['{YYYY:04d}'.format(YYYY=dTime['YYYY']),
+                   '{DOY:03d}'.format(DOY=dTime['DOY']),
+                   '{rx:s}'.format(rx=dfObsTle.columns[1]),
+                   '{gnss:s}'.format(gnss=dfObsTle.columns[2]),
+                   "TLE"]
     # print('hdr_data = {!s}'.format(hdr_data))
 
     # iterate over all examined obstypes
@@ -143,7 +149,7 @@ def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsd
 
         # note which observable is on this line
         obs_data[0] = '{:s}'.format(obst)
-        tleobs_data[0] = '{:s}_tle'.format(obst)
+        tleobs_data[0] = '{:s}'.format(obst)
 
         for SVPRN in dfObsTle.PRN:
             prn = int(SVPRN[1:])
@@ -158,10 +164,11 @@ def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsd
         # print(hdr_data + tleobs_data)
 
         # update the cvsdb with absolute and relative values
-        cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=hdr_data + obs_data, id_fields=len(hdr_data) + 1, logger=logger)
-        cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=hdr_data + tleobs_data, id_fields=len(hdr_data) + 1, logger=logger)
+        cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=obshdr_data + obs_data, id_fields=len(obshdr_data) + 1, logger=logger)
+        cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=tlehdr_data + tleobs_data, id_fields=len(tlehdr_data) + 1, logger=logger)
 
     sys.exit(5)
+
     pass
 
 
