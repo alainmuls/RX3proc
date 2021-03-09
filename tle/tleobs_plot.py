@@ -61,7 +61,7 @@ def tle_plot_arcs(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot: bo
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
     ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='best', markerscale=4)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=4)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)
@@ -162,7 +162,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
     ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='best', markerscale=4)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=4)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)
@@ -228,4 +228,6 @@ def bars_info(nr_arcs: int, logger: logging.Logger) -> Tuple[list, int]:
     dx_obs = [dx_start + i * (width_space + width_arc) for i in np.arange(nr_arcs)]
 
     return dx_obs, width_arc
+
+
 

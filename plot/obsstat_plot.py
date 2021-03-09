@@ -58,7 +58,7 @@ def obsstat_plot_obscount(obs_statf: str, gnss: str, gfzrnx: str, show_plot: boo
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
     ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='best', markerscale=4)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True, markerscale=4)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)

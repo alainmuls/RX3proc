@@ -10,7 +10,7 @@ __author__ = 'amuls'
 
 def cvsdb_open(cvsdb_name: str, logger: logging.Logger = None):
     """
-    cvsdb_open opens (or creates the database file for storing statistics on daily basis
+    cvsdb_open opens (or creates the database file for storing statistics on daily basis.
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -23,7 +23,7 @@ def cvsdb_open(cvsdb_name: str, logger: logging.Logger = None):
 
 def cvsdb_update_line(cvsdb_name: str, line_data: str, id_fields: int, logger: logging.Logger = None):
     """
-    cvsdb_update_line updates a line in the database, when the line exists it will be replaced, else it will be added
+    cvsdb_update_line updates a line in the database, when the line exists it will be replaced, else it will be added.
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -38,24 +38,15 @@ def cvsdb_update_line(cvsdb_name: str, line_data: str, id_fields: int, logger: l
     with os.fdopen(fd, 'w') as fout:
         with open(cvsdb_name, 'r') as fin:
             for line in fin:
-                print('line = {}'.format(line.rstrip()))
-                print('join = {}'.format(','.join(map(str, line_data[:id_fields]))))
-                print('comp = {}'.format(line.rstrip().startswith(','.join(map(str, line_data[:id_fields])))))
                 if line.rstrip().startswith(','.join(map(str, line_data[:id_fields]))):
-                    print('overwrite this line')
                     fout.write(','.join(map(str, line_data)) + '\n')
                     cvsdb_updated = True
                 else:
-                    print('use old line')
                     fout.write(line)
-            print('upd  = {}\n'.format(cvsdb_updated))
 
         # if update has not happened, than add the line to the database
         if not cvsdb_updated:
-            print('adding line_data {!s}'.format(line_data))
             fout.write(','.join(map(str, line_data)) + '\n')
-        else:
-            print('nothing todo')
 
     # Copy the file permissions from the old file to the new file
     copymode(cvsdb_name, abs_path)
@@ -110,7 +101,7 @@ def cvsdb_update_line(cvsdb_name: str, line_data: str, id_fields: int, logger: l
 
 def cvsdb_sort(cvsdb_name: str, logger: logging.Logger):
     """
-    cvsdb_sort sorts the database
+    cvsdb_sort sorts the database.
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 

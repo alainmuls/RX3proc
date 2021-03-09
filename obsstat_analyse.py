@@ -167,8 +167,6 @@ def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsd
         cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=obshdr_data + obs_data, id_fields=len(obshdr_data) + 1, logger=logger)
         cvsdb_ops.cvsdb_update_line(cvsdb_name=cvsdb, line_data=tlehdr_data + tleobs_data, id_fields=len(tlehdr_data) + 1, logger=logger)
 
-    sys.exit(5)
-
     pass
 
 
