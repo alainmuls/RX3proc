@@ -199,24 +199,24 @@ def obstab_analyse(argv):
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
 
     # verify input
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
     check_arguments(logger=logger)
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # read obsstat into a dataframe and select the SNR for the selected frequencies
-    lst_CmnPRNs, dfObsTab = read_obstab(obstabf=dTab['obstabf'], lst_PRNs=dTab['lst_prns'], dCli=dTab['cli'], logger=logger)
+    dTab['lst_CmnPRNs'], dfObsTab = read_obstab(obstabf=dTab['obstabf'], lst_PRNs=dTab['lst_prns'], dCli=dTab['cli'], logger=logger)
 
     # get the observation time spans based on TLE values
-    dfTLE = tle_visibility.PRNs_visibility(prn_lst=lst_CmnPRNs, cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
+    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dTab['lst_CmnPRNs'], cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
 
     amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
+
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # analyse_obsprn(dfobsPrn=dfObsTab, prn_list=[])
     # tleobs_plot.tle_plot_arcs()
 
     # plot the observables for all or selected PRNs
-    tleobs_plot.tle_plot_arcs(obsstatf=dTab['obstabf'], lst_PRNs=lst_CmnPRNs, dfTabObs=dfObsTab, dfTle=dfTLE, dTime=dTab['time'], logger=logger)
+    tleobs_plot.tle_plot_arcs(obsstatf=dTab['obstabf'], lst_PRNs=dTab['lst_CmnPRNs'], dfTabObs=dfObsTab, dfTle=dfTLE, dTime=dTab['time'], logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
