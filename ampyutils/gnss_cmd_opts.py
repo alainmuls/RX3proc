@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 from gfzrnx import gfzrnx_constants as gfzc
 
@@ -86,3 +87,19 @@ class cutoff_action(argparse.Action):
         if cutoff not in range(0, 45):
             raise argparse.ArgumentError(self, "cutoff angle must be in [0...45] degrees")
         setattr(namespace, self.dest, cutoff)
+
+
+class prn_list_action(argparse.Action):
+    def __call__(self, parser, namespace, prn_list, option_string=None):
+        # print('prn_list = {!s}'.format(prn_list))
+        for prn in prn_list:
+            gnss = prn[0]
+            # print('gnss = {!s}'.format(gnss))
+            if gnss not in gfzc.lst_GNSSs:
+                raise argparse.ArgumentError(self, 'Selected PRNs must belong to {GNSSs:s}'.format(GNSSs='|'.join(gfzc.lst_GNSSs)))
+
+            # print('gfzc.dict_GNSS_PRNs[gnss] = {}'.format(gfzc.dict_GNSS_PRNs[gnss]))
+            if prn not in gfzc.dict_GNSS_PRNs[gnss]:
+                # print('prn = {}'.format(prn))
+                raise argparse.ArgumentError(self, '{PRN:s} should be one of {GNSS_PRNs!s}'.format(PRN=prn, GNSS_PRNs=gfzc.dict_GNSS_PRNs[gnss]))
+        setattr(namespace, self.dest, prn_list)

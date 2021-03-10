@@ -7,6 +7,17 @@ lst_GNSSs = ['E', 'G']
 lst_GNSSs_names = ['Galileo', 'GPS NavSTAR']
 dict_GNSSs = dict(zip(lst_GNSSs, lst_GNSSs_names))
 
+# identification of PRNs for each GNSS
+max_PRN = [36, 32]
+dict_GNSS_MAXPRN = dict(zip(lst_GNSSs, max_PRN))
+GNSS_PRNs = ['', '']
+for i, (gnss, max_prn) in enumerate(dict_GNSS_MAXPRN.items()):
+    lst_gnss_prns = ['{gnss:s}{prn:02d}'.format(gnss=gnss, prn=prn) for prn in list(range(0, max_prn + 1))]
+    GNSS_PRNs[i] = lst_gnss_prns
+
+# contains valid PRN numbers per GNSS
+dict_GNSS_PRNs = dict(zip(lst_GNSSs, GNSS_PRNs))
+
 # identification of observation types
 lst_obstypes = ['C', 'S', 'D', 'L']
 lst_obstypes_names = ['Pseudorange', 'SNR', 'Doppler', 'Carrier']
