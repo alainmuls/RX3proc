@@ -16,7 +16,7 @@ from gfzrnx import gfzrnx_constants as gco
 __author__ = 'amuls'
 
 
-def tle_plot_arcs(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
     """
@@ -50,6 +50,8 @@ def tle_plot_arcs(obsstatf: str, dfTle: pd.DataFrame, dTime: dict, show_plot: bo
 
     # get the date of this observation to combine with rise and set times
     cur_date = dTime['date'].date()
+
+    sys.exit(6)
 
     for y_prn, prn_color, (prn, tle_prn) in zip(y_prns, prn_colors, dfTle.iterrows()):
         for tle_rise, tle_set in zip(tle_prn.tle_rise, tle_prn.tle_set):
@@ -133,7 +135,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
 
     # select the columns used for plotting
     col_names = dfObsTle.columns.tolist()
-    obstypes =  [x for x in col_names[col_names.index('PRN') + 1:]]
+    obstypes = [x for x in col_names[col_names.index('PRN') + 1:]]
 
     # determine widths of bars to use for each PRN
     dy_obstypes, bar_width = bars_info(nr_arcs=len(obstypes), logger=logger)

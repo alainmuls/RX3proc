@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 from shutil import copyfile
+from typing import Tuple
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -40,6 +41,8 @@ def treatCmdOpts(argv):
 
     parser.add_argument('-o', '--obstab', help='observation tabular file', type=str, required=True)
 
+    parser.add_argument('-s', '--svprns', help='list of PRNs to examine (default {:s} (if PRN is 00 than all PRNs for GNSS used)'.format(colored('E00', 'green')), type=str, required=False, default=['E00', 'G00'], action=gco.prn_list_action, nargs='+')
+
     parser.add_argument('-f', '--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
     parser.add_argument('-t', '--types_obs', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
 
@@ -55,7 +58,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obstab, args.freqs, args.types_obs, args.interval, args.cutoff, args.plot, args.logging
+    return args.obstab, args.svprns, args.freqs, args.types_obs, args.interval, args.cutoff, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -92,8 +95,19 @@ def check_arguments(logger: logging.Logger = None):
     # converting to date
     dTab['time']['date'] = datetime.strptime('{year:04d}-{doy:03d}'.format(year=dTab['time']['YYYY'], doy=dTab['time']['DOY']), "%Y-%j")
 
+    # if 'E00' or 'G00' is selected, the list of PRNs to examine is all PRNs for that GNSS
+    use_all_prns = False
+    for gnss in gfzc.lst_GNSSs:
+        for prn in dTab['cli']['lst_prns']:
+            if prn == gfzc.dict_GNSS_PRNs[gnss][0]:
+                use_all_prns = True
+                dTab['lst_prns'] = gfzc.dict_GNSS_PRNs[gnss]
 
-def read_obstab(obstabf: str, dCli: dict, logger: logging.Logger = None) -> pd.DataFrame:
+    if not use_all_prns:
+        dTab['lst_prns'] = dTab['cli']['lst_prns']
+
+
+def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger = None) -> Tuple[list, pd.DataFrame]:
     """
     read_obstab reads the SNR for the selected frequencies into a dataframe
     """
@@ -129,13 +143,33 @@ def read_obstab(obstabf: str, dCli: dict, logger: logging.Logger = None) -> pd.D
 
     dfTmp = pd.read_csv(obstabf, delimiter=',', skiprows=hdr_count, names=hdr_columns, header=None, parse_dates=[hdr_columns[2:4]], usecols=obstypes)
 
+    # check whether the selected PRNs are in the dataframe, else remove this PRN from
+    print('lst_PRNs = {}'.format(lst_PRNs))
+    lst_ObsPRNs = sorted(dfTmp.PRN.unique())
+    print('lst_obsPRNs = {}'.format(lst_ObsPRNs))
+
+    lst_CommonPRNS = [prn for prn in lst_ObsPRNs if prn in lst_PRNs]
+    print('lst_CommonPRNS = {}'.format(lst_CommonPRNS))
+
+    if len(lst_CommonPRNS) == 0:
+        logger.error('{func:s}: selected list of PRNs ({lstprns:s}) not observed. program exits'.format(lstprns=colored(', '.join(lst_PRNs), 'red'), func=cFuncName))
+        sys.exit(amc.E_PRN_NOT_IN_DATA)
+
+    # apply mask to dataframe to select PRNs in the list
+    print('lst_PRNs = {}'.format(lst_PRNs))
+    print("dfTmp['PRN'].isin(lst_PRNs) = {}".format(dfTmp['PRN'].isin(lst_PRNs)))
+    dfTmp = dfTmp[dfTmp['PRN'].isin(lst_CommonPRNS)]
+
     # XXX TEST BEGIN for testing remove some lines for SV E02
-    indexs = dfTmp[dfTmp['PRN'] == 'E02'].index
-    print('dropping indexs = {!s}'.format(indexs[5:120]))
-    dfTmp.drop(indexs[5:120], inplace=True)
+    indices = dfTmp[dfTmp['PRN'] == 'E02'].index
+    print('dropping indices = {!s}'.format(indices[5:120]))
+    dfTmp.drop(indices[5:120], inplace=True)
     # END XXX TEST
 
-    return dfTmp
+    if logger is not None:
+        amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
+
+    return lst_CommonPRNS, dfTmp
 
 
 def analyse_obsprn(dfobsPrn: pd.DataFrame, prn_list: list, logger: logging.Logger):
@@ -159,25 +193,30 @@ def obstab_analyse(argv):
     dTab['ltx'] = {}
     dTab['plots'] = {}
 
-    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['obs_types'], dTab['time']['interval'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
+    dTab['cli']['obstabf'], dTab['cli']['lst_prns'], dTab['cli']['freqs'], dTab['cli']['obs_types'], dTab['time']['interval'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
 
     # verify input
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
     check_arguments(logger=logger)
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # read obsstat into a dataframe and select the SNR for the selected frequencies
-    dfObsTab = read_obstab(obstabf=dTab['obstabf'], dCli=dTab['cli'], logger=logger)
-    amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
+    lst_CmnPRNs, dfObsTab = read_obstab(obstabf=dTab['obstabf'], lst_PRNs=dTab['lst_prns'], dCli=dTab['cli'], logger=logger)
 
-    # read the TLE orbits from CVS file
-    tlecvs_name = '{base:s}.tle'.format(base=os.path.splitext(dTab['obstabf'])[0])
-    dfTLE = pd.read_csv(tlecvs_name, delimiter=',', header=1)
+    # get the observation time spans based on TLE values
+    dfTLE = tle_visibility.PRNs_visibility(prn_lst=lst_CmnPRNs, cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
+
+    amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
 
     # analyse_obsprn(dfobsPrn=dfObsTab, prn_list=[])
     # tleobs_plot.tle_plot_arcs()
+
+    # plot the observables for all or selected PRNs
+    tleobs_plot.tle_plot_arcs(obsstatf=dTab['obstabf'], lst_PRNs=lst_CmnPRNs, dfTabObs=dfObsTab, dfTle=dfTLE, dTime=dTab['time'], logger=logger)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
