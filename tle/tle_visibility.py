@@ -18,9 +18,9 @@ def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: 
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    logger.info('{func:s}: observed PRNs are {prns!s} (#{total:d})'.format(prns=prn_lst, total=len(prn_lst), func=cFuncName))
-
-    logger.info('{func:s}; getting corresponding NORAD info'.format(func=cFuncName))
+    if logger is not None:
+        logger.info('{func:s}: observed PRNs are {prns!s} (#{total:d})'.format(prns=prn_lst, total=len(prn_lst), func=cFuncName))
+        logger.info('{func:s}; getting corresponding NORAD info'.format(func=cFuncName))
 
     # read the files galileo-NORAD-PRN.t and gps-ops-NORAD-PRN.t
     dfNORAD = tle_parser.read_norad2prn(logger=logger)
@@ -28,17 +28,19 @@ def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: 
 
     # get the corresponding NORAD nrs for the given PRNs
     dNORADs = tle_parser.get_norad_numbers(prns=prn_lst, dfNorad=dfNORAD, logger=logger)
-    logger.info('{func:s}: corresponding NORAD nrs (#{count:d}):'.format(count=len(dNORADs), func=cFuncName))
+    if logger is not None:
+        logger.info('{func:s}: corresponding NORAD nrs (#{count:d}):'.format(count=len(dNORADs), func=cFuncName))
 
     # load a time scale and set RMA as Topo
     # loader = sf.Loader(dir_tle, expire=True)  # loads the needed data files into the tle dir
     ts = sf.load.timescale()
     RMA = sf.Topos('50.8438 N', '4.3928 E')
-    logger.info('{func:s}: Earth station RMA @ {topo!s}'.format(topo=colored(RMA, 'green'), func=cFuncName))
-    # get the datetime that corresponds to yydoy
-    # date_yydoy = datetime.strptime(amc.dRTK['rnx']['times']['DT'], '%Y-%m-%d %H:%M:%S')
-    # yydoy = date_yydoy.strftime('%y%j')
-    logger.info('{func:s}: calculating rise / set times for {date:s}'.format(date=cur_date, func=cFuncName))
+    if logger is not None:
+        logger.info('{func:s}: Earth station RMA @ {topo!s}'.format(topo=colored(RMA, 'green'), func=cFuncName))
+        # get the datetime that corresponds to yydoy
+        # date_yydoy = datetime.strptime(amc.dRTK['rnx']['times']['DT'], '%Y-%m-%d %H:%M:%S')
+        # yydoy = date_yydoy.strftime('%y%j')
+        logger.info('{func:s}: calculating rise / set times for {date:s}'.format(date=cur_date.strftime('%d/%m/%Y'), func=cFuncName))
 
     t0 = ts.utc(int(cur_date.strftime('%Y')), int(cur_date.strftime('%m')), int(cur_date.strftime('%d')))
     date_tomorrow = cur_date + timedelta(days=1)

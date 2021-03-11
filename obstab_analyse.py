@@ -144,20 +144,22 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
     dfTmp = pd.read_csv(obstabf, delimiter=',', skiprows=hdr_count, names=hdr_columns, header=None, parse_dates=[hdr_columns[2:4]], usecols=obstypes)
 
     # check whether the selected PRNs are in the dataframe, else remove this PRN from
-    print('lst_PRNs = {}'.format(lst_PRNs))
+    # print('lst_PRNs = {}'.format(lst_PRNs))
     lst_ObsPRNs = sorted(dfTmp.PRN.unique())
-    print('lst_obsPRNs = {}'.format(lst_ObsPRNs))
+    # print('lst_obsPRNs = {}'.format(lst_ObsPRNs))
 
     lst_CommonPRNS = [prn for prn in lst_ObsPRNs if prn in lst_PRNs]
-    print('lst_CommonPRNS = {}'.format(lst_CommonPRNS))
+    # print('lst_CommonPRNS = {}'.format(lst_CommonPRNS))
 
     if len(lst_CommonPRNS) == 0:
         logger.error('{func:s}: selected list of PRNs ({lstprns:s}) not observed. program exits'.format(lstprns=colored(', '.join(lst_PRNs), 'red'), func=cFuncName))
         sys.exit(amc.E_PRN_NOT_IN_DATA)
+    else:
+        logger.info('{func:s}: following PRNs examined: {prns:s}'.format(prns=', '.join(lst_CommonPRNS), func=cFuncName))
 
     # apply mask to dataframe to select PRNs in the list
-    print('lst_PRNs = {}'.format(lst_PRNs))
-    print("dfTmp['PRN'].isin(lst_PRNs) = {}".format(dfTmp['PRN'].isin(lst_PRNs)))
+    # print('lst_PRNs = {}'.format(lst_PRNs))
+    # print("dfTmp['PRN'].isin(lst_PRNs) = {}".format(dfTmp['PRN'].isin(lst_PRNs)))
     dfTmp = dfTmp[dfTmp['PRN'].isin(lst_CommonPRNS)]
 
     # XXX TEST BEGIN for testing remove some lines for SV E02
