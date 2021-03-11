@@ -189,7 +189,7 @@ def sbf2rnx3(argv):
         json.dump(dRnx, f, ensure_ascii=False, indent=4, default=amutils.json_convertor)
 
     # clean up
-    copyfile(log_name, os.path.join(dRnx['dir'], '{scrname:s}.log'.format(scrname=os.path.basename(__file__).replace('.', '_'))))
+    copyfile(log_name, os.path.join(dRnx['dirs']['rnx'], '{scrname:s}.log'.format(scrname=os.path.basename(__file__).replace('.', '_'))))
     os.remove(log_name)
 
     return dRnx['obs3f'], dRnx['nav3f']
