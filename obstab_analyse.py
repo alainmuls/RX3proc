@@ -135,10 +135,12 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
 
     # keep the header columns selected by --freqs and --obstypes options
     obstypes = hdr_columns[2:5]
+    obsfreqs = []
     for obst in dCli['obs_types']:
         for freq in dCli['freqs']:
             obsfreq = '{obst:s}{freq:s}'.format(obst=obst, freq=freq)
-            obstypes.append([obstid for obstid in hdr_columns[2:] if obstid.startswith(obsfreq)][0])
+            obsfreqs.append([obstid for obstid in hdr_columns[2:] if obstid.startswith(obsfreq)][0])
+    obstypes += obsfreqs
 
     logger.info('{func:s}: loading from {tab:s}: {cols:s}'.format(tab=obstabf, cols=colored(', '.join(obstypes), 'green'), func=cFuncName))
 
@@ -172,10 +174,10 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
     if logger is not None:
         amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
 
-    return lst_CommonPRNS, dfTmp
+    return lst_CommonPRNS, obsfreqs, dfTmp
 
 
-def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, interval: int, logger: logging.Logger):
+def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, interval: int, logger: logging.Logger):
     """
     analyse_obsprn analyses the observations for the gicen PRNs and detemines a loss in SNR if asked.
     """
@@ -184,20 +186,22 @@ def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, interval: int, logge
 
     print('prn_list = {}'.format(prn_list))
     for prn in prn_list:
-        # select only the elements for this prn
-        dfObsPrn = dfObsPrns[dfObsPrns.PRN == prn]
+        for obsfreq in obsfreqs:
+            print('obsfreq = {}'.format(obsfreq))
+            # select only the elements for this prn
+            dfObsFreqPrn = dfObsPrns[(dfObsPrns.PRN == prn) & (dfObsPrns[obsfreq] != np.NaN)][['DATE_TIME', 'PRN', obsfreq]]
 
-        # calculate the time difference between successive entries
-        dfObsPrn['dt'] = (dfObsPrn['DATE_TIME'] - dfObsPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]')
+            # calculate the time difference between successive entries
+            dfObsFreqPrn['dt'] = (dfObsFreqPrn['DATE_TIME'] - dfObsFreqPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]')
 
-        amutils.logHeadTailDataFrame(df=dfObsPrn, dfName='dfObsPrn', callerName=cFuncName, logger=logger)
+            amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
 
-        idx_gaps = dfObsPrn.index[dfObsPrn.dt != interval]
-        print(idx_gaps)
+            idx_gaps = dfObsFreqPrn.index[dfObsFreqPrn.dt != interval]
+            print(idx_gaps)
 
-        for idx_gap in idx_gaps[1:]:
-            pos_idx_gap = dfObsPrn.index.get_loc(idx_gap)
-            print(dfObsPrn.iloc[pos_idx_gap - 1:pos_idx_gap + 2])
+            for idx_gap in idx_gaps[1:]:
+                pos_idx_gap = dfObsFreqPrn.index.get_loc(idx_gap)
+                print(dfObsFreqPrn.iloc[pos_idx_gap - 1:pos_idx_gap + 2])
 
     sys.exit(77)
 
@@ -225,7 +229,7 @@ def obstab_analyse(argv):
     check_arguments(logger=logger)
 
     # read obsstat into a dataframe and select the SNR for the selected frequencies
-    dTab['lst_CmnPRNs'], dfObsTab = read_obstab(obstabf=dTab['obstabf'], lst_PRNs=dTab['lst_prns'], dCli=dTab['cli'], logger=logger)
+    dTab['lst_CmnPRNs'], dTab['obsfreqs'], dfObsTab = read_obstab(obstabf=dTab['obstabf'], lst_PRNs=dTab['lst_prns'], dCli=dTab['cli'], logger=logger)
 
     # get the observation time spans based on TLE values
     dfTLE = tle_visibility.PRNs_visibility(prn_lst=dTab['lst_CmnPRNs'], cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
@@ -236,7 +240,7 @@ def obstab_analyse(argv):
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # perform analysis of the observations done
-    analyse_obsprn(dfObsPrns=dfObsTab, prn_list=dTab['lst_CmnPRNs'], interval=dTab['time']['interval'], logger=logger)
+    analyse_obsprn(dfObsPrns=dfObsTab, prn_list=dTab['lst_CmnPRNs'], obsfreqs=dTab['obsfreqs'], interval=dTab['time']['interval'], logger=logger)
     # tleobs_plot.tle_plot_arcs()
 
     # plot the observables for all or selected PRNs
