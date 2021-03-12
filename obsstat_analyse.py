@@ -241,6 +241,7 @@ def obsstat_analyse(argv):
     # plot the Observation and TLE observation count
     dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
     dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
+    dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
 
     sec_obsstat = ltx_rnxobs_reporting.obsstat_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
 

@@ -103,8 +103,12 @@ def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: 
         # tick.tick1line.set_markersize(0)
         # tick.tick2line.set_markersize(0)
         tick.label1.set_horizontalalignment('center')
-
     fig.tight_layout()
+
+    if show_plot:
+        plt.show(block=True)
+    else:
+        plt.close(fig)
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
@@ -113,10 +117,6 @@ def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: 
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
-    if show_plot:
-        plt.show(block=True)
-    else:
-        plt.close(fig)
 
 
 def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
@@ -187,11 +187,15 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
             tick_labels.append('')
 
     ax.set_yticklabels(tick_labels)
-
     fig.tight_layout()
 
-    # save the plot in subdir png of GNSSSystem
+    if show_plot:
+        plt.show(block=True)
+    else:
+        plt.close(fig)
     amutils.mkdir_p('png')
+
+    # save the plot in subdir png of GNSSSystem
     for ext in ['pdf', 'png', 'eps']:
         if not reduce2percentage:
             plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
@@ -200,10 +204,6 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
-    if show_plot:
-        plt.show(block=True)
-    else:
-        plt.close(fig)
 
     return plt_name
 
@@ -232,4 +232,80 @@ def bars_info(nr_arcs: int, logger: logging.Logger) -> Tuple[list, int]:
     return dx_obs, width_arc
 
 
+def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
+    """
+    obstle_plot_relativeobsstatf plots the percenatge of observations observed wrt the TLE determined max values.
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
+    # set up the plot
+    plt.style.use('ggplot')
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    gnss_id = dfObsTle.PRN.iloc[0][0]
+    x_prns = [int(prn[1:]) for prn in dfObsTle.PRN.to_list()]
+    x_crds = np.arange(1, 38)
+
+    # select the columns used for plotting
+    col_names = dfObsTle.columns.tolist()
+    obstypes = [x for x in col_names[col_names.index('PRN') + 1:]]
+
+    # create colormap with nrcolors discrete colors
+    colors, title_font = amutils.create_colormap_font(nrcolors=len(obstypes[:-1]), font_size=12)
+    # used markers
+    lst_markers = ['o', 'v', '^', '<', '>', 'x', '+', 's', 'd', '.', ',']
+
+    # store the percantages in a dict
+    for j, (obst, color, marker) in enumerate(zip(list(reversed(obstypes[:-1])), list(reversed(colors)), lst_markers)):
+        obs_percentages = [np.NaN] * 37
+        for i, (x_prn, prn) in enumerate(zip(x_prns, dfObsTle.PRN)):
+            tle_maxobs = dfObsTle.iloc[i][obstypes[-1]] / 100
+            if tle_maxobs != 0:
+                obs_perc = dfObsTle.iloc[i][obst] / tle_maxobs
+                obs_percentages[x_prn] = obs_perc
+
+        # plot the current percentages
+        ax.plot(x_crds, obs_percentages, marker=marker, color=color, label=obst, linestyle='-.')
+
+    # beautify plot
+    ax.xaxis.grid(b=True, which='major')
+    ax.yaxis.grid(b=True, which='major')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=1)
+
+    # ax.set_xlabel('PRN', fontdict=title_font)
+    ax.set_xlabel('PRNs', fontdict=title_font)
+    ax.set_ylabel('Observations relative to TLE [-]', fontdict=title_font)
+
+    # plot title
+    plt.title('Observations for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
+
+    # set limits for y-axis
+    ax.set_ylim([70, 101])
+
+    # setticks on X axis to represent the PRNs
+    ax.xaxis.set_ticks(np.arange(1, x_crds[-1]))
+    tick_labels = []
+    for i in np.arange(1, x_crds[-1]):
+        tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
+        if tick_prn in dfObsTle.PRN.to_list():
+            tick_labels.append(tick_prn)
+        else:
+            tick_labels.append('')
+
+    ax.set_xticklabels(tick_labels, rotation=90)
+    fig.tight_layout()
+
+    if show_plot:
+        plt.show(block=True)
+    else:
+        plt.close(fig)
+
+    # save the plot in subdir png of GNSSSystem
+    amutils.mkdir_p('png')
+    for ext in ['pdf', 'png', 'eps']:
+        plt_name = os.path.join('png', '{basen:s}-PERC.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+        fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
+        logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
+
+    return plt_name

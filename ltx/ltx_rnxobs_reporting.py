@@ -149,7 +149,8 @@ def obsstat_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_n
             longtabu.add_hline()
 
         # add figures representing the observations
-        ssec.append(NoEscape(r'Figure \vref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the Two Line Elements (TLE). The relative observation count is represented in ' + r'Figure \vref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
+        ssec.append(NoEscape(r'Figure \vref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the Two Line Elements (TLE). The relative observation count is represented in ' + r'Figure \vref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} and ' + r'Figure \vref{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
+
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['obs_count'], width=NoEscape(r'0.8\textwidth'), placement=NoEscape(r'\centering'))
             # plot.add_caption('Observation count per navigation signal')
@@ -158,6 +159,10 @@ def obsstat_analyse(obsstatf: str, dfObsTle: pd.DataFrame, plots: dict, script_n
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['obs_perc'], width=NoEscape(r'0.8\textwidth'), placement=NoEscape(r'\centering'))
             plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
+
+        with sssec.create(Figure(position='htbp')) as plot:
+            plot.add_image(plots['relative'], width=NoEscape(r'0.8\textwidth'), placement=NoEscape(r'\centering'))
+            plot.add_caption(NoEscape(r'\label{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
     return ssec
 
