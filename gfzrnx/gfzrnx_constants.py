@@ -19,7 +19,7 @@ for i, (gnss, max_prn) in enumerate(dict_GNSS_MAXPRN.items()):
 dict_GNSS_PRNs = dict(zip(lst_GNSSs, GNSS_PRNs))
 
 # identification of observation types
-lst_obstypes = ['C', 'S', 'D', 'L']
+lst_obstypes = ['S', 'C', 'D', 'L']
 lst_obstypes_names = ['Pseudorange', 'SNR', 'Doppler', 'Carrier']
 dict_obstypes = dict(zip(lst_obstypes, lst_obstypes_names))
 

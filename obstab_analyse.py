@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
+import numpy as np
 from shutil import copyfile
 from typing import Tuple
 
@@ -174,11 +175,31 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
     return lst_CommonPRNS, dfTmp
 
 
-def analyse_obsprn(dfobsPrn: pd.DataFrame, prn_list: list, logger: logging.Logger):
+def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, interval: int, logger: logging.Logger):
     """
     analyse_obsprn analyses the observations for the gicen PRNs and detemines a loss in SNR if asked.
     """
-    pass
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+
+    print('prn_list = {}'.format(prn_list))
+    for prn in prn_list:
+        # select only the elements for this prn
+        dfObsPrn = dfObsPrns[dfObsPrns.PRN == prn]
+
+        # calculate the time difference between successive entries
+        dfObsPrn['dt'] = (dfObsPrn['DATE_TIME'] - dfObsPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]')
+
+        amutils.logHeadTailDataFrame(df=dfObsPrn, dfName='dfObsPrn', callerName=cFuncName, logger=logger)
+
+        idx_gaps = dfObsPrn.index[dfObsPrn.dt != interval]
+        print(idx_gaps)
+
+        for idx_gap in idx_gaps[1:]:
+            pos_idx_gap = dfObsPrn.index.get_loc(idx_gap)
+            print(dfObsPrn.iloc[pos_idx_gap - 1:pos_idx_gap + 2])
+
+    sys.exit(77)
 
 
 def obstab_analyse(argv):
@@ -214,11 +235,12 @@ def obstab_analyse(argv):
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    # analyse_obsprn(dfobsPrn=dfObsTab, prn_list=[])
+    # perform analysis of the observations done
+    analyse_obsprn(dfObsPrns=dfObsTab, prn_list=dTab['lst_CmnPRNs'], interval=dTab['time']['interval'], logger=logger)
     # tleobs_plot.tle_plot_arcs()
 
     # plot the observables for all or selected PRNs
-    tleobs_plot.tle_plot_arcs(obsstatf=dTab['obstabf'], lst_PRNs=dTab['lst_CmnPRNs'], dfTabObs=dfObsTab, dfTle=dfTLE, dTime=dTab['time'], logger=logger)
+    tleobs_plot.tle_plot_arcs(obsstatf=dTab['obstabf'], lst_PRNs=dTab['lst_CmnPRNs'], dfTabObs=dfObsTab, dfTle=dfTLE, dTime=dTab['time'], logger=logger, show_plot=show_plot)
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))

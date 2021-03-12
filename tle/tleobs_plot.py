@@ -40,18 +40,16 @@ def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: 
     if logger is not None:
         logger.info('{func:s}: TLE time span {start:s} -> {end:s}'.format(start=dt_min.strftime('%H:%M:%S'), end=dt_max.strftime('%H:%M:%S'), func=cFuncName))
 
-    fig, ax = plt.subplots(figsize=(8, 6))
-
     gnss_id = dfTle.index.to_list()[0][0]
-    y_prns = [int(prn[1:]) for prn in dfTle.index.to_list()]
+    y_prns = [int(prn[1:]) + 1 for prn in dfTle.index.to_list()]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
 
     # create colormap with nrcolors discrete colors
     prn_colors, title_font = amutils.create_colormap_font(nrcolors=len(y_prns), font_size=12)
 
     # get the date of this observation to combine with rise and set times
     cur_date = dTime['date'].date()
-
-    sys.exit(6)
 
     for y_prn, prn_color, (prn, tle_prn) in zip(y_prns, prn_colors, dfTle.iterrows()):
         for tle_rise, tle_set in zip(tle_prn.tle_rise, tle_prn.tle_set):
@@ -75,7 +73,7 @@ def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: 
     # setticks on Y axis to represent the PRNs
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
     tick_labels = []
-    for i in np.arange(1, y_prns[-1] + 1):
+    for i in np.arange(0, y_prns[-1]):
         tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
         if tick_prn in dfTle.index.to_list():
             tick_labels.append(tick_prn)
@@ -204,7 +202,6 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
-
     return plt_name
 
 
@@ -309,3 +306,31 @@ def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
     return plt_name
+
+
+def obstle_plot_prns(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+    """
+    tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+    # set up the plot
+    plt.style.use('ggplot')
+
+    # find minimum time for tle_rise and maximum time for tle_set columns
+    dt_rise = []
+    dt_set = []
+    for j, (t_rise, t_set) in enumerate(zip(dfTle.tle_rise, dfTle.tle_set)):
+        if len(t_rise) > 0:
+            dt_rise.append(t_rise[0])
+        if len(t_set) > 0:
+            dt_set.append(t_set[-1])
+
+    dt_min = min(dt_rise)
+    dt_max = max(dt_set)
+
+    # get min and max times according the observation smade
+    amutils.logHeadTailDataFrame(df=dfTabObs, dfName='dfTabObs', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
+
+    sys.exit(88)
