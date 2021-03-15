@@ -333,4 +333,35 @@ def obstle_plot_prns(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTl
     amutils.logHeadTailDataFrame(df=dfTabObs, dfName='dfTabObs', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
 
+    # XXXXXXXXXXXXXXXXXXXXXXXXXXxx
+    # PLOT PRN ARCS FROM OBSERVED AND TLE
     sys.exit(88)
+
+
+def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+    """
+    plot_prnfreq plots for a given PRN the observation OBST on a frequency with the exponential moving average
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+    amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # used markers
+    lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
+    lst_alpha = [1, 0.5, 0.5]
+
+    # for obst, marker in zip(['S1C', 'EMA05', 'WMA05', 'EMA10', 'WMA10', 'EMA20','WMA20'], lst_markers[:7]):
+    for obst, marker, alpha in zip(['S1C', 'EMA20', 'WMA20'], lst_markers[:3], lst_alpha):
+        ax.plot(dfPrnObst['DATE_TIME'], dfPrnObst[obst], label=obst, linestyle='-', marker=marker, markersize=2, alpha=alpha)
+
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=1)
+
+    fig.tight_layout()
+
+    if show_plot:
+        plt.show(block=True)
+    else:
+        plt.close(fig)
+
