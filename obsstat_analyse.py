@@ -219,6 +219,7 @@ def obsstat_analyse(argv):
     dStat['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dStat['cli']['obsstatf'])[0][:-2])
     with open(dStat['obshdr'], 'rb') as handle:
         dStat['hdr'] = pickle.load(handle)
+    dStat['marker'] = dStat['hdr']['file']['site']
 
     logger.info('{func:s}: Reading header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dStat['obshdr'], 'blue')))
 
@@ -254,9 +255,9 @@ def obsstat_analyse(argv):
     # sys.exit(6)
 
     # plot the Observation and TLE observation count
-    dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
-    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
-    dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
+    dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
+    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
+    dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     sec_obsstat = ltx_rnxobs_reporting.obsstat_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
 

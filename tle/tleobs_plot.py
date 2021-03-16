@@ -16,7 +16,7 @@ from gfzrnx import gfzrnx_constants as gco
 __author__ = 'amuls'
 
 
-def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def tle_plot_arcs(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
     """
@@ -61,14 +61,14 @@ def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
     ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=4)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=4)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)
     ax.set_xlabel('TLE arcs', fontdict=title_font)
 
     # plot title
-    plt.title('TLE arcs for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
+    plt.title('TLE arcs: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker, gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
 
     # setticks on Y axis to represent the PRNs
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
@@ -117,7 +117,7 @@ def tle_plot_arcs(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: 
 
 
 
-def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
+def obstle_plot_obscount(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
     """
     obstle_plot_arcs plots count of observations wrt to number obtained from TLE
     """
@@ -162,7 +162,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
     ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=4)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=4)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)
@@ -172,7 +172,7 @@ def obstle_plot_obscount(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
         ax.set_xlabel('Observations Count [%]', fontdict=title_font)
 
     # plot title
-    plt.title('Observations Count for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
+    plt.title('Observations vs TLE: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker, gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
 
     # setticks on Y axis to represent the PRNs
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
@@ -229,7 +229,7 @@ def bars_info(nr_arcs: int, logger: logging.Logger) -> Tuple[list, int]:
     return dx_obs, width_arc
 
 
-def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
+def obstle_plot_relative(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None) -> str:
     """
     obstle_plot_relativeobsstatf plots the percenatge of observations observed wrt the TLE determined max values.
     """
@@ -254,7 +254,7 @@ def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     lst_markers = ['o', 'v', '^', '<', '>', 'x', '+', 's', 'd', '.', ',']
 
     # store the percantages in a dict
-    for j, (obst, color, marker) in enumerate(zip(list(reversed(obstypes[:-1])), list(reversed(colors)), lst_markers)):
+    for j, (obst, color, plotmarker) in enumerate(zip(list(reversed(obstypes[:-1])), list(reversed(colors)), lst_markers)):
         obs_percentages = [np.NaN] * 37
         for i, (x_prn, prn) in enumerate(zip(x_prns, dfObsTle.PRN)):
             tle_maxobs = dfObsTle.iloc[i][obstypes[-1]] / 100
@@ -263,19 +263,19 @@ def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
                 obs_percentages[x_prn] = obs_perc
 
         # plot the current percentages
-        ax.plot(x_crds, obs_percentages, marker=marker, color=color, label=obst, linestyle='')
+        ax.plot(x_crds, obs_percentages, marker=plotmarker, color=color, label=obst, linestyle='')
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
     ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=1)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=1)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_xlabel('PRNs', fontdict=title_font)
     ax.set_ylabel('Observations relative to TLE [-]', fontdict=title_font)
 
     # plot title
-    plt.title('Observations for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
+    plt.title('Relative Observations: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker, gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
 
     # set limits for y-axis
     # ax.set_ylim([70, 101])
@@ -308,7 +308,7 @@ def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     return plt_name
 
 
-def obstle_plot_prns(obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def obstle_plot_prns(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
     """
@@ -353,10 +353,10 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, dTime: dict, show_plot:
     lst_alpha = [1, 0.5, 0.5]
 
     # for obst, marker in zip(['S1C', 'EMA05', 'WMA05', 'EMA10', 'WMA10', 'EMA20','WMA20'], lst_markers[:7]):
-    for obst, marker, alpha in zip(['S1C', 'EMA20', 'WMA20'], lst_markers[:3], lst_alpha):
-        ax.plot(dfPrnObst['DATE_TIME'], dfPrnObst[obst], label=obst, linestyle='-', marker=marker, markersize=2, alpha=alpha)
+    for obst, plot_marker, alpha in zip(['S1C', 'EMA20', 'WMA20'], lst_markers[:3], lst_alpha):
+        ax.plot(dfPrnObst['DATE_TIME'], dfPrnObst[obst], label=obst, linestyle='-', marker=plot_marker, markersize=2, alpha=alpha)
 
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=6, markerscale=1)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=1)
 
     fig.tight_layout()
 
