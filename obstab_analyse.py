@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from shutil import copyfile
 from typing import Tuple
+import pickle
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -217,7 +218,7 @@ def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, inte
 
             tleobs_plot.plot_prnfreq(obsstatf=dTab['cli']['obstabf'], dfPrnObst=dfObsFreqPrn, dTime=dTab['time'], show_plot=True, logger=logger)
 
-            sys.exit(77)
+    sys.exit(77)
 
 def obstab_analyse(argv):
     """
@@ -241,11 +242,27 @@ def obstab_analyse(argv):
     # verify input
     check_arguments(logger=logger)
 
+    # read the observation header info from the Pickle file
+    dTab['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dTab['cli']['obstabf'])[0][:-2])
+    with open(dTab['obshdr'], 'rb') as handle:
+        dTab['hdr'] = pickle.load(handle)
+    dTab['marker'] = dTab['hdr']['file']['site']
+
+    logger.info('{func:s}: Reading header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dTab['obshdr'], 'blue')))
+
+    # determine start and end times of observation
+    DTGobs_start = datetime.strptime(dTab['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
+    DTGobs_end = datetime.strptime(dTab['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
+    print(DTGobs_start)
+    print(DTGobs_end)
+
+
     # read obsstat into a dataframe and select the SNR for the selected frequencies
     dTab['lst_CmnPRNs'], dTab['obsfreqs'], dfObsTab = read_obstab(obstabf=dTab['obstabf'], lst_PRNs=dTab['lst_prns'], dCli=dTab['cli'], logger=logger)
 
     # get the observation time spans based on TLE values
-    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dTab['lst_CmnPRNs'], cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
+    # dfTLE = tle_visibility.PRNs_visibility(prn_lst=dTab['lst_CmnPRNs'], cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
+    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsTab.PRN.unique(), DTG_start=DTGobs_start, DTG_end=DTGobs_end, interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
 
     amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
@@ -255,6 +272,7 @@ def obstab_analyse(argv):
     # perform analysis of the observations done
     analyse_obsprn(dfObsPrns=dfObsTab, prn_list=dTab['lst_CmnPRNs'], obsfreqs=dTab['obsfreqs'], interval=dTab['time']['interval'], logger=logger)
     # tleobs_plot.tle_plot_arcs()
+    sys.exit(55)
 
     # plot the observables for all or selected PRNs
     tleobs_plot.tle_plot_arcs(obsstatf=dTab['obstabf'], lst_PRNs=dTab['lst_CmnPRNs'], dfTabObs=dfObsTab, dfTle=dfTLE, dTime=dTab['time'], logger=logger, show_plot=show_plot)

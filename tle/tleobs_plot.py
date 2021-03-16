@@ -352,9 +352,26 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, dTime: dict, show_plot:
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
     lst_alpha = [1, 0.5, 0.5]
 
+    # find the indices where the 'dt' column differs the interval
+    idx_breaks = dfPrnObst.index[dfPrnObst['dt'] != 1].tolist()
+    print('idx_breaks = {}'.format(idx_breaks))
+    prin('GET NEXT INICES')
+
+    xxxx
+
     # for obst, marker in zip(['S1C', 'EMA05', 'WMA05', 'EMA10', 'WMA10', 'EMA20','WMA20'], lst_markers[:7]):
     for obst, plot_marker, alpha in zip(['S1C', 'EMA20', 'WMA20'], lst_markers[:3], lst_alpha):
-        ax.plot(dfPrnObst['DATE_TIME'], dfPrnObst[obst], label=obst, linestyle='-', marker=plot_marker, markersize=2, alpha=alpha)
+        for idx_start, idx_stop in zip(idx_breaks[:-2], idx_breaks[1:]):
+            print('{} => {}'.format(idx_start, idx_stop))
+            print(dfPrnObst.loc[idx_start:idx_stop]['DATE_TIME'])
+            print(dfPrnObst.loc[idx_start:idx_stop][obst])
+            print(dfPrnObst.loc[idx_start:idx_stop]['DATE_TIME'].shape)
+            print(dfPrnObst.loc[idx_start:idx_stop][obst].shape)
+
+            dfTmp = dfPrnObst.loc[idx_start:idx_stop]
+            amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
+
+            ax.plot(dfPrnObst.loc[idx_start:idx_stop]['DATE_TIME'], dfPrnObst.loc[idx_start:idx_stop][obst], label=obst, linestyle='-', marker=plot_marker, markersize=2, alpha=alpha)
 
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=1)
 

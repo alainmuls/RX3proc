@@ -226,8 +226,8 @@ def obsstat_analyse(argv):
     # determine start and end times of observation
     DTGobs_start = datetime.strptime(dStat['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
     DTGobs_end = datetime.strptime(dStat['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
-    print(DTGobs_start)
-    print(type(DTGobs_start))
+    # print(DTGobs_start)
+    # print(type(DTGobs_start))
 
     # read obsstat into a dataframe and select the SNR for the selected frequencies
     dfObsStat = read_obsstat(logger=logger)
