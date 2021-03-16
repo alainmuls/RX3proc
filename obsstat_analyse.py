@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from shutil import copyfile
+import pickle
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -214,12 +215,26 @@ def obsstat_analyse(argv):
     # verify input
     check_arguments(logger=logger)
 
+    # read the observation header info from the Pickle file
+    dStat['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dStat['cli']['obsstatf'])[0][:-2])
+    with open(dStat['obshdr'], 'rb') as handle:
+        dStat['hdr'] = pickle.load(handle)
+
+    logger.info('{func:s}: Reading header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dStat['obshdr'], 'blue')))
+
+    # determine start and end times of observation
+    DTGobs_start = datetime.strptime(dStat['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
+    DTGobs_end = datetime.strptime(dStat['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
+    print(DTGobs_start)
+    print(type(DTGobs_start))
+
     # read obsstat into a dataframe and select the SNR for the selected frequencies
     dfObsStat = read_obsstat(logger=logger)
     amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
 
     # get the observation time spans based on TLE values
-    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
+    # dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
+    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(), DTG_start=DTGobs_start, DTG_end=DTGobs_end, interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
 
     # combine the observation count and TLE count per PRN
@@ -251,11 +266,11 @@ def obsstat_analyse(argv):
     # dfTLE.to_csv(tle_name, index=True, date_format='%H:%M:%S')
 
     # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
-    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], '02_obs_stat')
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], '{marker:s}_02_obs_stat'.format(marker=dStat['obsstatf'][:9]))
     sec_obsstat.generate_tex(dStat['ltx']['obsstat'])
 
     # report to the user
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # store the json structure
     jsonName = os.path.join(dStat['dir'], '{scrname:s}.json'.format(scrname=os.path.splitext(os.path.basename(__file__))[0]))

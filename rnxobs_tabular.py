@@ -10,6 +10,7 @@ from typing import Tuple
 from shutil import copyfile
 from nested_lookup import nested_lookup
 from datetime import datetime
+import pickle
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -146,13 +147,17 @@ def rnx_tabular(argv) -> dict:
 
     # examine the header of the RX3 observation file
     dGFZ['hdr'] = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZ['bin']['gfzrnx'], obs3f=dGFZ['cli']['obsf'], logger=logger)
-
     logger.info('{func:s}: dGFZ[hdr] =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor)))
+
+    # save the header info for later usage
+    dGFZ['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dCLI['obsf'])[0])
+    with open(os.path.join(dGFZ['cli']['path'], dGFZ['obshdr']), 'wb') as fdict:
+        pickle.dump(dGFZ['hdr'], fdict)
 
     # extract information from the header useful for later usage
     obs_date = nested_lookup(key='first', document=dGFZ['hdr'])[0]
     dGFZ['info']['obs_date'] = datetime.strptime(obs_date.split('.')[0], '%Y %m %d %H %M %S').strftime('%d %B %Y')
-    print(dGFZ['cli']['obsf'])
+    # print(dGFZ['cli']['obsf'])
     dGFZ['info']['marker'] = dGFZ['cli']['obsf'][:9]
     dGFZ['info']['yyyy'] = int(dGFZ['cli']['obsf'][12:16])
     dGFZ['info']['doy'] = int(dGFZ['cli']['obsf'][16:19])
@@ -161,7 +166,7 @@ def rnx_tabular(argv) -> dict:
 
     sec_script = ltx_rnxobs_reporting.rnxobs_script_information(dCli=dGFZ['cli'], dHdr=dGFZ['hdr'], dInfo=dGFZ['info'], script_name=os.path.basename(__file__))
 
-    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], '01_script_info')
+    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], '{marker:s}_01_script_info'.format(marker=dGFZ['info']['marker']))
     sec_script.generate_tex(dGFZ['ltx']['script'])
 
     # create the tabular observation file for the selected GNSSs

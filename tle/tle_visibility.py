@@ -12,7 +12,7 @@ from ampyutils import amutils
 __author__ = 'amuls'
 
 
-def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: int = 5, logger: logging.Logger = None) -> pd.DataFrame:
+def PRNs_visibility(prn_lst: list, DTG_start: datetime, DTG_end: datetime, interval: float, cutoff: int = 5, logger: logging.Logger = None) -> pd.DataFrame:
     """
     PRNs_visibility determines the visibilty info for list of PRNs passed
     """
@@ -40,14 +40,20 @@ def PRNs_visibility(prn_lst: list, cur_date: datetime, interval: float, cutoff: 
         # get the datetime that corresponds to yydoy
         # date_yydoy = datetime.strptime(amc.dRTK['rnx']['times']['DT'], '%Y-%m-%d %H:%M:%S')
         # yydoy = date_yydoy.strftime('%y%j')
-        logger.info('{func:s}: calculating rise / set times for {date:s}'.format(date=cur_date.strftime('%d/%m/%Y'), func=cFuncName))
+        logger.info('{func:s}: calculating rise / set times for {DTGstart:s} => {DTGend:s}'.format(DTGstart=DTG_start.strftime('%Y/%m/%d %H:%M:%S'), DTGend=DTG_end.strftime('%Y/%m/%d %H:%M:%S'), func=cFuncName))
 
-    t0 = ts.utc(int(cur_date.strftime('%Y')), int(cur_date.strftime('%m')), int(cur_date.strftime('%d')))
-    date_tomorrow = cur_date + timedelta(days=1)
-    t1 = ts.utc(int(date_tomorrow.strftime('%Y')), int(date_tomorrow.strftime('%m')), int(date_tomorrow.strftime('%d')))
+    print(DTG_start.strftime('%Y/%m/%d %H:%M:%S'))
+    print(DTG_end.strftime('%Y/%m/%d %H:%M:%S'))
+    t0 = ts.utc(year=int(DTG_start.strftime('%Y')), month=int(DTG_start.strftime('%m')), day=int(DTG_start.strftime('%d')), hour=int(DTG_start.strftime('%H')), minute=int(DTG_start.strftime('%M')), second=int(DTG_start.strftime('%S')))
+    # date_tomorrow = cur_date + timedelta(days=1)
+    # t1 = ts.utc(int(date_tomorrow.strftime('%Y')), int(date_tomorrow.strftime('%m')), int(date_tomorrow.strftime('%d')))
+    t1 = ts.utc(year=int(DTG_end.strftime('%Y')), month=int(DTG_end.strftime('%m')), day=int(DTG_end.strftime('%d')), hour=int(DTG_end.strftime('%H')), minute=int(DTG_end.strftime('%M')), second=int(DTG_end.strftime('%S')))
+
+    print('t0 = {}'.format(t0))
+    print('t1 = {}'.format(t1))
 
     # find corresponding TLE record for NORAD nrs
-    df_tles = tle_parser.find_norad_tle_yydoy(dNorads=dNORADs, yydoy=cur_date.strftime('%y%j'), logger=logger)
+    df_tles = tle_parser.find_norad_tle_yydoy(dNorads=dNORADs, yydoy=DTG_start.strftime('%y%j'), logger=logger)
 
     # list of rise / set times by observation / TLEs
     lst_obs_rise = []

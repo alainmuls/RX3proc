@@ -263,7 +263,7 @@ def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
                 obs_percentages[x_prn] = obs_perc
 
         # plot the current percentages
-        ax.plot(x_crds, obs_percentages, marker=marker, color=color, label=obst, linestyle='-.')
+        ax.plot(x_crds, obs_percentages, marker=marker, color=color, label=obst, linestyle='')
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
@@ -278,12 +278,12 @@ def obstle_plot_relative(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, red
     plt.title('Observations for GNSS {gnss:s} on {date!s} ({yy:04d}/{doy:03d})'.format(gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
 
     # set limits for y-axis
-    ax.set_ylim([70, 101])
+    # ax.set_ylim([70, 101])
 
     # setticks on X axis to represent the PRNs
-    ax.xaxis.set_ticks(np.arange(1, x_crds[-1]))
-    tick_labels = []
-    for i in np.arange(1, x_crds[-1]):
+    ax.xaxis.set_ticks(np.arange(0, x_crds[-1] + 1))
+    tick_labels = ['']
+    for i in np.arange(0, x_crds[-1]):
         tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
         if tick_prn in dfObsTle.PRN.to_list():
             tick_labels.append(tick_prn)
