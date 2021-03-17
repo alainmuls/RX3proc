@@ -1,5 +1,5 @@
 import os
-import sys
+from numpy import arange
 import argparse
 from gfzrnx import gfzrnx_constants as gfzc
 
@@ -103,3 +103,10 @@ class prn_list_action(argparse.Action):
                 # print('prn = {}'.format(prn))
                 raise argparse.ArgumentError(self, '{PRN:s} should be one of {GNSS_PRNs!s}'.format(PRN=prn, GNSS_PRNs=gfzc.dict_GNSS_PRNs[gnss]))
         setattr(namespace, self.dest, prn_list)
+
+
+class snrth_action(argparse.Action):
+    def __call__(self, parser, namespace, snrth, option_string=None):
+        if snrth not in arange(0.25, 15, step=0.25):
+            raise argparse.ArgumentError(self, "SNR threshold must be in [0.25...15] and have as resolution 0.25")
+        setattr(namespace, self.dest, snrth)

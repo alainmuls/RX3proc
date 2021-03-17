@@ -338,7 +338,7 @@ def obstle_plot_prns(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.Da
     sys.exit(88)
 
 
-def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, idx_snr_jumps: list,  snrth: float, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     plot_prnfreq plots for a given PRN the observation OBST on a frequency with the exponential moving average
     """
@@ -346,34 +346,79 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, dTime: dict, show_plot:
 
     amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    # find the indices positional index where the 'dt' column differs from the interval (cfr odx_gaps_time)
+    pos_idx_gaps = []
+    pos_idx_nextgaps = []
+    # idx_gaps_time = dfPrnObst.index[dfPrnObst['dt'] != 1].tolist()
+    for idx_gap in idx_gaps_time[1:]:
+        pos_idx_gaps.append(dfPrnObst.index.get_loc(idx_gap))
+        pos_idx_nextgaps.append(dfPrnObst.index.get_loc(idx_gap) + 1)  # indicates position of next
+    print('idx_gaps_time = {} #{}'.format(idx_gaps_time, len(idx_gaps_time)))
+    # print('idx_gaps[1:] = {} #{}'.format(idx_gaps[1:], len(idx_gaps[1:])))
+    # print('idx_gaps[:-1] = {} #{}'.format(idx_gaps[:-1], len(idx_gaps[:-1])))
+    # print('pos_idx_gaps = {}'.format(pos_idx_gaps))
+    # print('pos_idx_nextgaps = {}'.format(pos_idx_nextgaps))
+
+    # create colormap with nrcolors discrete colors
+    # obstypes = [obst for obst in dfPrnObst.columns if obst not in ['DATE_TIME', 'PRN', 'dt', 'dS1C', 'EMA10', 'WMA10']]
+    # print(obstypes)
+    obstypes = [obst for obst in dfPrnObst.columns if obst not in ['DATE_TIME', 'PRN', 'dt'] and obst[0] != 'd']
+    print(obstypes)
 
     # used markers
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
-    lst_alpha = [1, 0.5, 0.5]
+    lst_colors, title_font = amutils.create_colormap_font(nrcolors=len(obstypes), font_size=12)
 
-    # find the indices where the 'dt' column differs the interval
-    idx_breaks = dfPrnObst.index[dfPrnObst['dt'] != 1].tolist()
-    print('idx_breaks = {}'.format(idx_breaks))
-    prin('GET NEXT INICES')
+    # plot on ax1 the curves, use ax2 for the difference with previous value
+    for obst, plot_marker, color in zip(obstypes, lst_markers[:len(obstypes)], lst_colors):
+        if obst[0] == 'S':  # more detailled plot for SNR analysis
+            fig = plt.figure(figsize=(10, 7))
+            gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[6, 3, 1])
+            ax1, ax2, ax3 = gs.subplots(sharex=True)
+            # fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(8, 6), )
+        else:
+            fig, ax1 = plt.subplots(figsize=(8, 6))
 
-    xxxx
+        # go over the time intervals
+        for i, (pos_idx_start, pos_idx_stop) in enumerate(zip(pos_idx_gaps[:-1], pos_idx_gaps[1:])):
+            # print('{} => {}'.format(pos_idx_start, pos_idx_stop))
+            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop]['DATE_TIME'])
+            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop][obst])
+            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop]['DATE_TIME'].shape)
+            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop][obst].shape)
+            dfTimeSegment = dfPrnObst.iloc[pos_idx_start:pos_idx_stop]
+            if i == 0:
+                ax1.plot(dfTimeSegment['DATE_TIME'],
+                         dfTimeSegment[obst],
+                         label=obst, linestyle='-', marker=plot_marker, markersize=2, color=color)
 
-    # for obst, marker in zip(['S1C', 'EMA05', 'WMA05', 'EMA10', 'WMA10', 'EMA20','WMA20'], lst_markers[:7]):
-    for obst, plot_marker, alpha in zip(['S1C', 'EMA20', 'WMA20'], lst_markers[:3], lst_alpha):
-        for idx_start, idx_stop in zip(idx_breaks[:-2], idx_breaks[1:]):
-            print('{} => {}'.format(idx_start, idx_stop))
-            print(dfPrnObst.loc[idx_start:idx_stop]['DATE_TIME'])
-            print(dfPrnObst.loc[idx_start:idx_stop][obst])
-            print(dfPrnObst.loc[idx_start:idx_stop]['DATE_TIME'].shape)
-            print(dfPrnObst.loc[idx_start:idx_stop][obst].shape)
+                if obst[0] == 'S':
+                    ax2.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
+                    ax2.plot(dfTimeSegment['DATE_TIME'],
+                             dfTimeSegment['d{obst:s}'.format(obst=obst)],
+                             label='d{obst:s}'.format(obst=obst), linestyle='-', marker=plot_marker, markersize=2, color=color)
 
-            dfTmp = dfPrnObst.loc[idx_start:idx_stop]
-            amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
+                # print a bar representing increase / decrease in SNR for a PRN / SNR pair
+                if obst[0] == 'S':
+                    # plot values in this segment where dSNR > snrth in green
+                    ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='green', linestyle='', marker='^', markersize=5)
+                    ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='red', linestyle='', marker='v', markersize=5)
 
-            ax.plot(dfPrnObst.loc[idx_start:idx_stop]['DATE_TIME'], dfPrnObst.loc[idx_start:idx_stop][obst], label=obst, linestyle='-', marker=plot_marker, markersize=2, alpha=alpha)
+            else:
+                ax1.plot(dfTimeSegment['DATE_TIME'],
+                         dfTimeSegment[obst],
+                         linestyle='-', marker=plot_marker, markersize=2, color=color)
 
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=1)
+                if obst[0] == 'S':
+                    ax2.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
+                    ax2.plot(dfTimeSegment['DATE_TIME'],
+                             dfTimeSegment['d{obst:s}'.format(obst=obst)],
+                             linestyle='-', marker=plot_marker, markersize=2, color=color)
+
+
+    ax1.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
+    if obst[0] == 'S':
+        ax2.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
 
     fig.tight_layout()
 
@@ -382,3 +427,4 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, dTime: dict, show_plot:
     else:
         plt.close(fig)
 
+    sys.exit(22)

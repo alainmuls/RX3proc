@@ -40,25 +40,25 @@ def treatCmdOpts(argv):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('-o', '--obsstat', help='observation statistics file', type=str, required=True)
+    parser.add_argument('--obsstat', help='observation statistics file', type=str, required=True)
 
-    parser.add_argument('-f', '--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
+    parser.add_argument('--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
 
-    parser.add_argument('-i', '--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
+    # parser.add_argument('--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
 
-    parser.add_argument('-c', '--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
+    parser.add_argument('--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
-    parser.add_argument('-d', '--dbcvs', help='Add information to CVS database (default {cvsdb:s})'.format(cvsdb=colored(gco.CVSDB_OBSTLE, 'green')), required=False, type=str, default=gco.CVSDB_OBSTLE)
+    parser.add_argument('--dbcvs', help='Add information to CVS database (default {cvsdb:s})'.format(cvsdb=colored(gco.CVSDB_OBSTLE, 'green')), required=False, type=str, default=gco.CVSDB_OBSTLE)
 
-    parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
+    parser.add_argument('--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
-    parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
+    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obsstat, args.freqs, args.interval, args.cutoff, args.dbcvs, args.plot, args.logging
+    return args.obsstat, args.freqs, args.cutoff, args.dbcvs, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -207,7 +207,7 @@ def obsstat_analyse(argv):
     dStat['ltx'] = {}
     dStat['plots'] = {}
 
-    dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['time']['interval'], dStat['cli']['mask'], dStat['cli']['cvsdb'], show_plot, logLevels = treatCmdOpts(argv)
+    dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['cli']['mask'], dStat['cli']['cvsdb'], show_plot, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
@@ -220,8 +220,9 @@ def obsstat_analyse(argv):
     with open(dStat['obshdr'], 'rb') as handle:
         dStat['hdr'] = pickle.load(handle)
     dStat['marker'] = dStat['hdr']['file']['site']
+    dStat['time']['interval'] = float(dStat['hdr']['file']['interval'])
 
-    logger.info('{func:s}: Reading header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dStat['obshdr'], 'blue')))
+    logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dStat['obshdr'], 'blue')))
 
     # determine start and end times of observation
     DTGobs_start = datetime.strptime(dStat['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
@@ -252,7 +253,6 @@ def obsstat_analyse(argv):
     # store the information in cvsdb
     cvsdb_ops.cvsdb_open(cvsdb_name=dStat['cli']['cvsdb'], logger=logger)
     cvsdb_update_obstle(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], cvsdb=dStat['cli']['cvsdb'], logger=logger)
-    # sys.exit(6)
 
     # plot the Observation and TLE observation count
     dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)

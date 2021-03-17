@@ -41,26 +41,28 @@ def treatCmdOpts(argv):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('-o', '--obstab', help='observation tabular file', type=str, required=True)
+    parser.add_argument('--obstab', help='observation tabular file', type=str, required=True)
 
-    parser.add_argument('-s', '--svprns', help='list of PRNs to examine (default {:s} (if PRN is 00 than all PRNs for GNSS used)'.format(colored('E00', 'green')), type=str, required=False, default=['E00', 'G00'], action=gco.prn_list_action, nargs='+')
+    parser.add_argument('--prns', help='list of PRNs to examine (default {:s} (if PRN is 00 than all PRNs for GNSS used)'.format(colored('E00', 'green')), type=str, required=False, default=['E00', 'G00'], action=gco.prn_list_action, nargs='+')
 
-    parser.add_argument('-f', '--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
-    parser.add_argument('-t', '--types_obs', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
+    parser.add_argument('--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
+    parser.add_argument('--obstypes', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
 
-    parser.add_argument('-i', '--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
+    parser.add_argument('--snr_threshold', help='threshold for detecting variation in SNR levels (default {snrtr:s})'.format(snrtr=colored('2', 'green')), type=float, required=False, default=2, action=gco.snrth_action)
 
-    parser.add_argument('-c', '--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
+    parser.add_argument('--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
 
-    parser.add_argument('-p', '--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
+    parser.add_argument('--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
-    parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
+    parser.add_argument('--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
+
+    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obstab, args.svprns, args.freqs, args.types_obs, args.interval, args.cutoff, args.plot, args.logging
+    return args.obstab, args.prns, args.freqs, args.obstypes, args.snr_threshold, args.cutoff, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -178,47 +180,55 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
     return lst_CommonPRNS, obsfreqs, dfTmp
 
 
-def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, interval: int, logger: logging.Logger):
+def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, snrth: float, interval: int, logger: logging.Logger):
     """
     analyse_obsprn analyses the observations for the gicen PRNs and detemines a loss in SNR if asked.
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    span = 10
     print('prn_list = {}'.format(prn_list))
+    idx_time_gaps = {}
+    idx_snr_jumps = {}
     for prn in prn_list:
+        idx_time_gaps[prn] = {}
+        idx_snr_jumps[prn] = {}
         for obsfreq in obsfreqs:
             print('obsfreq = {}'.format(obsfreq))
             # select only the elements for this prn
             dfObsFreqPrn = dfObsPrns[dfObsPrns.PRN == prn][['DATE_TIME', 'PRN', obsfreq]].dropna()
 
             # calculate the time difference between successive entries
-            dfObsFreqPrn['dt'] = (dfObsFreqPrn['DATE_TIME'] - dfObsFreqPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]')
+            dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc('DATE_TIME') + 1, column='dt', value=(dfObsFreqPrn['DATE_TIME'] - dfObsFreqPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]'))
+            # add column which is difference between current and previous obst
+            dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc(obsfreq) + 1, column='d{obsfreq:s}'.format(obsfreq=obsfreq), value=(dfObsFreqPrn[obsfreq] - dfObsFreqPrn[obsfreq].shift(1)).astype(float))
 
             # find the exponential moving average
             # dfObsFreqPrn['EMA05'] = dfObsFreqPrn[obsfreq].ewm(halflife='5 seconds', adjust=False, times=dfObsFreqPrn['DATE_TIME']).mean()
             # dfObsFreqPrn['WMA05'] = dfObsFreqPrn[obsfreq].rolling(5, min_periods=1).mean()
 
-            # dfObsFreqPrn['EMA10'] = dfObsFreqPrn[obsfreq].ewm(halflife='10 seconds', adjust=False, times=dfObsFreqPrn['DATE_TIME']).mean()
-            # dfObsFreqPrn['WMA10'] = dfObsFreqPrn[obsfreq].rolling(10, min_periods=1).mean()
+            # find the gaps for this PRN and OBST
+            idx_time_gaps[prn][obsfreq] = dfObsFreqPrn.index[dfObsFreqPrn.dt != interval].tolist()
+            print('idx_time_gaps[prn][obsfreq] = {} #{}'.format(idx_time_gaps[prn][obsfreq], len(idx_time_gaps[prn][obsfreq])))
 
-            dfObsFreqPrn['EMA20'] = dfObsFreqPrn[obsfreq].ewm(halflife='20 seconds', adjust=False, times=dfObsFreqPrn['DATE_TIME']).mean()
-            dfObsFreqPrn['WMA20'] = dfObsFreqPrn[obsfreq].rolling(20, min_periods=1).mean()
+            # for idx_gap in idx_time_gaps[1:]:
+            #     pos_idx_gap = dfObsFreqPrn.index.get_loc(idx_gap)
+            #     print(dfObsFreqPrn.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
 
-            # dfObsFreqPrn['EMA'] = dfObsFreqPrn[obsfreq].ewm(span=span, adjust=False, times=dfObsFreqPrn['DATE_TIME']).mean()
+            # find the SNR differences that are higher than snrth (SNR threshold)
+            if obsfreq[0] == 'S':
+                idx_snr_jumps[prn][obsfreq] = dfObsFreqPrn.index[dfObsFreqPrn['d{obsfreq:s}'.format(obsfreq=obsfreq)].abs() > snrth].tolist()
+                print('idx_snr_jumps[prn][obsfreq] = {} #{}'.format(idx_snr_jumps[prn][obsfreq], len(idx_snr_jumps[prn][obsfreq])))
+            else:
+                idx_snr_jumps[prn][obsfreq] = []
+
+            # info user
             amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
 
-            # find the gaps for this PRN and OBST
-            idx_gaps = dfObsFreqPrn.index[dfObsFreqPrn.dt != interval]
-            print(idx_gaps)
-
-            for idx_gap in idx_gaps[1:]:
-                pos_idx_gap = dfObsFreqPrn.index.get_loc(idx_gap)
-                print(dfObsFreqPrn.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
-
-            tleobs_plot.plot_prnfreq(obsstatf=dTab['cli']['obstabf'], dfPrnObst=dfObsFreqPrn, dTime=dTab['time'], show_plot=True, logger=logger)
+            # plot for each PRN and obstfreq
+            tleobs_plot.plot_prnfreq(obsstatf=dTab['cli']['obstabf'], dfPrnObst=dfObsFreqPrn, idx_gaps_time=idx_time_gaps[prn][obsfreq], idx_snr_jumps=idx_snr_jumps[prn][obsfreq], snrth=snrth, dTime=dTab['time'], show_plot=True, logger=logger)
 
     sys.exit(77)
+
 
 def obstab_analyse(argv):
     """
@@ -234,7 +244,7 @@ def obstab_analyse(argv):
     dTab['ltx'] = {}
     dTab['plots'] = {}
 
-    dTab['cli']['obstabf'], dTab['cli']['lst_prns'], dTab['cli']['freqs'], dTab['cli']['obs_types'], dTab['time']['interval'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
+    dTab['cli']['obstabf'], dTab['cli']['lst_prns'], dTab['cli']['freqs'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
@@ -247,8 +257,9 @@ def obstab_analyse(argv):
     with open(dTab['obshdr'], 'rb') as handle:
         dTab['hdr'] = pickle.load(handle)
     dTab['marker'] = dTab['hdr']['file']['site']
+    dTab['time']['interval'] = float(dTab['hdr']['file']['interval'])
 
-    logger.info('{func:s}: Reading header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dTab['obshdr'], 'blue')))
+    logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dTab['obshdr'], 'blue')))
 
     # determine start and end times of observation
     DTGobs_start = datetime.strptime(dTab['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
@@ -256,6 +267,7 @@ def obstab_analyse(argv):
     print(DTGobs_start)
     print(DTGobs_end)
 
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # read obsstat into a dataframe and select the SNR for the selected frequencies
     dTab['lst_CmnPRNs'], dTab['obsfreqs'], dfObsTab = read_obstab(obstabf=dTab['obstabf'], lst_PRNs=dTab['lst_prns'], dCli=dTab['cli'], logger=logger)
@@ -270,7 +282,7 @@ def obstab_analyse(argv):
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # perform analysis of the observations done
-    analyse_obsprn(dfObsPrns=dfObsTab, prn_list=dTab['lst_CmnPRNs'], obsfreqs=dTab['obsfreqs'], interval=dTab['time']['interval'], logger=logger)
+    analyse_obsprn(dfObsPrns=dfObsTab, prn_list=dTab['lst_CmnPRNs'], obsfreqs=dTab['obsfreqs'], snrth=dTab['cli']['snrth'], interval=dTab['time']['interval'], logger=logger)
     # tleobs_plot.tle_plot_arcs()
     sys.exit(55)
 
