@@ -35,14 +35,14 @@ def treatCmdOpts(argv: list):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('-r', '--root_dir', help='Root directory of SBF data collection (default {:s})'.format(colored(gco.ROOTDIR, 'green')), required=False, type=str, default=gco.ROOTDIR)
+    parser.add_argument('--root_dir', help='Root directory of SBF data collection (default {:s})'.format(colored(gco.ROOTDIR, 'green')), required=False, type=str, default=gco.ROOTDIR)
 
-    parser.add_argument('-m', '--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
-    parser.add_argument('-y', '--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
-    parser.add_argument('-d', '--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
+    parser.add_argument('--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
+    parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
+    parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
 
-    parser.add_argument('-c', '--compress', help='compress obtained RINEX files', default=False, required=False, action='store_true')
-    parser.add_argument('-o', '--overwrite', help='overwrite daily SBF file (default False)', action='store_true', required=False)
+    parser.add_argument('--compress', help='compress obtained RINEX files', default=False, required=False, action='store_true')
+    parser.add_argument('--overwrite', help='overwrite daily SBF file (default False)', action='store_true', required=False)
 
     parser.add_argument('--logging', help='specify logging level console/file (default {:s})'.format(colored('INFO DEBUG', 'green')), nargs=2, required=False, default=['INFO', 'DEBUG'], action=gco.logging_action)
 

@@ -48,9 +48,9 @@ def treatCmdOpts(argv: list):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
     # parser.add_argument('-s', '--sbfdir', help='SBF directory (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
-    parser.add_argument('-f', '--sbff', help='Binary SBF file', required=True, type=str)
+    parser.add_argument('--sbffile', help='Binary SBF file', required=True, type=str)
 
-    parser.add_argument('-r', '--rnxdir', help='Directory for RINEX output (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
+    parser.add_argument('--rnxdir', help='Directory for RINEX output (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
 
     parser.add_argument('--logging', help='specify logging level console/file (default {:s})'.format(colored('INFO DEBUG', 'green')), nargs=2, required=False, default=['INFO', 'DEBUG'], action=logging_action)
 
@@ -58,7 +58,7 @@ def treatCmdOpts(argv: list):
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.sbff, args.rnxdir, args.logging
+    return args.sbffile, args.rnxdir, args.logging
 
 
 def checkValidityArgs(logger: logging.Logger) -> bool:
@@ -132,9 +132,10 @@ def sbf2rinex(logger: logging.Logger) -> list:
             print('   process output = {!s}'.format(proc_out))
 
     # RINEX files are created in the SBF directory, have to move them to RNX dir
-    list_of_rnx_files = glob.glob(os.path.join(dRnx['dirs']['rnx'], '*.rnx'))
+    list_of_rnx_files = sorted(glob.glob(os.path.join(dRnx['dirs']['rnx'], '*.rnx')), key=os.path.getmtime)
+    logger.info('{func:s}: sorted list (by modification time) of rnx files:\n{lst:s}'.format(lst='\n'.join(list_of_rnx_files), func=cFuncName))
 
-    return list_of_rnx_files[:2]
+    return list_of_rnx_files[-2:]
 
 
 def sbf2rnx3(argv):

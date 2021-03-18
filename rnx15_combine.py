@@ -40,13 +40,13 @@ def treatCmdOpts(argv):
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
-    parser.add_argument('-f', '--from_dir', help='Directory of P3RS2 RINEX files (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
-    parser.add_argument('-r', '--rnx_dir', help='Root directory of P3RS2 RINEX files (default {:s})'.format(colored(gco.P3RS2RNXDIR, 'green')), required=False, type=str, default=gco.P3RS2RNXDIR)
-    parser.add_argument('-m', '--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
-    parser.add_argument('-y', '--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
-    parser.add_argument('-d', '--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
+    parser.add_argument('--from_dir', help='Directory of P3RS2 RINEX files (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
+    parser.add_argument('--rnx_dir', help='Root directory of P3RS2 RINEX files (default {:s})'.format(colored(gco.P3RS2RNXDIR, 'green')), required=False, type=str, default=gco.P3RS2RNXDIR)
+    parser.add_argument('--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
+    parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
+    parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
 
-    parser.add_argument('-c', '--crux', help='CRUX template file for updating RINEX headers (default {crux:s})'.format(crux=colored(gfzc.crux_tmpl, 'green')), required=False, type=str, default=gfzc.crux_tmpl)
+    parser.add_argument('--crux', help='CRUX template file for updating RINEX headers (default {crux:s})'.format(crux=colored(gfzc.crux_tmpl, 'green')), required=False, type=str, default=gfzc.crux_tmpl)
 
     parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 

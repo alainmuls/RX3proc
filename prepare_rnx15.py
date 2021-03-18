@@ -35,16 +35,16 @@ def treatCmdOpts(argv: list):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('-f', '--from_dir', help='Directory of 15 min P3RS2 data collection (default {:s})'.format(colored(gco.P3RS2PVTLSDIR, 'green')), required=False, type=str, default=gco.P3RS2PVTLSDIR)
-    parser.add_argument('-r', '--rnx_dir', help='Root directory of P3RS2 RINEX files (default {:s})'.format(colored(gco.P3RS2RNXDIR, 'green')), required=False, type=str, default=gco.P3RS2RNXDIR)
+    parser.add_argument('--root_dir', help='Directory of 15 min P3RS2 data collection (default {:s})'.format(colored(gco.P3RS2PVTLSDIR, 'green')), required=False, type=str, default=gco.P3RS2PVTLSDIR)
+    parser.add_argument('--rnx_dir', help='Root directory of P3RS2 RINEX files (default {:s})'.format(colored(gco.P3RS2RNXDIR, 'green')), required=False, type=str, default=gco.P3RS2RNXDIR)
 
-    parser.add_argument('-m', '--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
-    parser.add_argument('-y', '--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
-    parser.add_argument('-d', '--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
+    parser.add_argument('--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
+    parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
+    parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
 
-    parser.add_argument('-o', '--obs_crux', help='CRUX template file for updating RINEX headers (default {crux:s})'.format(crux=colored(gfzc.crux_tmpl, 'green')), required=False, type=str, default=gfzc.crux_tmpl)
+    parser.add_argument('--obs_crux', help='CRUX template file for updating RINEX headers (default {crux:s})'.format(crux=colored(gfzc.crux_tmpl, 'green')), required=False, type=str, default=gfzc.crux_tmpl)
 
-    parser.add_argument('-c', '--compress', help='compress obtained RINEX files', default=False, required=False, action='store_true')
+    parser.add_argument('--compress', help='compress obtained RINEX files', default=False, required=False, action='store_true')
 
     parser.add_argument('--logging', help='specify logging level console/file (default {:s})'.format(colored('INFO DEBUG', 'green')), nargs=2, required=False, default=['INFO', 'DEBUG'], action=gco.logging_action)
 
@@ -52,7 +52,7 @@ def treatCmdOpts(argv: list):
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.from_dir, args.rnx_dir, args.marker, args.year, args.doy, args.obs_crux, args.compress, args.logging
+    return args.root_dir, args.rnx_dir, args.marker, args.year, args.doy, args.obs_crux, args.compress, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):

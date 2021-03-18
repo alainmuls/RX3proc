@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 from matplotlib import dates
 from typing import Tuple
+from matplotlib.ticker import MultipleLocator
 
 from ampyutils import amutils
 from plot import plot_utils
@@ -161,7 +162,7 @@ def obstle_plot_obscount(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTi
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
-    ax.yaxis.grid(b=True, which='major')
+    ax.yaxis.grid(b=False)
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=4)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
@@ -175,6 +176,16 @@ def obstle_plot_obscount(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTi
     plt.title('Observations vs TLE: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker, gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
 
     # setticks on Y axis to represent the PRNs
+    _, xlim_right = ax.get_xlim()
+    ylim_left, ylim_right = ax.get_ylim()
+    print('{} | {} => {}'.format(int(xlim_right), int(ylim_left), int(ylim_right)))
+    for i in np.arange(int(ylim_left), int(ylim_right)):
+        if i % 2 == 0:
+            if not reduce2percentage:
+                ax.barh(y=i, height=0.95, width=xlim_right, color='black', alpha=0.1)
+            else:
+                ax.barh(y=i, height=0.95, width=100, color='black', alpha=0.1)
+
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
     tick_labels = []
     for i in np.arange(1, y_prns[-1] + 1):
@@ -253,6 +264,12 @@ def obstle_plot_relative(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTi
     # used markers
     lst_markers = ['o', 'v', '^', '<', '>', 'x', '+', 's', 'd', '.', ',']
 
+    # create an offset to plot the markers per PRN
+    dx_obs, dx_skip = bars_info(nr_arcs=len(obstypes) - 1, logger=logger)
+    # print('dx_obs = {}'.format(dx_obs))
+    # print('len(dx_obs) = {}'.format(len(dx_obs)))
+    # print('dx_skip = {}'.format(dx_skip))
+
     # store the percantages in a dict
     for j, (obst, color, plotmarker) in enumerate(zip(list(reversed(obstypes[:-1])), list(reversed(colors)), lst_markers)):
         obs_percentages = [np.NaN] * 37
@@ -262,13 +279,20 @@ def obstle_plot_relative(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTi
                 obs_perc = dfObsTle.iloc[i][obst] / tle_maxobs
                 obs_percentages[x_prn] = obs_perc
 
-        # plot the current percentages
-        ax.plot(x_crds, obs_percentages, marker=plotmarker, color=color, label=obst, linestyle='')
+            # plot the current percentages per PRN and per OBST
+            if i == 0:
+                ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs), obs_perc, marker=plotmarker, color=color, label=obst, linestyle='', markersize=3)
+            else:
+                ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs), obs_perc, marker=plotmarker, color=color, linestyle='', markersize=3)
 
     # beautify plot
-    ax.xaxis.grid(b=True, which='major')
-    ax.yaxis.grid(b=True, which='major')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=1)
+    ax.xaxis.grid(b=False)
+    ax.yaxis.grid(b=True, which='both')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=3)
+
+    ax.yaxis.grid(True)
+    ax.yaxis.set_minor_locator(MultipleLocator(5))
+    ax.yaxis.grid(which="minor", color='black', linestyle='-.', linewidth=5)
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_xlabel('PRNs', fontdict=title_font)
@@ -281,16 +305,20 @@ def obstle_plot_relative(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTi
     # ax.set_ylim([70, 101])
 
     # setticks on X axis to represent the PRNs
-    ax.xaxis.set_ticks(np.arange(0, x_crds[-1] + 1))
-    tick_labels = ['']
+    ax.xaxis.set_ticks(np.arange(0, x_crds[-1]))
+    tick_labels = []
     for i in np.arange(0, x_crds[-1]):
+        # create a grey bar for separating between PRNs
+        if i % 2 == 0:
+            ax.bar(i, 100, width=0.95, color='black', alpha=0.05)
+
         tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
         if tick_prn in dfObsTle.PRN.to_list():
             tick_labels.append(tick_prn)
         else:
             tick_labels.append('')
 
-    ax.set_xticklabels(tick_labels, rotation=90)
+    ax.set_xticklabels(tick_labels, rotation=90, horizontalalignment='center')
     fig.tight_layout()
 
     if show_plot:

@@ -38,9 +38,9 @@ def treatCmdOpts(argv):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('-r', '--rnxobsf', help='RINEX observation file', type=str, required=True)
+    parser.add_argument('--obsfile', help='RINEX observation file', type=str, required=True)
 
-    parser.add_argument('-g', '--gnsss', help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')), default=gfzc.lst_GNSSs[0], type=str, required=False, action=gco.gnss_action, nargs='+')
+    parser.add_argument('--gnsss', help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')), default=gfzc.lst_GNSSs[0], type=str, required=False, action=gco.gnss_action, nargs='+')
 
     parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
@@ -48,7 +48,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.rnxobsf, args.gnsss, args.logging
+    return args.obsfile, args.gnsss, args.logging
 
 
 def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: logging.Logger = None) -> Tuple[str, str]:

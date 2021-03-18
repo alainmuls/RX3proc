@@ -24,9 +24,8 @@ def report_information(dInfo: dict, logger: logging.Logger = None) -> dict:
                    'classification': '  '}
 
     if logger is not None:
-        logger.info('{func:s}: report creation information {report!s}'.format(report=report_info, func=cFuncName))
+        logger.info('{func:s}: report information created'.format(func=cFuncName))
 
-    print('{func:s}: report creation information {report!s}'.format(report=report_info, func=cFuncName))
     return report_info
 
 
