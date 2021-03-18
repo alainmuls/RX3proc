@@ -44,8 +44,6 @@ def treatCmdOpts(argv):
 
     parser.add_argument('--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
 
-    # parser.add_argument('--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
-
     parser.add_argument('--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
     parser.add_argument('--dbcvs', help='Add information to CVS database (default {cvsdb:s})'.format(cvsdb=colored(gco.CVSDB_OBSTLE, 'green')), required=False, type=str, default=gco.CVSDB_OBSTLE)
@@ -236,7 +234,7 @@ def obsstat_analyse(argv):
     # verify input
     check_arguments(logger=logger)
 
-    sys.exit(9)
+    # sys.file_exists(9)
 
     logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dStat['obshdr'], 'blue')))
 
@@ -269,6 +267,7 @@ def obsstat_analyse(argv):
     # store the information in cvsdb
     cvsdb_ops.cvsdb_open(cvsdb_name=dStat['cli']['cvsdb'], logger=logger)
     cvsdb_update_obstle(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], cvsdb=dStat['cli']['cvsdb'], logger=logger)
+    cvsdb_ops.cvsdb_sort(cvsdb_name=dStat['cli']['cvsdb'], logger=logger)
 
     # plot the Observation and TLE observation count
     dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
