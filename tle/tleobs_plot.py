@@ -401,8 +401,8 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, id
     for obst, plot_marker, color in zip(obstypes, lst_markers[:len(obstypes)], lst_colors):
         if obst[0] == 'S':  # more detailled plot for SNR analysis
             fig = plt.figure(figsize=(10, 7))
-            gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[6, 3, 1])
-            ax1, ax2, ax3 = gs.subplots(sharex=True)
+            gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[4, 1])
+            ax1, ax2 = gs.subplots(sharex=True)
             # fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(8, 6), )
         else:
             fig, ax1 = plt.subplots(figsize=(8, 6))
@@ -427,10 +427,10 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, id
                              label='d{obst:s}'.format(obst=obst), linestyle='-', marker=plot_marker, markersize=2, color=color)
 
                 # print a bar representing increase / decrease in SNR for a PRN / SNR pair
-                if obst[0] == 'S':
-                    # plot values in this segment where dSNR > snrth in green
-                    ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='green', linestyle='', marker='^', markersize=5)
-                    ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='red', linestyle='', marker='v', markersize=5)
+                # if obst[0] == 'S':
+                #     # plot values in this segment where dSNR > snrth in green
+                #     ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='green', linestyle='', marker='^', markersize=5)
+                #     ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='red', linestyle='', marker='v', markersize=5)
 
             else:
                 ax1.plot(dfTimeSegment['DATE_TIME'],
@@ -443,7 +443,6 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, id
                              dfTimeSegment['d{obst:s}'.format(obst=obst)],
                              linestyle='-', marker=plot_marker, markersize=2, color=color)
 
-
     ax1.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
     if obst[0] == 'S':
         ax2.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
@@ -454,5 +453,3 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, id
         plt.show(block=True)
     else:
         plt.close(fig)
-
-    sys.exit(22)

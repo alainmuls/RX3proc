@@ -95,6 +95,13 @@ def check_arguments(logger: logging.Logger = None):
             logger.error('{func:s}: cannot write to directory {dir:s} failed'.format(dir=colored(os.path.dirname(dStat['cli']['cvsdb']), 'red'), func=cFuncName))
         sys.exit(amc.E_PATH_NOT_WRITABLE)
 
+    # check whether selected freq is available
+    for clifreq in dStat['cli']['freqs']:
+        if clifreq not in dStat['info']['freqs']:
+            if logger is not None:
+                logger.error('{func:s}: selected frequency {clifreq:s} is not available'.format(clifreq=colored(clifreq, 'red'), func=cFuncName))
+            sys.exit(amc.E_NOAVAIL_FREQ)
+
     # extract YY and DOY from filename
     dStat['time']['YYYY'] = int(dStat['obsstatf'][12:16])
     dStat['time']['DOY'] = int(dStat['obsstatf'][16:19])
@@ -179,7 +186,7 @@ def tle_cvs(dfTle: pd.DataFrame, cvs_name: str, logger: logging.Logger = None):
 
     # convert the dfTle index to a column of PRNs
     dfTle.reset_index(inplace=True)
-    dfTle = dfTle.rename(columns = {'index':'PRN'})
+    dfTle = dfTle.rename(columns={'index': 'PRN'})
 
     # create an empty dataframe with the same columns
     dfCvs = pd.DataFrame(columns=dfTle.columns.tolist())
@@ -189,8 +196,6 @@ def tle_cvs(dfTle: pd.DataFrame, cvs_name: str, logger: logging.Logger = None):
 
     if logger is not None:
         amutils.logHeadTailDataFrame(df=dfCvs, dfName='dfCvs', callerName=cFuncName, logger=logger)
-
-
 
 
 def obsstat_analyse(argv):
@@ -206,14 +211,17 @@ def obsstat_analyse(argv):
     dStat['time'] = {}
     dStat['ltx'] = {}
     dStat['plots'] = {}
+    dStat['info'] = {}
 
     dStat['cli']['obsstatf'], dStat['cli']['freqs'], dStat['cli']['mask'], dStat['cli']['cvsdb'], show_plot, logLevels = treatCmdOpts(argv)
 
+    # detect used GNSS from the obsstatf filename
+    dStat['info']['gnss'] = os.path.splitext(os.path.basename(dStat['cli']['obsstatf']))[0][-1]
+    dStat['info']['gnss_name'] = gfzc.dict_GNSSs[dStat['info']['gnss']]
+    # print('{} => {}'.format(dStat['gnss'], dStat['gnss_name']))
+
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
-
-    # verify input
-    check_arguments(logger=logger)
 
     # read the observation header info from the Pickle file
     dStat['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dStat['cli']['obsstatf'])[0][:-2])
@@ -221,6 +229,14 @@ def obsstat_analyse(argv):
         dStat['hdr'] = pickle.load(handle)
     dStat['marker'] = dStat['hdr']['file']['site']
     dStat['time']['interval'] = float(dStat['hdr']['file']['interval'])
+    dStat['info']['freqs'] = dStat['hdr']['file']['sysfrq'][dStat['info']['gnss']]
+
+    print(dStat['info'])
+
+    # verify input
+    check_arguments(logger=logger)
+
+    sys.exit(9)
 
     logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dStat['obshdr'], 'blue')))
 
