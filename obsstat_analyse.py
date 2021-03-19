@@ -283,7 +283,7 @@ def obsstat_analyse(argv):
 
     # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
-    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], '{marker:s}_02_obs_stat'.format(marker=dStat['obsstatf'][:9]))
+    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], '{marker:s}_{gnss:s}_02_obs_stat'.format(marker=dStat['obsstatf'][:9], gnss=dStat['info']['gnss']))
     sec_obsstat.generate_tex(dStat['ltx']['obsstat'])
 
     # report to the user

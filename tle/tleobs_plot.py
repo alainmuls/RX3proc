@@ -366,7 +366,7 @@ def obstle_plot_prns(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.Da
     sys.exit(88)
 
 
-def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, idx_snr_jumps: list,  snrth: float, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, posidx_gaps: list, snrth: float, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     plot_prnfreq plots for a given PRN the observation OBST on a frequency with the exponential moving average
     """
@@ -375,13 +375,13 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, id
     amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
 
     # find the indices positional index where the 'dt' column differs from the interval (cfr odx_gaps_time)
-    pos_idx_gaps = []
-    pos_idx_nextgaps = []
-    # idx_gaps_time = dfPrnObst.index[dfPrnObst['dt'] != 1].tolist()
-    for idx_gap in idx_gaps_time[1:]:
-        pos_idx_gaps.append(dfPrnObst.index.get_loc(idx_gap))
-        pos_idx_nextgaps.append(dfPrnObst.index.get_loc(idx_gap) + 1)  # indicates position of next
-    print('idx_gaps_time = {} #{}'.format(idx_gaps_time, len(idx_gaps_time)))
+    # posidx_gaps = []
+    # pos_idx_nextgaps = []
+    # # idx_gaps_time = dfPrnObst.index[dfPrnObst['dt'] != 1].tolist()
+    # for idx_gap in idx_gaps_time[1:]:
+    #     pos_idx_gaps.append(dfPrnObst.index.get_loc(idx_gap))
+    #     pos_idx_nextgaps.append(dfPrnObst.index.get_loc(idx_gap) + 1)  # indicates position of next
+    # print('idx_gaps_time = {} #{}'.format(idx_gaps_time, len(idx_gaps_time)))
     # print('idx_gaps[1:] = {} #{}'.format(idx_gaps[1:], len(idx_gaps[1:])))
     # print('idx_gaps[:-1] = {} #{}'.format(idx_gaps[:-1], len(idx_gaps[:-1])))
     # print('pos_idx_gaps = {}'.format(pos_idx_gaps))
@@ -408,13 +408,13 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, id
             fig, ax1 = plt.subplots(figsize=(8, 6))
 
         # go over the time intervals
-        for i, (pos_idx_start, pos_idx_stop) in enumerate(zip(pos_idx_gaps[:-1], pos_idx_gaps[1:])):
-            # print('{} => {}'.format(pos_idx_start, pos_idx_stop))
-            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop]['DATE_TIME'])
-            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop][obst])
-            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop]['DATE_TIME'].shape)
-            # print(dfPrnObst.iloc[pos_idx_start:pos_idx_stop][obst].shape)
-            dfTimeSegment = dfPrnObst.iloc[pos_idx_start:pos_idx_stop]
+        for i, (posidx_start, posidx_stop) in enumerate(zip(posidx_gaps[:-1], posidx_gaps[1:])):
+            # print('{} => {}'.format(posidx_start, posidx_stop))
+            # print(dfPrnObst.iloc[posidx_start:posidx_stop]['DATE_TIME'])
+            # print(dfPrnObst.iloc[posidx_start:posidx_stop][obst])
+            # print(dfPrnObst.iloc[posidx_start:posidx_stop]['DATE_TIME'].shape)
+            # print(dfPrnObst.iloc[posidx_start:posidx_stop][obst].shape)
+            dfTimeSegment = dfPrnObst.iloc[posidx_start:posidx_stop]
             if i == 0:
                 ax1.plot(dfTimeSegment['DATE_TIME'],
                          dfTimeSegment[obst],
@@ -447,7 +447,7 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, idx_gaps_time: list, id
     if obst[0] == 'S':
         ax2.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
 
-    fig.tight_layout()
+    # fig.tight_layout()
 
     if show_plot:
         plt.show(block=True)

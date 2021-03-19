@@ -166,7 +166,7 @@ def rnx_tabular(argv) -> dict:
 
     sec_script = ltx_rnxobs_reporting.rnxobs_script_information(dCli=dGFZ['cli'], dHdr=dGFZ['hdr'], dInfo=dGFZ['info'], script_name=os.path.basename(__file__))
 
-    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], '{marker:s}_01_script_info'.format(marker=dGFZ['info']['marker']))
+    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], '{marker:s}_{gnsss:s}_01_script_info'.format(marker=dGFZ['info']['marker'], gnsss=''.join(dGFZ['cli']['GNSSs'])))
     sec_script.generate_tex(dGFZ['ltx']['script'])
 
     # create the tabular observation file for the selected GNSSs
