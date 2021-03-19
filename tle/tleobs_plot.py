@@ -366,7 +366,7 @@ def obstle_plot_prns(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.Da
     sys.exit(88)
 
 
-def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, posidx_gaps: list, snrth: float, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, obst: str, posidx_gaps: list, snrth: float, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     plot_prnfreq plots for a given PRN the observation OBST on a frequency with the exponential moving average
     """
@@ -374,31 +374,15 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, posidx_gaps: list, snrt
 
     amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
 
-    # find the indices positional index where the 'dt' column differs from the interval (cfr odx_gaps_time)
-    # posidx_gaps = []
-    # pos_idx_nextgaps = []
-    # # idx_gaps_time = dfPrnObst.index[dfPrnObst['dt'] != 1].tolist()
-    # for idx_gap in idx_gaps_time[1:]:
-    #     pos_idx_gaps.append(dfPrnObst.index.get_loc(idx_gap))
-    #     pos_idx_nextgaps.append(dfPrnObst.index.get_loc(idx_gap) + 1)  # indicates position of next
-    # print('idx_gaps_time = {} #{}'.format(idx_gaps_time, len(idx_gaps_time)))
-    # print('idx_gaps[1:] = {} #{}'.format(idx_gaps[1:], len(idx_gaps[1:])))
-    # print('idx_gaps[:-1] = {} #{}'.format(idx_gaps[:-1], len(idx_gaps[:-1])))
-    # print('pos_idx_gaps = {}'.format(pos_idx_gaps))
-    # print('pos_idx_nextgaps = {}'.format(pos_idx_nextgaps))
-
-    # create colormap with nrcolors discrete colors
-    # obstypes = [obst for obst in dfPrnObst.columns if obst not in ['DATE_TIME', 'PRN', 'dt', 'dS1C', 'EMA10', 'WMA10']]
-    # print(obstypes)
-    obstypes = [obst for obst in dfPrnObst.columns if obst not in ['DATE_TIME', 'PRN', 'dt'] and obst[0] != 'd']
-    print(obstypes)
+    # obstypes = [obst for obst in dfPrnObst.columns if obst not in ['DATE_TIME', 'PRN', 'dt'] and obst[0] != 'd']
+    print(obst)
 
     # used markers
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
-    lst_colors, title_font = amutils.create_colormap_font(nrcolors=len(obstypes), font_size=12)
+    lst_colors, title_font = amutils.create_colormap_font(nrcolors=1, font_size=12)
 
     # plot on ax1 the curves, use ax2 for the difference with previous value
-    for obst, plot_marker, color in zip(obstypes, lst_markers[:len(obstypes)], lst_colors):
+    for plot_marker, color in zip(lst_markers[:1], lst_colors):
         if obst[0] == 'S':  # more detailled plot for SNR analysis
             fig = plt.figure(figsize=(10, 7))
             gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[4, 1])

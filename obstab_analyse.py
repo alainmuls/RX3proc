@@ -213,6 +213,9 @@ def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, snrt
             idx_time_gaps = dfObsFreqPrn.index[dfObsFreqPrn.dt != interval].tolist()
             # convert to positional indices
             posidx_time_gaps = [dfObsFreqPrn.index.get_loc(gap) for gap in idx_time_gaps]
+            # insert the first and last positional indices to get start and end time
+            posidx_time_gaps.insert(0, 0)
+            posidx_time_gaps.append(dfObsFreqPrn.shape[0])
             print('posidx_time_gaps = {}'.format(posidx_time_gaps))
 
             # for idx_gap in idx_time_gaps[1:]:
@@ -238,9 +241,6 @@ def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, snrt
             # info user
             amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
 
-            # plot for each PRN and obstfreq
-            tleobs_plot.plot_prnfreq(obsstatf=dTab['cli']['obstabf'], dfPrnObst=dfObsFreqPrn, posidx_gaps=posidx_time_gaps, snrth=snrth, dTime=dTab['time'], show_plot=True, logger=logger)
-
             posidx = posidx_time_gaps[2]
             print(posidx)
             print('posidx= {}'.format(dfObsFreqPrn.iloc[posidx]))
@@ -252,6 +252,9 @@ def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, snrt
             beginTime = dfObsFreqPrn.DATE_TIME.iloc[posidx - 1]
             endTime = dfObsFreqPrn.DATE_TIME.iloc[posidx]
             print('time gap = {} => {} = {}'.format(beginTime, endTime, (endTime - beginTime).total_seconds()))
+
+            # plot for each PRN and obstfreq
+            tleobs_plot.plot_prnfreq(obsstatf=dTab['cli']['obstabf'], dfPrnObst=dfObsFreqPrn, obst=obsfreq, posidx_gaps=posidx_time_gaps, snrth=snrth, dTime=dTab['time'], show_plot=True, logger=logger)
 
     sys.exit(77)
 
