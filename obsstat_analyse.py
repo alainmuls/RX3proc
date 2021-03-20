@@ -272,9 +272,9 @@ def main_obsstat_analyse(argv):
     cvsdb_ops.cvsdb_sort(cvsdb_name=dStat['cli']['cvsdb'], logger=logger)
 
     # plot the Observation and TLE observation count
-    dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
-    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
-    dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(marker=dStat['marker'], obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
+    dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
+    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
+    dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(marker=dStat['marker'], obsf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
 
     sec_obsstat = ltx_rnxobs_reporting.obsstat_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
 

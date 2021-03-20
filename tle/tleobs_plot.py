@@ -17,7 +17,7 @@ from gfzrnx import gfzrnx_constants as gco
 __author__ = 'amuls'
 
 
-def tle_plot_arcs(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def tle_plot_arcs(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
     """
@@ -112,13 +112,13 @@ def tle_plot_arcs(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataF
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
     for ext in ['pdf', 'png', 'eps']:
-        plt_name = os.path.join('png', '{basen:s}-TLEarcs.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+        plt_name = os.path.join('png', '{basen:s}-TLEarcs.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
 
 
-def obstle_plot_obscount(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
+def obstle_plot_obscount(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
     """
     obstle_plot_arcs plots count of observations wrt to number obtained from TLE
     """
@@ -207,9 +207,9 @@ def obstle_plot_obscount(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTi
     # save the plot in subdir png of GNSSSystem
     for ext in ['pdf', 'png', 'eps']:
         if not reduce2percentage:
-            plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+            plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         else:
-            plt_name = os.path.join('png', '{basen:s}-ObsTLEperc.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+            plt_name = os.path.join('png', '{basen:s}-ObsTLEperc.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
@@ -240,9 +240,9 @@ def bars_info(nr_arcs: int, logger: logging.Logger) -> Tuple[list, int]:
     return dx_obs, width_arc
 
 
-def obstle_plot_relative(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None) -> str:
+def obstle_plot_relative(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None) -> str:
     """
-    obstle_plot_relativeobsstatf plots the percenatge of observations observed wrt the TLE determined max values.
+    obstle_plot_relativeobsf plots the percenatge of observations observed wrt the TLE determined max values.
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -329,14 +329,14 @@ def obstle_plot_relative(marker: str, obsstatf: str, dfObsTle: pd.DataFrame, dTi
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
     for ext in ['pdf', 'png', 'eps']:
-        plt_name = os.path.join('png', '{basen:s}-PERC.{ext:s}'.format(basen=obsstatf.split('.')[0], ext=ext))
+        plt_name = os.path.join('png', '{basen:s}-PERC.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
     return plt_name
 
 
-def obstle_plot_prns(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def obstle_plot_prns(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
     """
     tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
     """
@@ -354,6 +354,7 @@ def obstle_plot_prns(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.Da
         if len(t_set) > 0:
             dt_set.append(t_set[-1])
 
+    # get overall min/max times for the observation time span
     dt_min = min(dt_rise)
     dt_max = max(dt_set)
 
@@ -361,12 +362,21 @@ def obstle_plot_prns(marker: str, obsstatf: str, lst_PRNs: list, dfTabObs: pd.Da
     amutils.logHeadTailDataFrame(df=dfTabObs, dfName='dfTabObs', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
 
-    # XXXXXXXXXXXXXXXXXXXXXXXXXXxx
     # PLOT PRN ARCS FROM OBSERVED AND TLE
+    for prn in lst_PRNs:
+        print('prn = {!s}'.format(prn))
+
     sys.exit(88)
 
 
-def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, obst: str, posidx_gaps: list, snrth: float, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def plot_prnfreq(obsf: str,
+                 dfPrnObst: pd.DataFrame,
+                 dfTlePrn: pd.DataFrame,
+                 obst: str,
+                 posidx_gaps: list,
+                 snrth: float, dTime: dict,
+                 show_plot: bool = False,
+                 logger: logging.Logger = None):
     """
     plot_prnfreq plots for a given PRN the observation OBST on a frequency with the exponential moving average
     """
@@ -374,8 +384,7 @@ def plot_prnfreq(obsstatf: str, dfPrnObst: pd.DataFrame, obst: str, posidx_gaps:
 
     amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
 
-    # obstypes = [obst for obst in dfPrnObst.columns if obst not in ['DATE_TIME', 'PRN', 'dt'] and obst[0] != 'd']
-    print(obst)
+    print('DO SOMETHING WITH DFTLEPRN IN 2ND OR 3RD PLOT WINDOW')
 
     # used markers
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
