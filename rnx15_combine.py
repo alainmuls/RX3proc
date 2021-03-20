@@ -268,9 +268,9 @@ def convert_navrnx3(gfzrnx: str, rnxf_tmp: str, cruxf: str, rnxdir: str, logger:
     return navf
 
 
-def combine_rnx15(argv):
+def main_combine_rnx15(argv):
     """
-    combine_rnx15 combines the P3RS2 RINEX files of 15 minutes and creates correct ::RX3:: files
+    main_combine_rnx15 combines the P3RS2 RINEX files of 15 minutes and creates correct ::RX3:: files
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -372,6 +372,6 @@ def combine_rnx15(argv):
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    rnxdir, obs3f, nav3f = combine_rnx15(sys.argv[1:])
+    rnxdir, obs3f, nav3f = main_combine_rnx15(sys.argv[1:])
 
     print('Created {obsf:s} and {navf:s}'.format(obsf=obs3f, navf=nav3f ))

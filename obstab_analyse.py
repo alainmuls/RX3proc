@@ -9,7 +9,6 @@ import json
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
-import numpy as np
 from shutil import copyfile
 from typing import Tuple
 import pickle
@@ -259,9 +258,9 @@ def analyse_obsprn(dfObsPrns: pd.DataFrame, prn_list: list, obsfreqs: list, snrt
     sys.exit(77)
 
 
-def obstab_analyse(argv):
+def main_obstab_analyse(argv):
     """
-    obstab_analyse analyses the created OBSTAB files and compares with TLE data.
+    main_obstab_analyse analyses the created OBSTAB files and compares with TLE data.
     """
 
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
@@ -273,20 +272,25 @@ def obstab_analyse(argv):
     dTab['ltx'] = {}
     dTab['plots'] = {}
 
-    dTab['cli']['obstabf'], dTab['cli']['lst_prns'], dTab['cli']['freqs'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
+    dTab['cli']['obstabf'], dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
 
-    # verify input
-    check_arguments(logger=logger)
-
     # read the observation header info from the Pickle file
     dTab['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dTab['cli']['obstabf'])[0][:-2])
-    with open(dTab['obshdr'], 'rb') as handle:
-        dTab['hdr'] = pickle.load(handle)
-    dTab['marker'] = dTab['hdr']['file']['site']
-    dTab['time']['interval'] = float(dTab['hdr']['file']['interval'])
+    try:
+        with open(dTab['obshdr'], 'rb') as handle:
+            dTab['hdr'] = pickle.load(handle)
+        dTab['marker'] = dTab['hdr']['file']['site']
+        dTab['time']['interval'] = float(dTab['hdr']['file']['interval'])
+        dTab['info']['freqs'] = dTab['hdr']['file']['sysfrq'][dTab['info']['gnss']]
+    except IOError as e:
+        logger.error('{func:s}: error {err!s} reading header file {hdrf:s}'.format(hdrf=colored(dTab['obshdr'], 'red'), err=e, func=cFuncName))
+        sys.exit(amc.E_FILE_NOT_EXIST)
+
+    # verify input
+    check_arguments(logger=logger)
 
     logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dTab['obshdr'], 'blue')))
 
@@ -332,4 +336,4 @@ def obstab_analyse(argv):
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    obstab_analyse(sys.argv)
+    main_obstab_analyse(sys.argv)

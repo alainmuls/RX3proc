@@ -115,7 +115,7 @@ def sbf_rnx3(sbffile: str, sbfdir: str, rnxdir: str, logger: logging.Logger = No
     return rnx_obs3f, rnx_nav3f
 
 
-def prepare_rnx_data(argv):
+def main_prepare_rnx_data(argv):
 
     """
     creates a combined SBF file from hourly or six-hourly SBF files
@@ -170,6 +170,6 @@ def prepare_rnx_data(argv):
 
 
 if __name__ == "__main__":
-    errcode = prepare_rnx_data(sys.argv[1:])
+    errcode = main_prepare_rnx_data(sys.argv[1:])
 
     sys.exit(errcode)

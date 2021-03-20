@@ -105,7 +105,7 @@ def combine_P3RS2_data(p3rs2_dir: str, rnx_dir: str, marker: str, year: int, doy
     return rnxdir, obs3f, nav3f
 
 
-def prepare_P3RS2_data(argv) -> Tuple[str, str, str]:
+def main_prepare_P3RS2_data(argv) -> Tuple[str, str, str]:
 
     """
     combines the 15 min data files from P3RS2
@@ -166,4 +166,4 @@ def prepare_P3RS2_data(argv) -> Tuple[str, str, str]:
 
 
 if __name__ == "__main__":
-    rnxdir, obs3f, nav3f = prepare_P3RS2_data(sys.argv[1:])
+    rnxdir, obs3f, nav3f = main_prepare_P3RS2_data(sys.argv[1:])

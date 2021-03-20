@@ -196,9 +196,9 @@ def tle_cvs(dfTle: pd.DataFrame, cvs_name: str, logger: logging.Logger = None):
         amutils.logHeadTailDataFrame(df=dfCvs, dfName='dfCvs', callerName=cFuncName, logger=logger)
 
 
-def obsstat_analyse(argv):
+def main_obsstat_analyse(argv):
     """
-    obsstat_analyse analyses the created OBSSTAT files and compares with TLE data
+    main_obsstat_analyse analyses the created OBSSTAT files and compares with TLE data
     """
 
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
@@ -223,13 +223,15 @@ def obsstat_analyse(argv):
 
     # read the observation header info from the Pickle file
     dStat['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dStat['cli']['obsstatf'])[0][:-2])
-    with open(dStat['obshdr'], 'rb') as handle:
-        dStat['hdr'] = pickle.load(handle)
-    dStat['marker'] = dStat['hdr']['file']['site']
-    dStat['time']['interval'] = float(dStat['hdr']['file']['interval'])
-    dStat['info']['freqs'] = dStat['hdr']['file']['sysfrq'][dStat['info']['gnss']]
-
-    print(dStat['info'])
+    try:
+        with open(dStat['obshdr'], 'rb') as handle:
+            dStat['hdr'] = pickle.load(handle)
+        dStat['marker'] = dStat['hdr']['file']['site']
+        dStat['time']['interval'] = float(dStat['hdr']['file']['interval'])
+        dStat['info']['freqs'] = dStat['hdr']['file']['sysfrq'][dStat['info']['gnss']]
+    except IOError as e:
+        logger.error('{func:s}: error {err!s} reading header file {hdrf:s}'.format(hdrf=colored(dStat['obshdr'], 'red'), err=e, func=cFuncName))
+        sys.exit(amc.E_FILE_NOT_EXIST)
 
     # verify input
     check_arguments(logger=logger)
@@ -299,4 +301,4 @@ def obsstat_analyse(argv):
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    obsstat_analyse(sys.argv)
+    main_obsstat_analyse(sys.argv)

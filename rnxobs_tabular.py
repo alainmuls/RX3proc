@@ -113,9 +113,9 @@ def check_arguments(logger: logging.Logger = None):
         sys.exit(amc.E_FAILURE)
 
 
-def rnx_tabular(argv) -> dict:
+def main_rnx_tabular(argv) -> dict:
     """
-    rnx2obstab creates observation tabular/statistics file for selected GNSSs
+    main_rnx_tabular creates observation tabular/statistics file for selected GNSSs
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -190,6 +190,6 @@ def rnx_tabular(argv) -> dict:
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    dObstabs = rnx_tabular(sys.argv)
+    dObstabs = main_rnx_tabular(sys.argv)
 
     print('dObstabs = {!s}'.format(dObstabs))

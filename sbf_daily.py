@@ -44,9 +44,9 @@ def treatCmdOpts(argv: list):
     return args.dir, args.overwrite, args.logging
 
 
-def combine_sbf(argv):
+def main_combine_sbf(argv):
     """
-    creates a combined SBF file from hourly or six-hourly SBF files
+    main_combine_sbf creates a combined SBF file from hourly or six-hourly SBF files
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -124,6 +124,6 @@ def combine_sbf(argv):
 
 
 if __name__ == "__main__":
-    daily_sbf = combine_sbf(argv=sys.argv[1:])
+    daily_sbf = main_combine_sbf(argv=sys.argv[1:])
 
     print('daily_sbf = {!s}'.format(daily_sbf))
