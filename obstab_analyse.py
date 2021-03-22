@@ -371,7 +371,7 @@ def main_obstab_analyse(argv):
                    obsfreqs=dTab['obsfreqs'],
                    snrth=dTab['cli']['snrth'],
                    interval=dTab['time']['interval'],
-                   show_plot=False,
+                   show_plot=show_plot,
                    logger=logger)
 
     sys.exit(55)

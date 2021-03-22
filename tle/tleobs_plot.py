@@ -390,16 +390,18 @@ def plot_prnfreq(obsf: str,
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
     lst_colors, title_font = amutils.create_colormap_font(nrcolors=1, font_size=12)
 
-    # plot on ax1 the curves, use ax2 for the difference with previous value
-    for plot_marker, color in zip(lst_markers[:1], lst_colors):
-        if obst[0] == 'S':  # more detailled plot for SNR analysis
-            fig = plt.figure(figsize=(10, 7))
-            gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[4, 1])
-            ax1, ax2 = gs.subplots(sharex=True)
-            # fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(8, 6), )
-        else:
-            fig, ax1 = plt.subplots(figsize=(8, 6))
+    if obst[0] == 'S':  # more detailled plot for SNR analysis
+        fig = plt.figure(figsize=(12, 7))
+        gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[4, 2, 1])
+        axObst, axSNR, axTLE = gs.subplots(sharex=True)
+        # fig, (axObst, axSNR) = plt.subplots(2, sharex=True, figsize=(8, 6), )
+    else:
+        fig = plt.figure(figsize=(9, 7))
+        gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[5, 1])
+        axObst, axTLE = gs.subplots(sharex=True)
 
+    # plot on axObst the curves, on axSNR difference with previous value (only for SNR) and TLE on axTLE
+    for plot_marker, color in zip(lst_markers[:1], lst_colors):
         # go over the time intervals
         for i, (posidx_start, posidx_stop) in enumerate(zip(posidx_gaps[:-1], posidx_gaps[1:])):
             # print('{} => {}'.format(posidx_start, posidx_stop))
@@ -409,36 +411,43 @@ def plot_prnfreq(obsf: str,
             # print(dfPrnObst.iloc[posidx_start:posidx_stop][obst].shape)
             dfTimeSegment = dfPrnObst.iloc[posidx_start:posidx_stop]
             if i == 0:
-                ax1.plot(dfTimeSegment['DATE_TIME'],
-                         dfTimeSegment[obst],
-                         label=obst, linestyle='-', marker=plot_marker, markersize=2, color=color)
+                axObst.plot(dfTimeSegment['DATE_TIME'],
+                            dfTimeSegment[obst],
+                            label=obst, linestyle='-', marker=plot_marker, markersize=2, color=color)
 
                 if obst[0] == 'S':
-                    ax2.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
-                    ax2.plot(dfTimeSegment['DATE_TIME'],
-                             dfTimeSegment['d{obst:s}'.format(obst=obst)],
-                             label='d{obst:s}'.format(obst=obst), linestyle='-', marker=plot_marker, markersize=2, color=color)
-
-                # print a bar representing increase / decrease in SNR for a PRN / SNR pair
-                # if obst[0] == 'S':
-                #     # plot values in this segment where dSNR > snrth in green
-                #     ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='green', linestyle='', marker='^', markersize=5)
-                #     ax3.plot(dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['DATE_TIME'], dfTimeSegment[dfTimeSegment['d{obst:s}'.format(obst=obst)] > snrth]['dS1C'], color='red', linestyle='', marker='v', markersize=5)
+                    axSNR.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
+                    axSNR.plot(dfTimeSegment['DATE_TIME'],
+                               dfTimeSegment['d{obst:s}'.format(obst=obst)],
+                               label='d{obst:s}'.format(obst=obst), linestyle='-', marker=plot_marker, markersize=2, color=color)
 
             else:
-                ax1.plot(dfTimeSegment['DATE_TIME'],
-                         dfTimeSegment[obst],
-                         linestyle='-', marker=plot_marker, markersize=2, color=color)
+                axObst.plot(dfTimeSegment['DATE_TIME'],
+                            dfTimeSegment[obst],
+                            linestyle='-', marker=plot_marker, markersize=2, color=color)
 
                 if obst[0] == 'S':
-                    ax2.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
-                    ax2.plot(dfTimeSegment['DATE_TIME'],
-                             dfTimeSegment['d{obst:s}'.format(obst=obst)],
-                             linestyle='-', marker=plot_marker, markersize=2, color=color)
+                    axSNR.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
+                    axSNR.plot(dfTimeSegment['DATE_TIME'],
+                               dfTimeSegment['d{obst:s}'.format(obst=obst)],
+                               linestyle='-', marker=plot_marker, markersize=2, color=color)
 
-    ax1.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
+    # read in the timings for the TLE of this PRN
+    print('dfTlePrn = \n{}'.format(dfTlePrn))
+    for tle_rise, tle_set in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set']):
+        print('tle_rise = {} {}'.format(tle_rise, type(tle_rise)))
+        print('tle_set = {} {}'.format(tle_set, type(tle_set)))
+        test = datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise)
+        print('test = {} {} '.format(test, type(test)))
+        axTLE.plot_date([datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise),
+                         datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_set)],
+                        [1, 1],
+                        linestyle='-',
+                        linewidth=5)
+
+    axObst.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
     if obst[0] == 'S':
-        ax2.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
+        axSNR.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
 
     # fig.tight_layout()
 
