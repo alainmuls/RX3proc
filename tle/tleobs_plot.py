@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import logging
-from datetime import datetime
+import datetime
 from matplotlib import dates
 from typing import Tuple
 from matplotlib.ticker import MultipleLocator
@@ -54,10 +54,10 @@ def tle_plot_arcs(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame
 
     for y_prn, prn_color, (prn, tle_prn) in zip(y_prns, prn_colors, dfTle.iterrows()):
         for tle_rise, tle_set in zip(tle_prn.tle_rise, tle_prn.tle_set):
-            ax.plot_date(y=[y_prn, y_prn], x=[datetime.combine(cur_date, tle_rise), datetime.combine(cur_date, tle_set)], linewidth=2, color=prn_color, linestyle='-', markersize=6, marker='|')
+            ax.plot_date(y=[y_prn, y_prn], x=[datetime.datetime.combine(cur_date, tle_rise), datetime.datetime.combine(cur_date, tle_set)], linewidth=2, color=prn_color, linestyle='-', markersize=6, marker='|')
         for _, tle_cul in enumerate(tle_prn.tle_cul):
             if tle_cul is not np.NaN:
-                ax.plot_date(y=y_prn, x=datetime.combine(cur_date, tle_cul), color=prn_color, markersize=6, marker='v')
+                ax.plot_date(y=y_prn, x=datetime.datetime.combine(cur_date, tle_cul), color=prn_color, markersize=6, marker='v')
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
@@ -115,7 +115,6 @@ def tle_plot_arcs(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame
         plt_name = os.path.join('png', '{basen:s}-TLEarcs.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
-
 
 
 def obstle_plot_obscount(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: dict, reduce2percentage: bool = False, show_plot: bool = False, logger: logging.Logger = None) -> str:
@@ -178,7 +177,6 @@ def obstle_plot_obscount(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: 
     # setticks on Y axis to represent the PRNs
     _, xlim_right = ax.get_xlim()
     ylim_left, ylim_right = ax.get_ylim()
-    print('{} | {} => {}'.format(int(xlim_right), int(ylim_left), int(ylim_right)))
     for i in np.arange(int(ylim_left), int(ylim_right)):
         if i % 2 == 0:
             if not reduce2percentage:
@@ -266,9 +264,6 @@ def obstle_plot_relative(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: 
 
     # create an offset to plot the markers per PRN
     dx_obs, dx_skip = bars_info(nr_arcs=len(obstypes) - 1, logger=logger)
-    # print('dx_obs = {}'.format(dx_obs))
-    # print('len(dx_obs) = {}'.format(len(dx_obs)))
-    # print('dx_skip = {}'.format(dx_skip))
 
     # store the percantages in a dict
     for j, (obst, color, plotmarker) in enumerate(zip(list(reversed(obstypes[:-1])), list(reversed(colors)), lst_markers)):
@@ -364,17 +359,19 @@ def obstle_plot_prns(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFr
 
     # PLOT PRN ARCS FROM OBSERVED AND TLE
     for prn in lst_PRNs:
-        print('prn = {!s}'.format(prn))
+        print('prn = {}'.format(prn))
 
     sys.exit(88)
 
 
-def plot_prnfreq(obsf: str,
+def plot_prnfreq(marker: str,
+                 obsf: str,
                  dfPrnObst: pd.DataFrame,
                  dfTlePrn: pd.DataFrame,
                  obst: str,
                  posidx_gaps: list,
-                 snrth: float, dTime: dict,
+                 snrth: float,
+                 dTime: dict,
                  show_plot: bool = False,
                  logger: logging.Logger = None):
     """
@@ -384,7 +381,6 @@ def plot_prnfreq(obsf: str,
 
     amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
 
-    print('DO SOMETHING WITH DFTLEPRN IN 2ND OR 3RD PLOT WINDOW')
 
     # used markers
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
@@ -404,52 +400,70 @@ def plot_prnfreq(obsf: str,
     for plot_marker, color in zip(lst_markers[:1], lst_colors):
         # go over the time intervals
         for i, (posidx_start, posidx_stop) in enumerate(zip(posidx_gaps[:-1], posidx_gaps[1:])):
-            # print('{} => {}'.format(posidx_start, posidx_stop))
-            # print(dfPrnObst.iloc[posidx_start:posidx_stop]['DATE_TIME'])
-            # print(dfPrnObst.iloc[posidx_start:posidx_stop][obst])
-            # print(dfPrnObst.iloc[posidx_start:posidx_stop]['DATE_TIME'].shape)
-            # print(dfPrnObst.iloc[posidx_start:posidx_stop][obst].shape)
             dfTimeSegment = dfPrnObst.iloc[posidx_start:posidx_stop]
-            if i == 0:
-                axObst.plot(dfTimeSegment['DATE_TIME'],
-                            dfTimeSegment[obst],
-                            label=obst, linestyle='-', marker=plot_marker, markersize=2, color=color)
+            axObst.plot(dfTimeSegment['DATE_TIME'],
+                        dfTimeSegment[obst],
+                        linestyle='-', marker=plot_marker, markersize=2, color=color)
 
-                if obst[0] == 'S':
-                    axSNR.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
-                    axSNR.plot(dfTimeSegment['DATE_TIME'],
-                               dfTimeSegment['d{obst:s}'.format(obst=obst)],
-                               label='d{obst:s}'.format(obst=obst), linestyle='-', marker=plot_marker, markersize=2, color=color)
-
-            else:
-                axObst.plot(dfTimeSegment['DATE_TIME'],
-                            dfTimeSegment[obst],
-                            linestyle='-', marker=plot_marker, markersize=2, color=color)
-
-                if obst[0] == 'S':
-                    axSNR.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
-                    axSNR.plot(dfTimeSegment['DATE_TIME'],
-                               dfTimeSegment['d{obst:s}'.format(obst=obst)],
-                               linestyle='-', marker=plot_marker, markersize=2, color=color)
+            if obst[0] == 'S':
+                axSNR.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
+                axSNR.plot(dfTimeSegment['DATE_TIME'],
+                           dfTimeSegment['d{obst:s}'.format(obst=obst)],
+                           linestyle='-', marker=plot_marker, markersize=2, color=color)
 
     # read in the timings for the TLE of this PRN
-    print('dfTlePrn = \n{}'.format(dfTlePrn))
-    for tle_rise, tle_set in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set']):
-        print('tle_rise = {} {}'.format(tle_rise, type(tle_rise)))
-        print('tle_set = {} {}'.format(tle_set, type(tle_set)))
-        test = datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise)
-        print('test = {} {} '.format(test, type(test)))
-        axTLE.plot_date([datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise),
-                         datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_set)],
+    for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
+        axTLE.plot_date([datetime.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise),
+                         datetime.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_set)],
                         [1, 1],
                         linestyle='-',
-                        linewidth=5)
+                        linewidth=9,
+                        marker='')
 
-    axObst.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
+        # add a tick at culmination point
+        if isinstance(tle_cul, datetime.time):
+            axTLE.plot(datetime.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_cul),
+                       1,
+                       marker='v', markersize=14)
+
+    # create title
+    fig.suptitle('{marker:s}: {obst:s} for {prn:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, prn=dfPrnObst.PRN.iloc[0], dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))
+
+    # beautify plot
+    axObst.xaxis.grid(b=True, which='both')
+    axObst.yaxis.grid(b=True, which='both')
+    axObst.set_ylabel(obst)
+
+    axTLE.xaxis.grid(b=True)
+    axTLE.yaxis.grid(b=False)
+    axTLE.tick_params(left=False)
+    axTLE.get_yaxis().set_ticklabels([])
+    axTLE.set_ylabel('TLE span')
+
     if obst[0] == 'S':
-        axSNR.legend(loc='best', fancybox=True, shadow=True, ncol=6, markerscale=3)
+        axSNR.xaxis.grid(b=True, which='both')
+        axSNR.yaxis.grid(b=True, which='both')
+        axSNR.set_ylabel('d({snr:s})'.format(snr=obst))
 
-    # fig.tight_layout()
+    # create the ticks for the time ax
+    axTLE.set_xlim([dTime['start'], dTime['end']])
+    dtFormat = plot_utils.determine_datetime_ticks(startDT=dTime['start'], endDT=dTime['end'])
+
+    if dtFormat['minutes']:
+        # ax.xaxis.set_major_locator(dates.MinuteLocator(byminute=range(10, 60, 10), interval=1))
+        pass
+    else:
+        axTLE.xaxis.set_major_locator(dates.HourLocator(interval=dtFormat['hourInterval']))   # every 4 hours
+    axTLE.xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))  # hours and minutes
+
+    axTLE.xaxis.set_minor_locator(dates.DayLocator(interval=1))    # every day
+    axTLE.xaxis.set_minor_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+
+    axTLE.xaxis.set_tick_params(rotation=0)
+    for tick in axTLE.xaxis.get_major_ticks():
+        # tick.tick1line.set_markersize(0)
+        # tick.tick2line.set_markersize(0)
+        tick.label1.set_horizontalalignment('center')
 
     if show_plot:
         plt.show(block=True)

@@ -187,7 +187,9 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
     return lst_CommonPRNS, obsfreqs, dfTmp
 
 
-def analyse_obsprn(dfObsPrns: pd.DataFrame,
+def analyse_obsprn(marker: str,
+                   dTime: dict,
+                   dfObsPrns: pd.DataFrame,
                    dfTle: pd.DataFrame,
                    prn_list: list,
                    obsfreqs: list,
@@ -274,12 +276,14 @@ def analyse_obsprn(dfObsPrns: pd.DataFrame,
             # print('time gap = {} => {} = {}'.format(beginTime.time(), endTime.time(), (endTime - beginTime).total_seconds()))
 
             # plot for each PRN and obstfreq
-            tleobs_plot.plot_prnfreq(obsf=dTab['cli']['obstabf'],
+            tleobs_plot.plot_prnfreq(marker=marker,
+                                     dTime=dTime,
+                                     obsf=dTab['cli']['obstabf'],
                                      dfPrnObst=dfObsFreqPrn,
                                      dfTlePrn=dfTLEprn,
                                      obst=obsfreq,
                                      posidx_gaps=posidx_time_gaps,
-                                     snrth=snrth, dTime=dTab['time'],
+                                     snrth=snrth,
                                      show_plot=show_plot,
                                      logger=logger)
 
@@ -326,10 +330,8 @@ def main_obstab_analyse(argv):
     logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dTab['obshdr'], 'blue')))
 
     # determine start and end times of observation
-    DTGobs_start = datetime.strptime(dTab['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
-    DTGobs_end = datetime.strptime(dTab['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
-    print('DTGobs_start = {}'.format(DTGobs_start))
-    print('DTGobs_end = {}'.format(DTGobs_end))
+    dTab['time']['start'] = datetime.strptime(dTab['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
+    dTab['time']['end'] = datetime.strptime(dTab['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
@@ -342,8 +344,8 @@ def main_obstab_analyse(argv):
     # get the observation time spans based on TLE values
     # dfTLE = tle_visibility.PRNs_visibility(prn_lst=dTab['lst_CmnPRNs'], cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
     dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsTab.PRN.unique(),
-                                           DTG_start=DTGobs_start,
-                                           DTG_end=DTGobs_end,
+                                           DTG_start=dTab['time']['start'],
+                                           DTG_end=dTab['time']['end'],
                                            interval=dTab['time']['interval'],
                                            cutoff=dTab['cli']['mask'],
                                            logger=logger)
@@ -365,7 +367,9 @@ def main_obstab_analyse(argv):
     #                              show_plot=show_plot)
 
     # perform analysis of the observations done
-    analyse_obsprn(dfObsPrns=dfObsTab,
+    analyse_obsprn(marker=dTab['marker'],
+                   dTime=dTab['time'],
+                   dfObsPrns=dfObsTab,
                    dfTle=dfTLE,
                    prn_list=dTab['lst_CmnPRNs'],
                    obsfreqs=dTab['obsfreqs'],
