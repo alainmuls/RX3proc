@@ -475,7 +475,7 @@ def plot_prnfreq(marker: str,
                  snrth: float,
                  dTime: dict,
                  show_plot: bool = False,
-                 logger: logging.Logger = None):
+                 logger: logging.Logger = None) -> str:
     """
     plot_prnfreq plots for a given PRN the observation OBST on a frequency with the exponential moving average
     """
@@ -567,15 +567,18 @@ def plot_prnfreq(marker: str,
         tick.label1.set_horizontalalignment('center')
 
     # save the plot in subdir png
+    print(os.getcwd())
     amutils.mkdir_p('png')
     for ext in ['pdf', 'png', 'eps']:
-        plt_name = os.path.join('png', '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext, obst=obst, prn=dfPrnObst.PRN.iloc[0]))
+        tmp_name = '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, prn=dfPrnObst.PRN.iloc[0])
+        plt_name = os.path.join('png', tmp_name)
         print('plt_name = {}'.format(plt_name))
-        sys.exit(6)
-        # fig.savefig('plt_name', dpi=150, bbox_inches='tight', format=ext)
+        fig.savefig('plt_name', dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
     if show_plot:
         plt.show(block=True)
     else:
         plt.close(fig)
+
+    return plt_name

@@ -254,38 +254,21 @@ def analyse_obsprn(marker: str,
                 posidx_snr_negjumps = [dfObsFreqPrn.index.get_loc(jump) for jump in idx_snr_negjumps]
                 print('posidx_snr_negjumps = {} #{}'.format(posidx_snr_negjumps, len(posidx_snr_negjumps)))
 
-            # else:
-            #     idx_snr_posjumps[prn][obsfreq] = []
-            #     idx_snr_negjumps[prn][obsfreq] = []
-
             # info user
             if logger is not None:
                 amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
 
-            # posidx = posidx_time_gaps[2]
-            # print('posidx = {}'.format(posidx))
-            # print('dfObsFreqPrn.iloc[posidx] = {}'.format(dfObsFreqPrn.iloc[posidx:]))
-
-            # sys.exit(78)
-            # posidx = posidx_time_gaps[2] - 1
-            # print(posidx)
-            # print('posidx= {}'.format(dfObsFreqPrn.iloc[posidx]))
-
-            # beginTime = dfObsFreqPrn.DATE_TIME.iloc[posidx - 1]
-            # endTime = dfObsFreqPrn.DATE_TIME.iloc[posidx]
-            # print('time gap = {} => {} = {}'.format(beginTime.time(), endTime.time(), (endTime - beginTime).total_seconds()))
-
             # plot for each PRN and obstfreq
-            tleobs_plot.plot_prnfreq(marker=marker,
-                                     dTime=dTime,
-                                     obsf=dTab['cli']['obstabf'],
-                                     dfPrnObst=dfObsFreqPrn,
-                                     dfTlePrn=dfTLEprn,
-                                     obst=obsfreq,
-                                     posidx_gaps=posidx_time_gaps,
-                                     snrth=snrth,
-                                     show_plot=show_plot,
-                                     logger=logger)
+            prnfreq_plot = tleobs_plot.plot_prnfreq(marker=marker,
+                                                    dTime=dTime,
+                                                    obsf=dTab['cli']['obstabf'],
+                                                    dfPrnObst=dfObsFreqPrn,
+                                                    dfTlePrn=dfTLEprn,
+                                                    obst=obsfreq,
+                                                    posidx_gaps=posidx_time_gaps,
+                                                    snrth=snrth,
+                                                    show_plot=show_plot,
+                                                    logger=logger)
 
 
 def main_obstab_analyse(argv):
@@ -356,14 +339,14 @@ def main_obstab_analyse(argv):
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # create plot with all selected PRNs vs the TLE part
-    tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
-                                 obsf=dTab['obstabf'],
-                                 dTime=dTab['time'],
-                                 lst_PRNs=dTab['lst_CmnPRNs'],
-                                 dfTabObs=dfObsTab,
-                                 dfTle=dfTLE,
-                                 logger=logger,
-                                 show_plot=show_plot)
+    tle_obs_plot = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
+                                                obsf=dTab['obstabf'],
+                                                dTime=dTab['time'],
+                                                lst_PRNs=dTab['lst_CmnPRNs'],
+                                                dfTabObs=dfObsTab,
+                                                dfTle=dfTLE,
+                                                logger=logger,
+                                                show_plot=show_plot)
 
     # perform analysis of the observations done
     analyse_obsprn(marker=dTab['marker'],
