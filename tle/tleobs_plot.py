@@ -458,7 +458,12 @@ def obstle_plot_prns(marker: str,
     else:
         plt.close(fig)
 
-    sys.exit(88)
+    # save the plot in subdir png of GNSSSystem
+    amutils.mkdir_p('png')
+    for ext in ['pdf', 'png', 'eps']:
+        plt_name = os.path.join('png', '{basen:s}-TLE-OBS-arcs.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
+        fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
+        logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
 
 def plot_prnfreq(marker: str,
@@ -517,7 +522,7 @@ def plot_prnfreq(marker: str,
                         marker='')
 
         # add a tick at culmination point
-        if isinstance(tle_cul, dt.datetime.time):
+        if isinstance(tle_cul, dt.time):
             axTLE.plot(dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_cul),
                        1,
                        marker='v', markersize=14)
@@ -560,6 +565,15 @@ def plot_prnfreq(marker: str,
         # tick.tick1line.set_markersize(0)
         # tick.tick2line.set_markersize(0)
         tick.label1.set_horizontalalignment('center')
+
+    # save the plot in subdir png
+    amutils.mkdir_p('png')
+    for ext in ['pdf', 'png', 'eps']:
+        plt_name = os.path.join('png', '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext, obst=obst, prn=dfPrnObst.PRN.iloc[0]))
+        print('plt_name = {}'.format(plt_name))
+        sys.exit(6)
+        # fig.savefig('plt_name', dpi=150, bbox_inches='tight', format=ext)
+        logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
     if show_plot:
         plt.show(block=True)
