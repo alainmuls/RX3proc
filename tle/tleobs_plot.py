@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import logging
-import datetime
+import datetime as dt
 from matplotlib import dates
 from typing import Tuple
 from matplotlib.ticker import MultipleLocator
+import matplotlib.ticker as ticker
 
 from ampyutils import amutils
 from plot import plot_utils
@@ -54,10 +55,21 @@ def tle_plot_arcs(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame
 
     for y_prn, prn_color, (prn, tle_prn) in zip(y_prns, prn_colors, dfTle.iterrows()):
         for tle_rise, tle_set in zip(tle_prn.tle_rise, tle_prn.tle_set):
-            ax.plot_date(y=[y_prn, y_prn], x=[datetime.datetime.combine(cur_date, tle_rise), datetime.datetime.combine(cur_date, tle_set)], linewidth=2, color=prn_color, linestyle='-', markersize=6, marker='|')
+            ax.plot_date(y=[y_prn, y_prn],
+                         x=[dt.datetime.combine(cur_date, tle_rise),
+                            dt.datetime.combine(cur_date, tle_set)],
+                         linewidth=2,
+                         color=prn_color,
+                         linestyle='-',
+                         markersize=6,
+                         marker='|')
         for _, tle_cul in enumerate(tle_prn.tle_cul):
-            if tle_cul is not np.NaN:
-                ax.plot_date(y=y_prn, x=datetime.datetime.combine(cur_date, tle_cul), color=prn_color, markersize=6, marker='v')
+            if isinstance(tle_cul, dt.datetime.time):
+                ax.plot_date(y=y_prn,
+                             x=dt.datetime.combine(cur_date, tle_cul),
+                             color=prn_color,
+                             markersize=6,
+                             marker='v')
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
@@ -71,6 +83,27 @@ def tle_plot_arcs(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame
     # plot title
     plt.title('TLE arcs: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker, gnss=gco.dict_GNSSs[gnss_id], yy=dTime['YYYY'], doy=dTime['DOY'], date=dTime['date'].strftime('%d/%m/%Y')))
 
+    # create the ticks for the time ax
+    ax.set_xlim([dt.datetime.combine(cur_date, dt_min),
+                 dt.datetime.combine(cur_date, dt_max)])
+    dtFormat = plot_utils.determine_datetime_ticks(startDT=dt.datetime.combine(cur_date, dt_min),
+                                                   endDT=dt.datetime.combine(cur_date, dt_max))
+
+    if dtFormat['minutes']:
+        # ax.xaxis.set_major_locator(dates.MinuteLocator(byminute=range(10, 60, 10), interval=1))
+        pass
+    else:
+        ax.xaxis.set_major_locator(dates.HourLocator(interval=dtFormat['hourInterval']))   # every 4 hours
+    ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))  # hours and minutes
+
+    ax.xaxis.set_minor_locator(dates.DayLocator(interval=1))    # every day
+    ax.xaxis.set_minor_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+
+    ax.xaxis.set_tick_params(rotation=0)
+    for tick in ax.xaxis.get_major_ticks():
+        # tick.tick1line.set_markersize(0)
+        # tick.tick2line.set_markersize(0)
+        tick.label1.set_horizontalalignment('center')
     # setticks on Y axis to represent the PRNs
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
     tick_labels = []
@@ -83,26 +116,7 @@ def tle_plot_arcs(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame
 
     ax.set_yticklabels(tick_labels)
 
-    # create the ticks for the time ax
-    ax.set_xlim([datetime.combine(cur_date, dt_min), datetime.combine(cur_date, dt_max)])
-    dtFormat = plot_utils.determine_datetime_ticks(startDT=datetime.combine(cur_date, dt_min), endDT=datetime.combine(cur_date, dt_max))
-
-    if dtFormat['minutes']:
-        # ax.xaxis.set_major_locator(dates.MinuteLocator(byminute=range(10, 60, 10), interval=1))
-        pass
-    else:
-        ax.xaxis.set_major_locator(dates.HourLocator(interval=dtFormat['hourInterval']))   # every 4 hours
-    ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))  # hours and minutes
-
-    ax.xaxis.set_minor_locator(dates.DayLocator(interval=1))    # every day
-    ax.xaxis.set_minor_formatter(dates.DateFormatter('\n%d-%m-%Y'))
-
-    ax.xaxis.set_tick_params(rotation=0)
-    for tick in ax.xaxis.get_major_ticks():
-        # tick.tick1line.set_markersize(0)
-        # tick.tick2line.set_markersize(0)
-        tick.label1.set_horizontalalignment('center')
-    fig.tight_layout()
+    # fig.tight_layout()
 
     if show_plot:
         plt.show(block=True)
@@ -331,7 +345,14 @@ def obstle_plot_relative(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: 
     return plt_name
 
 
-def obstle_plot_prns(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame, dfTle: pd.DataFrame, dTime: dict, show_plot: bool = False, logger: logging.Logger = None):
+def obstle_plot_prns(marker: str,
+                     obsf: str,
+                     dTime: dict,
+                     lst_PRNs: list,
+                     dfTabObs: pd.DataFrame,
+                     dfTle: pd.DataFrame,
+                     show_plot: bool = False,
+                     logger: logging.Logger = None):
     """
     tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
     """
@@ -340,26 +361,102 @@ def obstle_plot_prns(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFr
     # set up the plot
     plt.style.use('ggplot')
 
-    # find minimum time for tle_rise and maximum time for tle_set columns
-    dt_rise = []
-    dt_set = []
-    for j, (t_rise, t_set) in enumerate(zip(dfTle.tle_rise, dfTle.tle_set)):
-        if len(t_rise) > 0:
-            dt_rise.append(t_rise[0])
-        if len(t_set) > 0:
-            dt_set.append(t_set[-1])
-
-    # get overall min/max times for the observation time span
-    dt_min = min(dt_rise)
-    dt_max = max(dt_set)
-
     # get min and max times according the observation smade
     amutils.logHeadTailDataFrame(df=dfTabObs, dfName='dfTabObs', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
 
+    # create colormap with 36 discrete colors
+    max_prn = 36
+    prn_colors, title_font = amutils.create_colormap_font(nrcolors=max_prn, font_size=12)
+
+    # subplots
+    fig, ax = plt.subplots(figsize=(12.0, 8.0))
+    print('dTime = {}'.format(dTime))
+    fig.suptitle('{marker:s} - {date:s} ({yy:04d}/{doy:03d} - Obs vs TLE)'.format(
+                 marker=marker,
+                 date='{date:s}'.format(date=dTime['date'].strftime('%d/%m/%Y')),
+                 yy=dTime['YYYY'],
+                 doy=dTime['DOY'],
+                 fontdict=title_font,
+                 fontsize=18))
+
     # PLOT PRN ARCS FROM OBSERVED AND TLE
     for prn in lst_PRNs:
-        print('prn = {}'.format(prn))
+        y_prn = int(prn[1:]) - 1
+
+        # get the lists with rise / set times as observed
+        # for dt_obs_rise, dt_obs_set in zip(dfTle.loc[prn]['obs_rise'], dfTle.loc[prn]['obs_set']):
+        #     ax.plot_date([dt_obs_rise, dt_obs_set], [y_prn, y_prn], linestyle='solid', color=prn_colors[y_prn], linewidth=2, marker='v', markersize=4, alpha=1)
+
+        # get the lists with rise / set times by TLEs
+        for tle_rise, tle_set, tle_cul in zip(dfTle.loc[prn]['tle_rise'],
+                                              dfTle.loc[prn]['tle_set'],
+                                              dfTle.loc[prn]['tle_cul']):
+            ax.plot_date([dt.datetime.combine(dfTabObs.DATE_TIME.iloc[0], tle_rise),
+                          dt.datetime.combine(dfTabObs.DATE_TIME.iloc[0], tle_set)],
+                         [y_prn, y_prn],
+                         linestyle='-',
+                         color=prn_colors[y_prn],
+                         linewidth=9,
+                         marker='|',
+                         markersize=16,
+                         alpha=0.4)
+
+            # add a indicator for the culmination time of PRN
+            if isinstance(tle_cul, dt.time):
+                ax.plot(dt.datetime.combine(dfTabObs.DATE_TIME.iloc[0], tle_cul),
+                        y_prn,
+                        marker='^',
+                        markersize=10,
+                        alpha=0.4,
+                        color=prn_colors[y_prn])
+
+            # get the data for this particular PRN out of dfTabObs
+            dfPrnObs = dfTabObs[dfTabObs['PRN'] == prn]
+            ax.plot(dfPrnObs['DATE_TIME'],
+                    [y_prn] * dfPrnObs.shape[0],
+                    linestyle='',
+                    marker='.',
+                    markersize=6,
+                    color=prn_colors[y_prn])
+
+   # format the date time ticks
+    ax.xaxis.set_major_locator(dates.DayLocator(interval=1))
+    ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+
+    ax.xaxis.set_minor_locator(dates.HourLocator(interval=1))
+    ax.xaxis.set_minor_formatter(dates.DateFormatter('%H:%M:%S'))
+    plt.xticks()
+
+    # format the y-ticks to represent the PRN number
+    plt.yticks(np.arange(0, max_prn))
+    prn_ticks = [''] * max_prn
+
+    # get list of observed PRN numbers (without satsyst letter)
+    prn_nrs = [int(prn[1:]) for prn in dfTle.index]
+
+    # and the corresponding ticks
+    for prn_nr, prn_txt in zip(prn_nrs, dfTle.index):
+        prn_ticks[prn_nr - 1] = prn_txt
+    # ax.yaxis.set_major_locator(mticker.FixedLocator(prn_ticks))
+
+    # adjust color for y ticks
+    # ax.yaxis.set_major_locator(ticker.FixedLocator(np.arange(0, max_prn)))
+    for color, tick in zip(prn_colors, ax.yaxis.get_major_ticks()):
+        tick.label1.set_color(color)  # set the color property
+        tick.label1.set_fontweight('bold')
+    print('prn_ticks = {}'.format(prn_ticks))
+    ax.set_yticks(np.arange(0, max_prn))
+    ax.set_yticklabels(prn_ticks)
+
+    # set the axis labels
+    ax.set_xlabel('Time', fontdict=title_font)
+    ax.set_ylabel('PRN', fontdict=title_font)
+
+    if show_plot:
+        plt.show(block=True)
+    else:
+        plt.close(fig)
 
     sys.exit(88)
 
@@ -380,7 +477,6 @@ def plot_prnfreq(marker: str,
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
-
 
     # used markers
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
@@ -413,16 +509,16 @@ def plot_prnfreq(marker: str,
 
     # read in the timings for the TLE of this PRN
     for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
-        axTLE.plot_date([datetime.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise),
-                         datetime.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_set)],
+        axTLE.plot_date([dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise),
+                         dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_set)],
                         [1, 1],
                         linestyle='-',
                         linewidth=9,
                         marker='')
 
         # add a tick at culmination point
-        if isinstance(tle_cul, datetime.time):
-            axTLE.plot(datetime.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_cul),
+        if isinstance(tle_cul, dt.datetime.time):
+            axTLE.plot(dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_cul),
                        1,
                        marker='v', markersize=14)
 

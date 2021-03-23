@@ -355,16 +355,15 @@ def main_obstab_analyse(argv):
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    # # create plot with all selected PRNs vs the TLE part
-    # # plot the observables for all or selected PRNs
-    # tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
-    #                              obsf=dTab['obstabf'],
-    #                              lst_PRNs=dTab['lst_CmnPRNs'],
-    #                              dfTabObs=dfObsTab,
-    #                              dfTle=dfTLE,
-    #                              dTime=dTab['time'],
-    #                              logger=logger,
-    #                              show_plot=show_plot)
+    # create plot with all selected PRNs vs the TLE part
+    tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
+                                 obsf=dTab['obstabf'],
+                                 dTime=dTab['time'],
+                                 lst_PRNs=dTab['lst_CmnPRNs'],
+                                 dfTabObs=dfObsTab,
+                                 dfTle=dfTLE,
+                                 logger=logger,
+                                 show_plot=show_plot)
 
     # perform analysis of the observations done
     analyse_obsprn(marker=dTab['marker'],
