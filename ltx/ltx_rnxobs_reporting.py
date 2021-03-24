@@ -168,6 +168,7 @@ def obsstat_analyse(obsstatf: str,
 
 def obstab_tleobs_ssec(obstabf: str,
                        lst_PRNs: list,
+                       lst_NavSignals: list,
                        lst_ObsFreqs) -> Subsection:
     """
     obstab_tleobs_ssec creates a subsection used for adding info about analysis of the observations
@@ -187,6 +188,18 @@ def obstab_tleobs_ssec(obstabf: str,
                     longtabu.add_row(('', '', '{prns:s}'.format(prns=' '.join(subsublst_PRNs))))
         else:
             longtabu.add_row(('Examined satellites', ':', '{prns:s}'.format(prns=' '.join(lst_PRNs))))
+
+        longtabu.add_empty_row()
+
+        if len(lst_NavSignals) > n:
+            sublst_NavSignals = [lst_NavSignals[i * n:(i + 1) * n] for i in range((len(lst_NavSignals) + n - 1) // n)]
+            for i, subsublst_NavSignals in enumerate(sublst_NavSignals):
+                if i == 0:
+                    longtabu.add_row(('Examined navigation signals', ':', '{obst:s}'.format(obst=' '.join(subsublst_NavSignals))))
+                else:
+                    longtabu.add_row(('', '', '{obst:s}'.format(obst=' '.join(subsublst_NavSignals))))
+        else:
+            longtabu.add_row(('Examined navigation signals', ':', '{obst:s}'.format(obst=' '.join(lst_NavSignals))))
 
         longtabu.add_empty_row()
 

@@ -118,7 +118,10 @@ def check_arguments(logger: logging.Logger = None):
         dTab['lst_prns'] = dTab['cli']['lst_prns']
 
 
-def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger = None) -> Tuple[list, pd.DataFrame]:
+def read_obstab(obstabf: str,
+                lst_PRNs: list,
+                dCli: dict,
+                logger: logging.Logger = None) -> Tuple[list, list, list, pd.DataFrame]:
     """
     read_obstab reads the SNR for the selected frequencies into a dataframe
     """
@@ -146,11 +149,15 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
     # keep the header columns selected by --freqs and --obstypes options
     obstypes = hdr_columns[2:5]
     obsfreqs = []
-    for obst in dCli['obs_types']:
-        for freq in dTab['info']['freqs']:
+    for freq in dTab['info']['freqs']:
+        for obst in dCli['obs_types']:
             obsfreq = '{obst:s}{freq:s}'.format(obst=obst, freq=freq)
             obsfreqs.append([obstid for obstid in hdr_columns[2:] if obstid.startswith(obsfreq)][0])
     obstypes += obsfreqs
+
+    # created the possible navigation signals we have
+    nav_signals = list(set([obsfreq[1:] for obsfreq in obsfreqs]))
+    print(nav_signals)
 
     logger.info('{func:s}: loading from {tab:s}: {cols:s}'.format(tab=obstabf, cols=colored(', '.join(obstypes), 'green'), func=cFuncName))
 
@@ -184,7 +191,7 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
     if logger is not None:
         amutils.logHeadTailDataFrame(df=dfTmp, dfName='dfTmp', callerName=cFuncName, logger=logger)
 
-    return lst_CommonPRNS, obsfreqs, dfTmp
+    return lst_CommonPRNS, nav_signals, obsfreqs, dfTmp
 
 
 def analyse_obsprn(marker: str,
@@ -216,6 +223,10 @@ def analyse_obsprn(marker: str,
 
     if dfObsPrn.shape[0] != dfObsFreqPrn.shape[0]:
         sys.exit(22)
+    # END TEST
+
+    # get a list of time jumps
+
     return
 
     for obsfreq in obsfreqs:
@@ -340,10 +351,11 @@ def main_obstab_analyse(argv):
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # read obstab into a dataframe and select the SNR for the selected frequencies
-    dTab['lst_CmnPRNs'], dTab['obsfreqs'], dfObsTab = read_obstab(obstabf=dTab['obstabf'],
-                                                                  lst_PRNs=dTab['lst_prns'],
-                                                                  dCli=dTab['cli'],
-                                                                  logger=logger)
+    dTab['lst_CmnPRNs'], dTab['nav_signals'], dTab['obsfreqs'], dfObsTab = \
+        read_obstab(obstabf=dTab['obstabf'],
+                    lst_PRNs=dTab['lst_prns'],
+                    dCli=dTab['cli'],
+                    logger=logger)
 
     # get the observation time spans based on TLE values
     dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsTab.PRN.unique(),
@@ -360,22 +372,31 @@ def main_obstab_analyse(argv):
 
     sec_obstab = ltx_rnxobs_reporting.obstab_tleobs_ssec(obstabf=dTab['obstabf'],
                                                          lst_PRNs=dTab['lst_CmnPRNs'],
+                                                         lst_NavSignals=dTab['nav_signals'],
                                                          lst_ObsFreqs=dTab['obsfreqs'])
     dTab['ltx']['obstab'] = os.path.join(dTab['ltx']['path'], '{marker:s}_{gnss:s}_03_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss']))
-    # create plot with all selected PRNs vs the TLE part
-    tle_obs_plot = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
-                                                obsf=dTab['obstabf'],
-                                                dTime=dTab['time'],
-                                                lst_PRNs=dTab['lst_CmnPRNs'],
-                                                dfTabObs=dfObsTab,
-                                                dfTle=dfTLE,
-                                                logger=logger,
-                                                show_plot=show_plot)
 
-    ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
-                                                              gnss=dTab['info']['gnss'],
-                                                              tle_obs_plt=tle_obs_plot)
-    sec_obstab.append(ssec_tleobs)
+    # create plot with all selected PRNs vs the TLE part per navigation signal
+    for nav_signal in dTab['nav_signals']:
+        print('nav_signal = {}'.format(nav_signal))
+
+        ADD NAV_SIGNAL SELECTION HERE!!
+
+        tle_obs_plot = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
+                                                    obsf=dTab['obstabf'],
+                                                    dTime=dTab['time'],
+                                                    lst_PRNs=dTab['lst_CmnPRNs'],
+                                                    dfTabObs=dfObsTab,
+                                                    dfTle=dfTLE,
+                                                    logger=logger,
+                                                    show_plot=show_plot)
+
+        ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
+                                                                  gnss=dTab['info']['gnss'],
+                                                                  tle_obs_plt=tle_obs_plot)
+        sec_obstab.append(ssec_tleobs)
+
+    sys.exit(99)
 
     # perform analysis of the observations done per PRN
     for prn in dTab['lst_CmnPRNs']:
