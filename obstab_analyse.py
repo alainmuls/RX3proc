@@ -188,87 +188,108 @@ def read_obstab(obstabf: str, lst_PRNs: list, dCli: dict, logger: logging.Logger
 
 
 def analyse_obsprn(marker: str,
+                   obstabf: str,
                    dTime: dict,
-                   dfObsPrns: pd.DataFrame,
-                   dfTle: pd.DataFrame,
-                   prn_list: list,
+                   dfObsPrn: pd.DataFrame,
+                   dfTlePrn: pd.DataFrame,
+                   prn: str,
                    obsfreqs: list,
                    snrth: float,
                    interval: int,
                    show_plot: bool = False,
-                   logger: logging.Logger = None):
+                   logger: logging.Logger = None) -> Tuple[list, list, list, dict]:
     """
-    analyse_obsprn analyses the observations for the gicen PRNs and detemines a loss in SNR if asked.
+    analyse_obsprn analyses the observations for the given PRN and determines a loss in SNR if asked.
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    print('prn_list = {}'.format(prn_list))
+    plots = {}
+    posidx_time_gaps = []
+    posidx_snr_posjumps = []
+    posidx_snr_negjumps = []
 
-    for prn in prn_list:
-        # select the TLE row for this PRN
-        dfTLEprn = dfTle.loc[prn]
-        print('dfTLEprn = {}'.format(dfTLEprn))
+    # TEST
+    amutils.logHeadTailDataFrame(df=dfObsPrn, dfName='dfObsPrn', callerName=cFuncName, logger=logger)
 
-        for obsfreq in obsfreqs:
-            print('obsfreq = {}'.format(obsfreq))
-            # select only the elements for this prn
-            dfObsFreqPrn = dfObsPrns[dfObsPrns.PRN == prn][['DATE_TIME', 'PRN', obsfreq]].dropna()
+    dfObsFreqPrn = dfObsPrn.dropna()
+    amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
 
-            # calculate the time difference between successive entries
-            dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc('DATE_TIME') + 1,
-                                column='dt',
-                                value=(dfObsFreqPrn['DATE_TIME'] - dfObsFreqPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]'))
-            # add column which is difference between current and previous obst
-            dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc(obsfreq) + 1,
-                                column='d{obsfreq:s}'.format(obsfreq=obsfreq),
-                                value=(dfObsFreqPrn[obsfreq] - dfObsFreqPrn[obsfreq].shift(1)).astype(float))
+    if dfObsPrn.shape[0] != dfObsFreqPrn.shape[0]:
+        sys.exit(22)
+    return
 
-            # find the exponential moving average
-            # dfObsFreqPrn['EMA05'] = dfObsFreqPrn[obsfreq].ewm(halflife='5 seconds', adjust=False, times=dfObsFreqPrn['DATE_TIME']).mean()
-            # dfObsFreqPrn['WMA05'] = dfObsFreqPrn[obsfreq].rolling(5, min_periods=1).mean()
+    for obsfreq in obsfreqs:
+        print('obsfreq = {}'.format(obsfreq))
+        # select only the elements for this prn
+        dfObsFreqPrn = dfObsPrn[['DATE_TIME', 'PRN', obsfreq]].dropna()
 
-            # find the gaps for this PRN and OBST
-            idx_time_gaps = dfObsFreqPrn.index[dfObsFreqPrn.dt != interval].tolist()
-            # convert to positional indices
-            posidx_time_gaps = [dfObsFreqPrn.index.get_loc(gap) for gap in idx_time_gaps]
-            # insert the first and last positional indices to get start and end time
-            if posidx_time_gaps[0] != 0:
-                posidx_time_gaps.insert(0, 0)
-            if posidx_time_gaps[-1] != dfObsFreqPrn.shape[0] - 1:
-                posidx_time_gaps.append(dfObsFreqPrn.shape[0] - 1)
-            print('posidx_time_gaps = {}'.format(posidx_time_gaps))
+        # calculate the time difference between successive entries
+        dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc('DATE_TIME') + 1,
+                            column='dt',
+                            value=(dfObsFreqPrn['DATE_TIME'] - dfObsFreqPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]'))
+        # add column which is difference between current and previous obst
+        dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc(obsfreq) + 1,
+                            column='d{obsfreq:s}'.format(obsfreq=obsfreq),
+                            value=(dfObsFreqPrn[obsfreq] - dfObsFreqPrn[obsfreq].shift(1)).astype(float))
 
-            # for idx_gap in idx_time_gaps[1:]:
-            #     pos_idx_gap = dfObsFreqPrn.index.get_loc(idx_gap)
-            #     print(dfObsFreqPrn.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
+        print('dfObsFreqPrn = {}'.format(dfObsFreqPrn))
 
-            # find the SNR differences that are higher than snrth (SNR threshold)
-            if obsfreq[0] == 'S':
-                idx_snr_posjumps = dfObsFreqPrn.index[dfObsFreqPrn['d{obsfreq:s}'.format(obsfreq=obsfreq)] > snrth].tolist()
-                # convert to poisionla indices
-                posidx_snr_posjumps = [dfObsFreqPrn.index.get_loc(jump) for jump in idx_snr_posjumps]
-                print('posidx_snr_posjumps = {} #{}'.format(posidx_snr_posjumps, len(posidx_snr_posjumps)))
+        # find the exponential moving average
+        # dfObsFreqPrn['EMA05'] = dfObsFreqPrn[obsfreq].ewm(halflife='5 seconds', adjust=False, times=dfObsFreqPrn['DATE_TIME']).mean()
+        # dfObsFreqPrn['WMA05'] = dfObsFreqPrn[obsfreq].rolling(5, min_periods=1).mean()
 
-                idx_snr_negjumps = dfObsFreqPrn.index[dfObsFreqPrn['d{obsfreq:s}'.format(obsfreq=obsfreq)] < -snrth].tolist()
-                # convert to poisionla indices
-                posidx_snr_negjumps = [dfObsFreqPrn.index.get_loc(jump) for jump in idx_snr_negjumps]
-                print('posidx_snr_negjumps = {} #{}'.format(posidx_snr_negjumps, len(posidx_snr_negjumps)))
+        # find the gaps for this PRN and OBST
+        idx_time_gaps = dfObsFreqPrn.index[dfObsFreqPrn.dt != interval].tolist()
+        # convert to positional indices
+        posidx_time_gaps = [dfObsFreqPrn.index.get_loc(gap) for gap in idx_time_gaps]
+        # insert the first and last positional indices to get start and end time
+        if posidx_time_gaps[0] != 0:
+            posidx_time_gaps.insert(0, 0)
+        if posidx_time_gaps[-1] != dfObsFreqPrn.shape[0] - 1:
+            posidx_time_gaps.append(dfObsFreqPrn.shape[0] - 1)
+        print('posidx_time_gaps = {}'.format(posidx_time_gaps))
 
-            # info user
-            if logger is not None:
-                amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
+        # for idx_gap in idx_time_gaps[1:]:
+        #     pos_idx_gap = dfObsFreqPrn.index.get_loc(idx_gap)
+        #     print(dfObsFreqPrn.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
 
-            # plot for each PRN and obstfreq
-            prnfreq_plot = tleobs_plot.plot_prnfreq(marker=marker,
-                                                    dTime=dTime,
-                                                    obsf=dTab['cli']['obstabf'],
-                                                    dfPrnObst=dfObsFreqPrn,
-                                                    dfTlePrn=dfTLEprn,
-                                                    obst=obsfreq,
-                                                    posidx_gaps=posidx_time_gaps,
-                                                    snrth=snrth,
-                                                    show_plot=show_plot,
-                                                    logger=logger)
+        # find the SNR differences that are higher than snrth (SNR threshold)
+        if obsfreq[0] == 'S':
+            idx_snr_posjumps = dfObsFreqPrn.index[dfObsFreqPrn['d{obsfreq:s}'.format(obsfreq=obsfreq)] > snrth].tolist()
+            # convert to poisionla indices
+            posidx_snr_posjumps = [dfObsFreqPrn.index.get_loc(jump) for jump in idx_snr_posjumps]
+            print('posidx_snr_posjumps = {} #{}'.format(posidx_snr_posjumps, len(posidx_snr_posjumps)))
+
+            idx_snr_negjumps = dfObsFreqPrn.index[dfObsFreqPrn['d{obsfreq:s}'.format(obsfreq=obsfreq)] < -snrth].tolist()
+            # convert to poisionla indices
+            posidx_snr_negjumps = [dfObsFreqPrn.index.get_loc(jump) for jump in idx_snr_negjumps]
+            print('posidx_snr_negjumps = {} #{}'.format(posidx_snr_negjumps, len(posidx_snr_negjumps)))
+        else:
+            idx_snr_posjumps = []
+            idx_snr_negjumps = []
+
+        # info to user
+        if logger is not None:
+            amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
+
+        # plot for each PRN and obstfreq
+        plots[obsfreq] = tleobs_plot.plot_prnfreq(marker=marker,
+                                                  dTime=dTime,
+                                                  obsf=obstabf,
+                                                  dfPrnObst=dfObsFreqPrn,
+                                                  dfTlePrn=dfTlePrn,
+                                                  obst=obsfreq,
+                                                  posidx_gaps=posidx_time_gaps,
+                                                  snrth=snrth,
+                                                  show_plot=show_plot,
+                                                  logger=logger)
+
+    print('plots = {}'.format(plots))
+    print('posidx_time_gaps = {}'.format(posidx_time_gaps))
+    print('posidx_snr_posjumps = {}'.format(posidx_snr_posjumps))
+    print('posidx_snr_negjumps = {}'.format(posidx_snr_negjumps))
+    sys.exit(8)
+    return posidx_time_gaps, posidx_snr_posjumps, posidx_snr_negjumps, plots
 
 
 def main_obstab_analyse(argv):
@@ -359,14 +380,18 @@ def main_obstab_analyse(argv):
     # perform analysis of the observations done per PRN
     for prn in dTab['lst_CmnPRNs']:
         # select the TLE row for this PRN
-        dfTLEprn = dfTLE.loc[prn]
-        print('dfTLEprn = {}'.format(dfTLEprn))
+        dfTLEPrn = dfTLE.loc[prn]
+        print('dfTLEPrn = {}'.format(dfTLEPrn))
+        # select the dataframe part for this PRN in the observables
+        dfObsPrn = dfObsTab[dfObsTab['PRN'] == prn].dropna()
+        print('dfObsPrn = {}'.format(dfObsPrn))
 
         analyse_obsprn(marker=dTab['marker'],
+                       obstabf=dTab['obstabf'],
                        dTime=dTab['time'],
-                       dfObsPrns=dfObsTab,
-                       dfTle=dfTLE,
-                       ,
+                       dfObsPrn=dfObsPrn,
+                       dfTlePrn=dfTLEPrn,
+                       prn=prn,
                        obsfreqs=dTab['obsfreqs'],
                        snrth=dTab['cli']['snrth'],
                        interval=dTab['time']['interval'],
