@@ -125,7 +125,7 @@ def tle_plot_arcs(marker: str, obsf: str, lst_PRNs: list, dfTabObs: pd.DataFrame
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
-    for ext in ['pdf', 'png', 'eps']:
+    for ext in ['pdf']:
         plt_name = os.path.join('png', '{basen:s}-TLEarcs.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
@@ -217,7 +217,7 @@ def obstle_plot_obscount(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: 
     amutils.mkdir_p('png')
 
     # save the plot in subdir png of GNSSSystem
-    for ext in ['pdf', 'png', 'eps']:
+    for ext in ['pdf']:
         if not reduce2percentage:
             plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         else:
@@ -337,7 +337,7 @@ def obstle_plot_relative(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: 
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
-    for ext in ['pdf', 'png', 'eps']:
+    for ext in ['pdf']:
         plt_name = os.path.join('png', '{basen:s}-PERC.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
@@ -460,10 +460,12 @@ def obstle_plot_prns(marker: str,
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
-    for ext in ['pdf', 'png', 'eps']:
+    for ext in ['pdf']:
         plt_name = os.path.join('png', '{basen:s}-TLE-OBS-arcs.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
+
+    return plt_name
 
 
 def plot_prnfreq(marker: str,
@@ -569,7 +571,7 @@ def plot_prnfreq(marker: str,
     # save the plot in subdir png
     print(os.getcwd())
     amutils.mkdir_p('png')
-    for ext in ['pdf', 'png', 'eps']:
+    for ext in ['pdf']:
         tmp_name = '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, prn=dfPrnObst.PRN.iloc[0])
         plt_name = os.path.join('png', tmp_name)
         print('plt_name = {}'.format(plt_name))

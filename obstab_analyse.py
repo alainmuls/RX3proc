@@ -286,7 +286,7 @@ def main_obstab_analyse(argv):
     dTab['plots'] = {}
     dTab['info'] = {}
 
-    dTab['cli']['obstabf'], dTab['cli']['freqs'],  dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
+    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
 
     # detect used GNSS from the obstabf filename
     dTab['info']['gnss'] = os.path.splitext(os.path.basename(dTab['cli']['obstabf']))[0][-1]
@@ -318,14 +318,13 @@ def main_obstab_analyse(argv):
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    # read obsstat into a dataframe and select the SNR for the selected frequencies
+    # read obstab into a dataframe and select the SNR for the selected frequencies
     dTab['lst_CmnPRNs'], dTab['obsfreqs'], dfObsTab = read_obstab(obstabf=dTab['obstabf'],
                                                                   lst_PRNs=dTab['lst_prns'],
                                                                   dCli=dTab['cli'],
                                                                   logger=logger)
 
     # get the observation time spans based on TLE values
-    # dfTLE = tle_visibility.PRNs_visibility(prn_lst=dTab['lst_CmnPRNs'], cur_date=dTab['time']['date'], interval=dTab['time']['interval'], cutoff=dTab['cli']['mask'], logger=logger)
     dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsTab.PRN.unique(),
                                            DTG_start=dTab['time']['start'],
                                            DTG_end=dTab['time']['end'],
@@ -338,6 +337,10 @@ def main_obstab_analyse(argv):
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
+    sec_obstab = ltx_rnxobs_reporting.obstab_tleobs_ssec(obstabf=dTab['obstabf'],
+                                                         lst_PRNs=dTab['lst_CmnPRNs'],
+                                                         lst_ObsFreqs=dTab['obsfreqs'])
+    dTab['ltx']['obstab'] = os.path.join(dTab['ltx']['path'], '{marker:s}_{gnss:s}_03_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss']))
     # create plot with all selected PRNs vs the TLE part
     tle_obs_plot = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
                                                 obsf=dTab['obstabf'],
@@ -348,17 +351,31 @@ def main_obstab_analyse(argv):
                                                 logger=logger,
                                                 show_plot=show_plot)
 
-    # perform analysis of the observations done
-    analyse_obsprn(marker=dTab['marker'],
-                   dTime=dTab['time'],
-                   dfObsPrns=dfObsTab,
-                   dfTle=dfTLE,
-                   prn_list=dTab['lst_CmnPRNs'],
-                   obsfreqs=dTab['obsfreqs'],
-                   snrth=dTab['cli']['snrth'],
-                   interval=dTab['time']['interval'],
-                   show_plot=show_plot,
-                   logger=logger)
+    ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
+                                                              gnss=dTab['info']['gnss'],
+                                                              tle_obs_plt=tle_obs_plot)
+    sec_obstab.append(ssec_tleobs)
+
+    # perform analysis of the observations done per PRN
+    for prn in dTab['lst_CmnPRNs']:
+        # select the TLE row for this PRN
+        dfTLEprn = dfTLE.loc[prn]
+        print('dfTLEprn = {}'.format(dfTLEprn))
+
+        analyse_obsprn(marker=dTab['marker'],
+                       dTime=dTab['time'],
+                       dfObsPrns=dfObsTab,
+                       dfTle=dfTLE,
+                       ,
+                       obsfreqs=dTab['obsfreqs'],
+                       snrth=dTab['cli']['snrth'],
+                       interval=dTab['time']['interval'],
+                       show_plot=show_plot,
+                       logger=logger)
+
+    sec_obstab.generate_tex(dTab['ltx']['obstab'])
+
+    sys.exit(55)
 
     sys.exit(55)
     # report to the user
