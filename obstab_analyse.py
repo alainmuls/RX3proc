@@ -378,23 +378,30 @@ def main_obstab_analyse(argv):
 
     # create plot with all selected PRNs vs the TLE part per navigation signal
     for nav_signal in dTab['nav_signals']:
-        print('nav_signal = {}'.format(nav_signal))
+        logger.info('{func:s}: working on navigation signal {navs:s}'.format(navs=colored(nav_signal, 'green'), func=cFuncName))
 
-        ADD NAV_SIGNAL SELECTION HERE!!
+        # keep the observables for this navigatoion signal
+        col_navsig = [column for column in dfObsTab.columns.tolist()[:2]]
+        col_navsig += [column for column in dfObsTab.columns.tolist()[2:] if column.endswith(nav_signal)]
+        print('col_navsig = {}'.format(col_navsig))
+        dfNavSig = dfObsTab[col_navsig].dropna()
+
+        amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
 
         tle_obs_plot = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
                                                     obsf=dTab['obstabf'],
                                                     dTime=dTab['time'],
+                                                    navsig_name=nav_signal,
                                                     lst_PRNs=dTab['lst_CmnPRNs'],
-                                                    dfTabObs=dfObsTab,
+                                                    dfNavSig=dfNavSig,
                                                     dfTle=dfTLE,
                                                     logger=logger,
                                                     show_plot=show_plot)
 
-        ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
-                                                                  gnss=dTab['info']['gnss'],
-                                                                  tle_obs_plt=tle_obs_plot)
-        sec_obstab.append(ssec_tleobs)
+        # ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
+        #                                                           gnss=dTab['info']['gnss'],
+        #                                                           tle_obs_plt=tle_obs_plot)
+        # sec_obstab.append(ssec_tleobs)
 
     sys.exit(99)
 

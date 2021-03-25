@@ -348,8 +348,9 @@ def obstle_plot_relative(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: 
 def obstle_plot_prns(marker: str,
                      obsf: str,
                      dTime: dict,
+                     navsig_name: str,
                      lst_PRNs: list,
-                     dfTabObs: pd.DataFrame,
+                     dfNavSig: pd.DataFrame,
                      dfTle: pd.DataFrame,
                      show_plot: bool = False,
                      logger: logging.Logger = None):
@@ -362,7 +363,7 @@ def obstle_plot_prns(marker: str,
     plt.style.use('ggplot')
 
     # get min and max times according the observation smade
-    amutils.logHeadTailDataFrame(df=dfTabObs, dfName='dfTabObs', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
 
     # create colormap with 36 discrete colors
@@ -372,13 +373,14 @@ def obstle_plot_prns(marker: str,
     # subplots
     fig, ax = plt.subplots(figsize=(12.0, 8.0))
     print('dTime = {}'.format(dTime))
-    fig.suptitle('{marker:s} - {date:s} ({yy:04d}/{doy:03d} - Obs vs TLE)'.format(
+    fig.suptitle('{marker:s} - {navs:s} - {date:s} ({yy:04d}/{doy:03d} - Obs vs TLE)'.format(
                  marker=marker,
                  date='{date:s}'.format(date=dTime['date'].strftime('%d/%m/%Y')),
+                 navs=navsig_name,
                  yy=dTime['YYYY'],
-                 doy=dTime['DOY'],
+                 doy=dTime['DOY']),
                  fontdict=title_font,
-                 fontsize=18))
+                 fontsize=18)
 
     # PLOT PRN ARCS FROM OBSERVED AND TLE
     for prn in lst_PRNs:
@@ -392,8 +394,8 @@ def obstle_plot_prns(marker: str,
         for tle_rise, tle_set, tle_cul in zip(dfTle.loc[prn]['tle_rise'],
                                               dfTle.loc[prn]['tle_set'],
                                               dfTle.loc[prn]['tle_cul']):
-            ax.plot_date([dt.datetime.combine(dfTabObs.DATE_TIME.iloc[0], tle_rise),
-                          dt.datetime.combine(dfTabObs.DATE_TIME.iloc[0], tle_set)],
+            ax.plot_date([dt.datetime.combine(dfNavSig.DATE_TIME.iloc[0], tle_rise),
+                          dt.datetime.combine(dfNavSig.DATE_TIME.iloc[0], tle_set)],
                          [y_prn, y_prn],
                          linestyle='-',
                          color=prn_colors[y_prn],
@@ -404,15 +406,15 @@ def obstle_plot_prns(marker: str,
 
             # add a indicator for the culmination time of PRN
             if isinstance(tle_cul, dt.time):
-                ax.plot(dt.datetime.combine(dfTabObs.DATE_TIME.iloc[0], tle_cul),
+                ax.plot(dt.datetime.combine(dfNavSig.DATE_TIME.iloc[0], tle_cul),
                         y_prn,
                         marker='^',
                         markersize=10,
                         alpha=0.4,
                         color=prn_colors[y_prn])
 
-            # get the data for this particular PRN out of dfTabObs
-            dfPrnObs = dfTabObs[dfTabObs['PRN'] == prn]
+            # get the data for this particular PRN out of dfNavSig
+            dfPrnObs = dfNavSig[dfNavSig['PRN'] == prn]
             ax.plot(dfPrnObs['DATE_TIME'],
                     [y_prn] * dfPrnObs.shape[0],
                     linestyle='',
@@ -420,7 +422,7 @@ def obstle_plot_prns(marker: str,
                     markersize=6,
                     color=prn_colors[y_prn])
 
-   # format the date time ticks
+    # format the date time ticks
     ax.xaxis.set_major_locator(dates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
 
@@ -461,7 +463,7 @@ def obstle_plot_prns(marker: str,
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
     for ext in ['pdf']:
-        plt_name = os.path.join('png', '{basen:s}-TLE-OBS-arcs.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
+        plt_name = os.path.join('png', '{basen:s}-TLE-{navs:s}-arcs.{ext:s}'.format(basen=obsf.split('.')[0], navs=navsig_name, ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
