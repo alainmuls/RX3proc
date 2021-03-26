@@ -470,18 +470,18 @@ def obstle_plot_prns(marker: str,
     return plt_name
 
 
-def plot_prnfreq(marker: str,
-                 obsf: str,
-                 dfPrnObst: pd.DataFrame,
-                 dfTlePrn: pd.DataFrame,
-                 obst: str,
-                 posidx_gaps: list,
-                 snrth: float,
-                 dTime: dict,
-                 show_plot: bool = False,
-                 logger: logging.Logger = None) -> str:
+def plot_prn_navsig_obs(marker: str,
+                        obsf: str,
+                        dfPrnObst: pd.DataFrame,
+                        dfTlePrn: pd.DataFrame,
+                        obst: str,
+                        posidx_gaps: list,
+                        snrth: float,
+                        dTime: dict,
+                        show_plot: bool = False,
+                        logger: logging.Logger = None) -> str:
     """
-    plot_prnfreq plots for a given PRN the observation OBST on a frequency with the exponential moving average
+    plot_prn_navsig_obs plots for a given PRN the observation OBST for a navigation signal (with the exponential moving average)
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -501,29 +501,31 @@ def plot_prnfreq(marker: str,
         gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[5, 1])
         axObst, axTLE = gs.subplots(sharex=True)
 
+    print('posidx_gaps = {}'.format(posidx_gaps))
     # plot on axObst the curves, on axSNR difference with previous value (only for SNR) and TLE on axTLE
     for plot_marker, color in zip(lst_markers[:1], lst_colors):
         # go over the time intervals
-        for i, (posidx_start, posidx_stop) in enumerate(zip(posidx_gaps[:-1], posidx_gaps[1:])):
+        for posidx_start, posidx_stop in zip(posidx_gaps[:-1], posidx_gaps[1:]):
             dfTimeSegment = dfPrnObst.iloc[posidx_start:posidx_stop]
+            print('dfTimeSegment = \n{}'.format(dfTimeSegment))
+
             axObst.plot(dfTimeSegment['DATE_TIME'],
                         dfTimeSegment[obst],
-                        linestyle='-', marker=plot_marker, markersize=2, color=color)
+                        linestyle='--', dashes=(1, 2), marker=plot_marker, markersize=2, color='blue')
 
             if obst[0] == 'S':
-                axSNR.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth, color='black', alpha=0.20, linestyle='-')
+                axSNR.fill_between(dfTimeSegment['DATE_TIME'], -snrth, +snrth,
+                                   color='black', alpha=0.20, linestyle='-')
                 axSNR.plot(dfTimeSegment['DATE_TIME'],
                            dfTimeSegment['d{obst:s}'.format(obst=obst)],
-                           linestyle='-', marker=plot_marker, markersize=2, color=color)
+                           linestyle='--', dashes=(1, 2), marker=plot_marker, markersize=2, color='blue')
 
     # read in the timings for the TLE of this PRN
     for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
         axTLE.plot_date([dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise),
                          dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_set)],
                         [1, 1],
-                        linestyle='-',
-                        linewidth=9,
-                        marker='')
+                        linestyle='-', linewidth=9, marker='')
 
         # add a tick at culmination point
         if isinstance(tle_cul, dt.time):
