@@ -213,8 +213,8 @@ def analyse_obsprn(marker: str,
 
     plots = {}
     posidx_time_gaps = []
-    posidx_snr_posjumps = []
-    posidx_snr_negjumps = []
+    posidx_snr_posjumps = {}
+    posidx_snr_negjumps = {}
 
     # get a list of time jumps for this navigation signal
     # calculate the time difference between successive entries
@@ -242,8 +242,6 @@ def analyse_obsprn(marker: str,
         # select only the elements for this prn
         dfPrnNSObs = dfPrnNavSig[['DATE_TIME', 'dt', 'PRN', navsig_obs]].dropna()
 
-        input('wait')
-
         # add column which is difference between current and previous obst
         dfPrnNSObs.insert(loc=dfPrnNSObs.columns.get_loc(navsig_obs) + 1,
                           column='d{nso:s}'.format(nso=navsig_obs),
@@ -263,16 +261,16 @@ def analyse_obsprn(marker: str,
         if navsig_obs[0] == 'S':
             idx_snr_posjumps = dfPrnNSObs.index[dfPrnNSObs['d{nso:s}'.format(nso=navsig_obs)] > snrth].tolist()
             # convert to poisionla indices
-            posidx_snr_posjumps = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_posjumps]
-            print('posidx_snr_posjumps = {} #{}'.format(posidx_snr_posjumps, len(posidx_snr_posjumps)))
+            posidx_snr_posjumps[navsig_obs] = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_posjumps]
+            print('posidx_snr_posjumps[navsig_obs] = {} #{}'.format(posidx_snr_posjumps[navsig_obs], len(posidx_snr_posjumps[navsig_obs])))
 
             idx_snr_negjumps = dfPrnNSObs.index[dfPrnNSObs['d{nso:s}'.format(nso=navsig_obs)] < -snrth].tolist()
             # convert to poisionla indices
-            posidx_snr_negjumps = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_negjumps]
-            print('posidx_snr_negjumps = {} #{}'.format(posidx_snr_negjumps, len(posidx_snr_negjumps)))
+            posidx_snr_negjumps[navsig_obs] = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_negjumps]
+            print('posidx_snr_negjumps[navsig_obs] = {} #{}'.format(posidx_snr_negjumps[navsig_obs], len(posidx_snr_negjumps[navsig_obs])))
         else:
-            idx_snr_posjumps = []
-            idx_snr_negjumps = []
+            posidx_snr_posjumps[navsig_obs] = None
+            posidx_snr_negjumps[navsig_obs] = None
 
         # info to user
         if logger is not None:
@@ -292,10 +290,10 @@ def analyse_obsprn(marker: str,
 
     print('plots = {}'.format(plots))
     print('posidx_time_gaps = {}'.format(posidx_time_gaps))
-    print('posidx_snr_posjumps = {}'.format(posidx_snr_posjumps))
-    print('posidx_snr_negjumps = {}'.format(posidx_snr_negjumps))
+    print('posidx_snr_posjumps[navsig_obs] = {}'.format(posidx_snr_posjumps[navsig_obs]))
+    print('posidx_snr_negjumps[navsig_obs] = {}'.format(posidx_snr_negjumps[navsig_obs]))
 
-    return posidx_time_gaps, posidx_snr_posjumps, posidx_snr_negjumps, plots
+    return posidx_time_gaps, posidx_snr_posjumps[navsig_obs], posidx_snr_negjumps[navsig_obs], plots
 
 
 def main_obstab_analyse(argv):
