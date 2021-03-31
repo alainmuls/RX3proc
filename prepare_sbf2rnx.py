@@ -13,8 +13,8 @@ from ampyutils import am_config as amc
 from ampyutils import gnss_cmd_opts as gco
 from ampyutils import amutils, compress_utils, location
 
-from sbf_daily import combine_sbf
-from sbf_rinex import sbf2rnx3
+from sbf_daily import main_combine_sbf
+from sbf_rinex import main_sbf2rnx3
 
 __author__ = 'amuls'
 
@@ -41,6 +41,8 @@ def treatCmdOpts(argv: list):
     parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
     parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
 
+    parser.add_argument('--rnxdir', help='Directory for RINEX output (default {:s})'.format(colored('YYDOY subdir', 'green')), required=False, type=str, default='RNXDIR')
+
     parser.add_argument('--compress', help='compress obtained RINEX files', default=False, required=False, action='store_true')
     parser.add_argument('--overwrite', help='overwrite daily SBF file (default False)', action='store_true', required=False)
 
@@ -50,7 +52,7 @@ def treatCmdOpts(argv: list):
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.root_dir, args.marker, args.year, args.doy, args.compress, args.overwrite, args.logging
+    return args.root_dir, args.marker, args.year, args.doy, args.rnxdir, args.compress, args.overwrite, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -90,7 +92,7 @@ def combine_sbffiles(sbfdir: str, overwrite: bool = False, logger: logging.Logge
     if logger is not None:
         logger.info('=== {func:s}: passing control to {scr:s} (options: {opts!s}) ==='.format(scr=colored('sbf_daily.py', 'red'), opts=colored(' '.join(sys.argv), 'blue'), func=cFuncName))
 
-    sbff = combine_sbf(argv=sys.argv)
+    sbff = main_combine_sbf(argv=sys.argv)
 
     if sbff is None:
         logger.info('=== {func:s}: {scr:s} returned without combined SBF file'.format(scr=colored('sbf_daily.py', 'red'), func=cFuncName))
@@ -110,7 +112,7 @@ def sbf_rnx3(sbffile: str, sbfdir: str, rnxdir: str, logger: logging.Logger = No
     if logger is not None:
         logger.info('=== {func:s}: passing control to {scr:s}  (options: {opts!s}) ==='.format(scr=colored('sbf_rinex.py', 'red'), opts=colored(' '.join(sys.argv), 'blue'), func=cFuncName))
 
-    rnx_obs3f, rnx_nav3f = sbf2rnx3(argv=sys.argv)
+    rnx_obs3f, rnx_nav3f = main_sbf2rnx3(argv=sys.argv)
 
     return rnx_obs3f, rnx_nav3f
 
@@ -127,7 +129,7 @@ def main_prepare_rnx_data(argv):
     dProc['cli'] = {}
     dProc['rnx'] = {}
 
-    dProc['dirs']['root'], dProc['cli']['marker'], dProc['cli']['yyyy'], dProc['cli']['doy'], dProc['cli']['compress'], dProc['cli']['overwrite'], logLevels = treatCmdOpts(argv)
+    dProc['dirs']['root'], dProc['cli']['marker'], dProc['cli']['yyyy'], dProc['cli']['doy'], rnxdir, dProc['cli']['compress'], dProc['cli']['overwrite'], logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
@@ -139,11 +141,14 @@ def main_prepare_rnx_data(argv):
     dProc['sbffile'] = combine_sbffiles(sbfdir=dProc['dirs']['sbf'], overwrite=dProc['cli']['overwrite'], logger=logger)
     logger.info('>>>>>> {func:s}: obtained daily SBF file = {sbff:s}'.format(sbff=colored(dProc['sbffile'], 'yellow'), func=cFuncName))
 
-    # chech rnx directory
-    dProc['dirs']['yydoy'] = os.path.expanduser(os.path.join(dProc['dirs']['root'], dProc['cli']['marker'], 'rinex', '{yy:02d}{doy:03d}'.format(yy=(dProc['cli']['yyyy'] % 100), doy=dProc['cli']['doy'])))
+    # check rnx directory
+    if rnxdir == 'RNXDIR':
+        dProc['dirs']['rnxdir'] = os.path.expanduser(os.path.join(dProc['dirs']['root'], dProc['cli']['marker'], 'rinex', '{yy:02d}{doy:03d}'.format(yy=(dProc['cli']['yyyy'] % 100), doy=dProc['cli']['doy'])))
+    else:
+        dProc['dirs']['rnxdir'] = rnxdir
 
     # convert the daily SBFFile to RINEX v3.x observation and navigation file
-    dProc['rnx']['obs3f'], dProc['rnx']['nav3f'] = sbf_rnx3(sbffile=dProc['sbffile'], sbfdir=dProc['dirs']['sbf'], rnxdir=dProc['dirs']['yydoy'], logger=logger)
+    dProc['rnx']['obs3f'], dProc['rnx']['nav3f'] = sbf_rnx3(sbffile=dProc['sbffile'], sbfdir=dProc['dirs']['sbf'], rnxdir=dProc['dirs']['rnxdir'], logger=logger)
     logger.info('>>>>>> {func:s}: obtained RINEX observation file = {obs3f:s}'.format(obs3f=colored(dProc['rnx']['obs3f'], 'yellow'), func=cFuncName))
     logger.info('>>>>>> {func:s}: obtained RINEX navigation files = {nav3f:s}'.format(nav3f=colored(dProc['rnx']['nav3f'], 'yellow'), func=cFuncName))
 
@@ -154,18 +159,18 @@ def main_prepare_rnx_data(argv):
         dProc['bin']['gzip'] = location.locateProg('gzip', logger)
 
         # observation file
-        dProc['rnx']['obs3fc'] = compress_utils.compress_rnx_obs(rnx2crz=dProc['bin']['rnx2crz'], obsf=dProc['rnx']['obs3f'], rnxdir=dProc['dirs']['yydoy'], logger=logger)
+        dProc['rnx']['obs3fc'] = compress_utils.compress_rnx_obs(rnx2crz=dProc['bin']['rnx2crz'], obsf=dProc['rnx']['obs3f'], rnxdir=dProc['dirs']['rnxdir'], logger=logger)
         logger.info('>>>>>> {func:s}: compressed RINEX observation file = {obs3fc:s}'.format(obs3fc=colored(dProc['rnx']['obs3fc'], 'yellow'), func=cFuncName))
 
         # navigation file
-        dProc['rnx']['nav3fc'] = compress_utils.gzip_compress(gzip=dProc['bin']['gzip'], ungzipf=dProc['rnx']['nav3f'], dir=dProc['dirs']['yydoy'], logger=logger)
+        dProc['rnx']['nav3fc'] = compress_utils.gzip_compress(gzip=dProc['bin']['gzip'], ungzipf=dProc['rnx']['nav3f'], dir=dProc['dirs']['rnxdir'], logger=logger)
         logger.info('>>>>>> {func:s}: compressed RINEX navigation file = {nav3fc:s}'.format(nav3fc=colored(dProc['rnx']['nav3fc'], 'yellow'), func=cFuncName))
 
     # report to the user
     logger.info('{func:s}: SBF preparation information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dProc, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    # copy temp log file to the YYDOY directory
-    copyfile(log_name, os.path.join(dProc['dirs']['yydoy'], '{scrname:s}.log'.format(scrname=os.path.splitext(os.path.basename(__file__))[0])))
+    # copy temp log file to the rnxdir directory
+    copyfile(log_name, os.path.join(dProc['dirs']['rnxdir'], '{scrname:s}.log'.format(scrname=os.path.splitext(os.path.basename(__file__))[0])))
     os.remove(log_name)
 
 

@@ -138,9 +138,9 @@ def sbf2rinex(logger: logging.Logger) -> list:
     return list_of_rnx_files[-2:]
 
 
-def min_sbf2rnx3(argv):
+def main_sbf2rnx3(argv):
     """
-    min_sbf2rnx3 converts raw data from SBF/UBlox to RINEX
+    main_sbf2rnx3 converts raw data from SBF/UBlox to RINEX
 
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
@@ -197,4 +197,4 @@ def min_sbf2rnx3(argv):
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    rnx_obsf, rnx_navf = min_sbf2rnx3(argv=sys.argv[1:])
+    rnx_obsf, rnx_navf = main_sbf2rnx3(argv=sys.argv[1:])
