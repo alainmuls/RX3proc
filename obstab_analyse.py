@@ -149,7 +149,7 @@ def read_obstab(obstabf: str,
     # keep the header columns selected by --freqs and --obstypes options
     obstypes = hdr_columns[2:5]
     obsfreqs = []
-    for freq in dTab['info']['freqs']:
+    for freq in dTab['cli']['freqs']:
         for obst in dCli['obs_types']:
             obsfreq = '{obst:s}{freq:s}'.format(obst=obst, freq=freq)
             obsfreqs.append([obstid for obstid in hdr_columns[2:] if obstid.startswith(obsfreq)][0])
@@ -196,11 +196,12 @@ def read_obstab(obstabf: str,
 
 def analyse_obsprn(marker: str,
                    obstabf: str,
+                   navsig_name: str,
                    dTime: dict,
-                   dfObsPrn: pd.DataFrame,
-                   dfTlePrn: pd.DataFrame,
+                   dfPrnNavSig: pd.DataFrame,
+                   dfPrnTle: pd.DataFrame,
                    prn: str,
-                   obsfreqs: list,
+                   navsig_obs_lst: list,
                    snrth: float,
                    interval: int,
                    show_plot: bool = False,
@@ -212,95 +213,87 @@ def analyse_obsprn(marker: str,
 
     plots = {}
     posidx_time_gaps = []
-    posidx_snr_posjumps = []
-    posidx_snr_negjumps = []
+    posidx_snr_posjumps = {}
+    posidx_snr_negjumps = {}
+
+    # get a list of time jumps for this navigation signal
+    # calculate the time difference between successive entries
+    dfPrnNavSig.insert(loc=dfPrnNavSig.columns.get_loc('DATE_TIME') + 1,
+                       column='dt',
+                       value=(dfPrnNavSig['DATE_TIME'] - dfPrnNavSig['DATE_TIME'].shift(1)).astype('timedelta64[s]'))
+
+    idx_time_gaps = dfPrnNavSig.index[dfPrnNavSig.dt != interval].tolist()
+    # convert to positional indices
+    posidx_time_gaps = [dfPrnNavSig.index.get_loc(gap) for gap in idx_time_gaps]
+    # insert the first and last positional indices to get start and end time
+    if posidx_time_gaps[0] != 0:
+        posidx_time_gaps.insert(0, 0)
+    if posidx_time_gaps[-1] != dfPrnNavSig.shape[0] - 1:
+        posidx_time_gaps.append(dfPrnNavSig.shape[0] - 1)
+    print('{}: posidx_time_gaps = {}'.format(prn, posidx_time_gaps))
 
     # TEST
-    amutils.logHeadTailDataFrame(df=dfObsPrn, dfName='dfObsPrn', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfPrnNavSig, dfName='dfPrnNavSig', callerName=cFuncName, logger=logger)
 
-    dfObsFreqPrn = dfObsPrn.dropna()
-    amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
-
-    if dfObsPrn.shape[0] != dfObsFreqPrn.shape[0]:
-        sys.exit(22)
-    # END TEST
-
-    # get a list of time jumps
-
-    return
-
-    for obsfreq in obsfreqs:
-        print('obsfreq = {}'.format(obsfreq))
+    # examine the requested observations for this navigation signal
+    print('{}: navsig_obs_lst = {}'.format(prn, navsig_obs_lst))
+    for navsig_obs in navsig_obs_lst:
+        print('{}: navsig_obs = {}'.format(prn, navsig_obs))
         # select only the elements for this prn
-        dfObsFreqPrn = dfObsPrn[['DATE_TIME', 'PRN', obsfreq]].dropna()
+        dfPrnNSObs = dfPrnNavSig[['DATE_TIME', 'dt', 'PRN', navsig_obs]].dropna()
 
-        # calculate the time difference between successive entries
-        dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc('DATE_TIME') + 1,
-                            column='dt',
-                            value=(dfObsFreqPrn['DATE_TIME'] - dfObsFreqPrn['DATE_TIME'].shift(1)).astype('timedelta64[s]'))
         # add column which is difference between current and previous obst
-        dfObsFreqPrn.insert(loc=dfObsFreqPrn.columns.get_loc(obsfreq) + 1,
-                            column='d{obsfreq:s}'.format(obsfreq=obsfreq),
-                            value=(dfObsFreqPrn[obsfreq] - dfObsFreqPrn[obsfreq].shift(1)).astype(float))
+        dfPrnNSObs.insert(loc=dfPrnNSObs.columns.get_loc(navsig_obs) + 1,
+                          column='d{nso:s}'.format(nso=navsig_obs),
+                          value=(dfPrnNSObs[navsig_obs] - dfPrnNSObs[navsig_obs].shift(1)).astype(float))
 
-        print('dfObsFreqPrn = {}'.format(dfObsFreqPrn))
+        print('dfPrnNSObs = {}'.format(dfPrnNSObs))
 
         # find the exponential moving average
-        # dfObsFreqPrn['EMA05'] = dfObsFreqPrn[obsfreq].ewm(halflife='5 seconds', adjust=False, times=dfObsFreqPrn['DATE_TIME']).mean()
-        # dfObsFreqPrn['WMA05'] = dfObsFreqPrn[obsfreq].rolling(5, min_periods=1).mean()
-
-        # find the gaps for this PRN and OBST
-        idx_time_gaps = dfObsFreqPrn.index[dfObsFreqPrn.dt != interval].tolist()
-        # convert to positional indices
-        posidx_time_gaps = [dfObsFreqPrn.index.get_loc(gap) for gap in idx_time_gaps]
-        # insert the first and last positional indices to get start and end time
-        if posidx_time_gaps[0] != 0:
-            posidx_time_gaps.insert(0, 0)
-        if posidx_time_gaps[-1] != dfObsFreqPrn.shape[0] - 1:
-            posidx_time_gaps.append(dfObsFreqPrn.shape[0] - 1)
-        print('posidx_time_gaps = {}'.format(posidx_time_gaps))
+        # dfPrnNSObs['EMA05'] = dfPrnNSObs[navsig_obs].ewm(halflife='5 seconds', adjust=False, times=dfPrnNSObs['DATE_TIME']).mean()
+        # dfPrnNSObs['WMA05'] = dfPrnNSObs[navsig_obs].rolling(5, min_periods=1).mean()
 
         # for idx_gap in idx_time_gaps[1:]:
-        #     pos_idx_gap = dfObsFreqPrn.index.get_loc(idx_gap)
-        #     print(dfObsFreqPrn.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
+        #     pos_idx_gap = dfPrnNSObs.index.get_loc(idx_gap)
+        #     print(dfPrnNSObs.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
 
         # find the SNR differences that are higher than snrth (SNR threshold)
-        if obsfreq[0] == 'S':
-            idx_snr_posjumps = dfObsFreqPrn.index[dfObsFreqPrn['d{obsfreq:s}'.format(obsfreq=obsfreq)] > snrth].tolist()
+        if navsig_obs[0] == 'S':
+            idx_snr_posjumps = dfPrnNSObs.index[dfPrnNSObs['d{nso:s}'.format(nso=navsig_obs)] > snrth].tolist()
             # convert to poisionla indices
-            posidx_snr_posjumps = [dfObsFreqPrn.index.get_loc(jump) for jump in idx_snr_posjumps]
-            print('posidx_snr_posjumps = {} #{}'.format(posidx_snr_posjumps, len(posidx_snr_posjumps)))
+            posidx_snr_posjumps[navsig_obs] = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_posjumps]
+            print('posidx_snr_posjumps[navsig_obs] = {} #{}'.format(posidx_snr_posjumps[navsig_obs], len(posidx_snr_posjumps[navsig_obs])))
 
-            idx_snr_negjumps = dfObsFreqPrn.index[dfObsFreqPrn['d{obsfreq:s}'.format(obsfreq=obsfreq)] < -snrth].tolist()
+            idx_snr_negjumps = dfPrnNSObs.index[dfPrnNSObs['d{nso:s}'.format(nso=navsig_obs)] < -snrth].tolist()
             # convert to poisionla indices
-            posidx_snr_negjumps = [dfObsFreqPrn.index.get_loc(jump) for jump in idx_snr_negjumps]
-            print('posidx_snr_negjumps = {} #{}'.format(posidx_snr_negjumps, len(posidx_snr_negjumps)))
+            posidx_snr_negjumps[navsig_obs] = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_negjumps]
+            print('posidx_snr_negjumps[navsig_obs] = {} #{}'.format(posidx_snr_negjumps[navsig_obs], len(posidx_snr_negjumps[navsig_obs])))
         else:
-            idx_snr_posjumps = []
-            idx_snr_negjumps = []
+            posidx_snr_posjumps[navsig_obs] = None
+            posidx_snr_negjumps[navsig_obs] = None
 
         # info to user
         if logger is not None:
-            amutils.logHeadTailDataFrame(df=dfObsFreqPrn, dfName='dfObsFreqPrn', callerName=cFuncName, logger=logger)
+            amutils.logHeadTailDataFrame(df=dfPrnNSObs, dfName='dfPrnNSObs', callerName=cFuncName, logger=logger)
 
         # plot for each PRN and obstfreq
-        plots[obsfreq] = tleobs_plot.plot_prnfreq(marker=marker,
-                                                  dTime=dTime,
-                                                  obsf=obstabf,
-                                                  dfPrnObst=dfObsFreqPrn,
-                                                  dfTlePrn=dfTlePrn,
-                                                  obst=obsfreq,
-                                                  posidx_gaps=posidx_time_gaps,
-                                                  snrth=snrth,
-                                                  show_plot=show_plot,
-                                                  logger=logger)
+        plots[navsig_obs] = tleobs_plot.plot_prn_navsig_obs(marker=marker,
+                                                            dTime=dTime,
+                                                            obsf=obstabf,
+                                                            dfPrnObst=dfPrnNSObs,
+                                                            dfTlePrn=dfPrnTle,
+                                                            obst=navsig_obs,
+                                                            posidx_gaps=posidx_time_gaps,
+                                                            snrth=snrth,
+                                                            show_plot=show_plot,
+                                                            logger=logger)
 
     print('plots = {}'.format(plots))
     print('posidx_time_gaps = {}'.format(posidx_time_gaps))
-    print('posidx_snr_posjumps = {}'.format(posidx_snr_posjumps))
-    print('posidx_snr_negjumps = {}'.format(posidx_snr_negjumps))
-    sys.exit(8)
-    return posidx_time_gaps, posidx_snr_posjumps, posidx_snr_negjumps, plots
+    print('posidx_snr_posjumps[navsig_obs] = {}'.format(posidx_snr_posjumps[navsig_obs]))
+    print('posidx_snr_negjumps[navsig_obs] = {}'.format(posidx_snr_negjumps[navsig_obs]))
+
+    return posidx_time_gaps, posidx_snr_posjumps[navsig_obs], posidx_snr_negjumps[navsig_obs], plots
 
 
 def main_obstab_analyse(argv):
@@ -377,7 +370,9 @@ def main_obstab_analyse(argv):
     dTab['ltx']['obstab'] = os.path.join(dTab['ltx']['path'], '{marker:s}_{gnss:s}_03_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss']))
 
     # create plot with all selected PRNs vs the TLE part per navigation signal
+    navsig_plots = {}
     for nav_signal in dTab['nav_signals']:
+        nav_signal_name = '{gnss:s}{navs:s}'.format(gnss=dTab['info']['gnss'], navs=nav_signal)
         logger.info('{func:s}: working on navigation signal {navs:s}'.format(navs=colored(nav_signal, 'green'), func=cFuncName))
 
         # keep the observables for this navigatoion signal
@@ -388,49 +383,55 @@ def main_obstab_analyse(argv):
 
         amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
 
-        tle_obs_plot = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
-                                                    obsf=dTab['obstabf'],
-                                                    dTime=dTab['time'],
-                                                    navsig_name=nav_signal,
-                                                    lst_PRNs=dTab['lst_CmnPRNs'],
-                                                    dfNavSig=dfNavSig,
-                                                    dfTle=dfTLE,
-                                                    logger=logger,
-                                                    show_plot=show_plot)
 
-        # ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
-        #                                                           gnss=dTab['info']['gnss'],
-        #                                                           tle_obs_plt=tle_obs_plot)
-        # sec_obstab.append(ssec_tleobs)
+        navsig_plots[nav_signal] = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
+                                                                obsf=dTab['obstabf'],
+                                                                dTime=dTab['time'],
+                                                                navsig_name=nav_signal_name,
+                                                                lst_PRNs=dTab['lst_CmnPRNs'],
+                                                                dfNavSig=dfNavSig,
+                                                                dfTle=dfTLE,
+                                                                logger=logger,
+                                                                show_plot=show_plot)
 
-    sys.exit(99)
+        # perform analysis of the observations done per PRN and per navigation signal
+        lst_navsig_obs = [navsig_obs for navsig_obs in dTab['obsfreqs'] if navsig_obs.endswith(nav_signal)]
 
-    # perform analysis of the observations done per PRN
-    for prn in dTab['lst_CmnPRNs']:
-        # select the TLE row for this PRN
-        dfTLEPrn = dfTLE.loc[prn]
-        print('dfTLEPrn = {}'.format(dfTLEPrn))
-        # select the dataframe part for this PRN in the observables
-        dfObsPrn = dfObsTab[dfObsTab['PRN'] == prn].dropna()
-        print('dfObsPrn = {}'.format(dfObsPrn))
+        for prn in dTab['lst_CmnPRNs']:
+            print('\nPRN = {} {}'.format(prn, nav_signal_name))
+            # select the TLE row for this PRN
+            dfTLEPrn = dfTLE.loc[prn]
 
-        analyse_obsprn(marker=dTab['marker'],
-                       obstabf=dTab['obstabf'],
-                       dTime=dTab['time'],
-                       dfObsPrn=dfObsPrn,
-                       dfTlePrn=dfTLEPrn,
-                       prn=prn,
-                       obsfreqs=dTab['obsfreqs'],
-                       snrth=dTab['cli']['snrth'],
-                       interval=dTab['time']['interval'],
-                       show_plot=show_plot,
-                       logger=logger)
+            # select the TLE row for this PRN
+            dfNavSigPRN = dfNavSig[dfNavSig['PRN'] == prn].dropna()
+            print('dfNavSigPRN = \n{}'.format(dfNavSigPRN))
+
+            analyse_obsprn(marker=dTab['marker'],
+                           obstabf=dTab['obstabf'],
+                           navsig_name=nav_signal_name,
+                           dTime=dTab['time'],
+                           prn=prn,
+                           dfPrnTle=dfTLEPrn,
+                           dfPrnNavSig=dfNavSigPRN,
+                           navsig_obs_lst=lst_navsig_obs,
+                           snrth=dTab['cli']['snrth'],
+                           interval=dTab['time']['interval'],
+                           show_plot=show_plot,
+                           logger=logger)
+
+            input("Press any key to terminate the program")
+
+    sys.exit(66)
+    ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
+                                                              gnss=dTab['info']['gnss'],
+                                                              navsigs=dTab['nav_signals'],
+                                                              navsig_plts=navsig_plots)
+    sec_obstab.append(ssec_tleobs)
+
 
     sec_obstab.generate_tex(dTab['ltx']['obstab'])
-
     sys.exit(55)
 
-    sys.exit(55)
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 

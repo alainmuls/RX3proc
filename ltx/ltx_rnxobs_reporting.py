@@ -232,11 +232,13 @@ def tle_conversion(tle_value):
 
 def obstab_tleobs_overview(dfTle: pd.DataFrame,
                            gnss: str,
-                           tle_obs_plt: str) -> Subsubsection:
+                           navsigs: list,
+                           navsig_plts: dict) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
     """
-    sssec = Subsubsection('Comparison between observation and TLE time spans')
+    sssec = Subsubsection('Comparison between navigation signal and TLE time spans')
+
     with sssec.create(LongTabu('l|l|l|l|l', pos='l', col_space='2pt')) as longtabu:
         longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
         longtabu.add_hline()
@@ -254,13 +256,18 @@ def obstab_tleobs_overview(dfTle: pd.DataFrame,
 
         longtabu.add_hline()
 
-    # add figures representing the observations
-    sssec.append(NoEscape(r'Figure \vref{fig:tle_obst_gnss_' + '{gnss:s}'.format(gnss=gnss) + '} represents the time span as observed set out against the maximum time span calculated from the  Two Line Elements (TLE).'))
+    # go over the available navigation signals
+    for navsig in navsigs:
+        # add figures representing the observations per navigation signal
+        sssec.append(NoEscape(r'Figure \vref{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navs:s}'.format(navs=navsig) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE).'.format(gnss=gnss, navs=navsig)))
 
-    with sssec.create(Figure(position='htbp')) as plot:
-        plot.add_image(tle_obs_plt,
-                       width=NoEscape(r'0.8\textwidth'),
-                       placement=NoEscape(r'\centering'))
-        plot.add_caption(NoEscape(r'\label{fig:tle_obst_gnss_' + '{gnss:s}'.format(gnss=gnss) + '} Observation versus TLE time span for ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[gnss])))
+        with sssec.create(Figure(position='htbp')) as plot:
+            plot.add_image(navsig_plts[navsig],
+                           width=NoEscape(r'0.8\textwidth'),
+                           placement=NoEscape(r'\centering'))
+
+            # print(r'\label{fig:tle_navsig_' + r'{gnss:s}'.format(gnss=gnss) + r'{navs:s}'.format(navs=navsig) + r'}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig))
+
+            plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig)))
 
     return sssec
