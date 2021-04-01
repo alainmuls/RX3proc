@@ -367,10 +367,11 @@ def main_obstab_analyse(argv):
                                                          lst_PRNs=dTab['lst_CmnPRNs'],
                                                          lst_NavSignals=dTab['nav_signals'],
                                                          lst_ObsFreqs=dTab['obsfreqs'])
-    dTab['ltx']['obstab'] = os.path.join(dTab['ltx']['path'], '{marker:s}_{gnss:s}_03_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss']))
+    dTab['ltx']['obstab'] = '{marker:s}_{gnss:s}_03_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss'])
 
     # create plot with all selected PRNs vs the TLE part per navigation signal
-    navsig_plots = {}
+    dTab['plots'] = {}
+
     for nav_signal in dTab['nav_signals']:
         nav_signal_name = '{gnss:s}{navs:s}'.format(gnss=dTab['info']['gnss'], navs=nav_signal)
         logger.info('{func:s}: working on navigation signal {navs:s}'.format(navs=colored(nav_signal, 'green'), func=cFuncName))
@@ -384,7 +385,7 @@ def main_obstab_analyse(argv):
         amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
 
 
-        navsig_plots[nav_signal] = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
+        dTab['plots'][nav_signal] = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
                                                                 obsf=dTab['obstabf'],
                                                                 dTime=dTab['time'],
                                                                 navsig_name=nav_signal_name,
@@ -398,6 +399,7 @@ def main_obstab_analyse(argv):
         lst_navsig_obs = [navsig_obs for navsig_obs in dTab['obsfreqs'] if navsig_obs.endswith(nav_signal)]
 
         for prn in dTab['lst_CmnPRNs']:
+
             print('\nPRN = {} {}'.format(prn, nav_signal_name))
             # select the TLE row for this PRN
             dfTLEPrn = dfTLE.loc[prn]
@@ -406,6 +408,7 @@ def main_obstab_analyse(argv):
             dfNavSigPRN = dfNavSig[dfNavSig['PRN'] == prn].dropna()
             print('dfNavSigPRN = \n{}'.format(dfNavSigPRN))
 
+            # posidx_time_gaps, posidx_snr_posjumps[navsig_obs], posidx_snr_negjumps[navsig_obs], plots
             analyse_obsprn(marker=dTab['marker'],
                            obstabf=dTab['obstabf'],
                            navsig_name=nav_signal_name,
@@ -419,21 +422,18 @@ def main_obstab_analyse(argv):
                            show_plot=show_plot,
                            logger=logger)
 
-            input("Press any key to terminate the program")
-
-    sys.exit(66)
     ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
                                                               gnss=dTab['info']['gnss'],
                                                               navsigs=dTab['nav_signals'],
-                                                              navsig_plts=navsig_plots)
-    sec_obstab.append(ssec_tleobs)
-
-
-    sec_obstab.generate_tex(dTab['ltx']['obstab'])
-    sys.exit(55)
+                                                              navsig_plts=dTab['plots'])
 
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    sec_obstab.append(ssec_tleobs)
+
+
+    sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))
+    sys.exit(55)
 
     # store the json structure
     jsonName = os.path.join(dTab['dir'], '{scrname:s}.json'.format(scrname=os.path.splitext(os.path.basename(__file__))[0]))
