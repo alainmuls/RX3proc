@@ -2,6 +2,7 @@ import os
 from numpy import arange
 import argparse
 from gfzrnx import gfzrnx_constants as gfzc
+import re
 
 __author__ = 'amuls'
 
@@ -123,8 +124,9 @@ def checkTime(hms, tmeRange):
 
 class epoch_action(argparse.Action):
     def __call__(self, parser, namespace, epoch, option_string=None):
-        if not len(epoch) == 8:
-            raise argparse.ArgumentError(self, "Incorrect format for epoch {epoch:s}".format(epoch=epoch))
+        regex = re.compile(r'^(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])$')
+        if not re.search(regex, epoch):
+            raise argparse.ArgumentError(self, "Incorrect regex format for epoch {epoch:s}".format(epoch=epoch))
 
         if not checkTime(epoch, ('00:00:00', '23:59:59')):
             raise argparse.ArgumentError(self, "Specified epoch {epoch:s} not in range 00:00:00 => 23:59:59".format(epoch=epoch))

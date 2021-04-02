@@ -42,6 +42,9 @@ def treatCmdOpts(argv: list):
     parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
     parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
 
+    parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'.format(start=colored('00:00:00', 'green')), required=False, type=str, default='00:00:00', action=gco.epoch_action)
+    parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'.format(end=colored('23:59:59', 'green')), required=False, type=str, default='23:59:59', action=gco.epoch_action)
+
     parser.add_argument('--obs_crux', help='CRUX template file for updating RINEX headers (default {crux:s})'.format(crux=colored(gfzc.crux_tmpl, 'green')), required=False, type=str, default=gfzc.crux_tmpl)
 
     parser.add_argument('--compress', help='compress obtained RINEX files', default=False, required=False, action='store_true')
@@ -52,7 +55,7 @@ def treatCmdOpts(argv: list):
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.root_dir, args.rnx_dir, args.marker, args.year, args.doy, args.obs_crux, args.compress, args.logging
+    return args.root_dir, args.rnx_dir, args.marker, args.year, args.doy, args.startepoch, args.endepoch, args.obs_crux, args.compress, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -117,7 +120,7 @@ def main_prepare_P3RS2_data(argv) -> Tuple[str, str, str]:
     dProc['cli'] = {}
     dProc['rnx'] = {}
 
-    dProc['dirs']['pvt'], dProc['dirs']['rnx_root'], dProc['cli']['marker'], dProc['cli']['yyyy'], dProc['cli']['doy'], dProc['cli']['cruxf'], dProc['cli']['compress'], logLevels = treatCmdOpts(argv)
+    dProc['dirs']['pvt'], dProc['dirs']['rnx_root'], dProc['cli']['marker'], dProc['cli']['yyyy'], dProc['cli']['doy'], dProc['cli']['startepoch'], dProc['cli']['endepoch'], dProc['cli']['cruxf'], dProc['cli']['compress'], logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
