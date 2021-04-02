@@ -10,6 +10,8 @@ from shutil import copyfile
 from pathlib import Path
 import glob
 
+from ampyutils import gnss_cmd_opts as gco
+
 from ampyutils import am_config as amc
 from ampyutils import amutils, location
 
@@ -18,22 +20,6 @@ __author__ = 'amuls'
 # global used dict
 global dRnx
 dRnx = {}
-
-
-# class interval_action(argparse.Action):
-#     def __call__(self, parser, namespace, interval, option_string=None):
-#         if not 5 <= int(interval) <= 60:
-#             raise argparse.ArgumentError(self, "interval must be in 5..60 minutes")
-#         setattr(namespace, self.dest, interval)
-
-
-class logging_action(argparse.Action):
-    def __call__(self, parser, namespace, log_actions, option_string=None):
-        choices = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
-        for log_action in log_actions:
-            if log_action not in choices:
-                raise argparse.ArgumentError(self, "log_actions must be in {!s}".format(choices))
-        setattr(namespace, self.dest, log_actions)
 
 
 def treatCmdOpts(argv: list):
@@ -52,13 +38,16 @@ def treatCmdOpts(argv: list):
 
     parser.add_argument('--rnxdir', help='Directory for RINEX output (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
 
-    parser.add_argument('--logging', help='specify logging level console/file (default {:s})'.format(colored('INFO DEBUG', 'green')), nargs=2, required=False, default=['INFO', 'DEBUG'], action=logging_action)
+    parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'.format(start=colored('00:00:00', 'green')), required=False, type=str, default='00:00:00', action=gco.epoch_action)
+    parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'.format(end=colored('23:59:59', 'green')), required=False, type=str, default='23:59:59', action=gco.epoch_action)
+
+    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.sbffile, args.rnxdir, args.logging
+    return args.sbffile, args.rnxdir, args.startepoch, args.endepoch, args.logging
 
 
 def checkValidityArgs(logger: logging.Logger) -> bool:
@@ -109,6 +98,12 @@ def sbf2rinex(logger: logging.Logger) -> list:
 
     # convert to RINEX observable file
     args4SBF2RIN = [dRnx['bin']['SBF2RIN'], '-f', os.path.join(dRnx['dirs']['sbf'], dRnx['sbff']), '-x', excludeGNSSs, '-s', '-D', '-v', '-R3', '-l', '-O', 'BEL']
+
+    if dRnx['time']['startepoch'] != '00:00:00':
+        args4SBF2RIN += ['-b', dRnx['time']['startepoch']]
+    if dRnx['time']['endepoch'] != '23:59:59':
+        args4SBF2RIN += ['-e', dRnx['time']['endepoch']]
+
     # run the sbf2rin program
     logger.info('{func:s}: creating RINEX observation file'.format(func=cFuncName))
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=args4SBF2RIN, logger=logger)
@@ -146,7 +141,7 @@ def main_sbf2rnx3(argv):
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # treat command line options
-    sbffile, rnxdir, logLevels = treatCmdOpts(argv)
+    sbffile, rnxdir, startepoch, endepoch, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
@@ -155,7 +150,15 @@ def main_sbf2rnx3(argv):
     dRnx['dirs'] = {}
     dRnx['dirs']['sbf'] = os.path.dirname(Path(sbffile).resolve())
     dRnx['sbff'] = os.path.basename(sbffile)
-    dRnx['dirs']['rnx'] = (Path(rnxdir).resolve())
+    dRnx['dirs']['rnx'] = Path(rnxdir).resolve()
+    dRnx['time'] = {}
+
+    if endepoch < startepoch:
+        logger.error('{func:s}: startepoch {start:s} must be before endepoch {end:s}'.format(start=colored(startepoch, 'red'), end=colored(endepoch, 'red'), func=cFuncName))
+        sys.exit(amc.E_INCORRECT_TIMES)
+
+    dRnx['time']['startepoch'] = startepoch
+    dRnx['time']['endepoch'] = endepoch
 
     logger.info('{func:s}: arguments processed: dRnx = {drtk!s}'.format(func=cFuncName, drtk=dRnx))
 

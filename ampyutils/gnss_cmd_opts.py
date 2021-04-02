@@ -110,3 +110,22 @@ class snrth_action(argparse.Action):
         if snrth not in arange(0.25, 15, step=0.25):
             raise argparse.ArgumentError(self, "SNR threshold must be in [0.25...15] and have as resolution 0.25")
         setattr(namespace, self.dest, snrth)
+
+
+def secondsPerDay(hms):
+    hours, minutes, seconds = hms.split(':')
+    return ((hours * 60) + minutes) * 60 + seconds
+
+
+def checkTime(hms, tmeRange):
+    return secondsPerDay(tmeRange[0]) < secondsPerDay(hms) < tmeRange[1]
+
+
+class epoch_action(argparse.Action):
+    def __call__(self, parser, namespace, epoch, option_string=None):
+        if not len(epoch) == 8:
+            raise argparse.ArgumentError(self, "Incorrect format for epoch {epoch:s}".format(epoch=epoch))
+
+        if not checkTime(epoch, ('00:00:00', '23:59:59')):
+            raise argparse.ArgumentError(self, "Specified epoch {epoch:s} not in range 00:00:00 => 23:59:59".format(epoch=epoch))
+        setattr(namespace, self.dest, epoch)

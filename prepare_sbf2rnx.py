@@ -41,6 +41,9 @@ def treatCmdOpts(argv: list):
     parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
     parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
 
+    parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'.format(start=colored('00:00:00', 'green')), required=False, type=str, default='00:00:00', action=gco.epoch_action)
+    parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'.format(end=colored('23:59:59', 'green')), required=False, type=str, default='23:59:59', action=gco.epoch_action)
+
     parser.add_argument('--rnxdir', help='Directory for RINEX output (default {:s})'.format(colored('YYDOY subdir', 'green')), required=False, type=str, default='RNXDIR')
 
     parser.add_argument('--compress', help='compress obtained RINEX files', default=False, required=False, action='store_true')
@@ -52,7 +55,7 @@ def treatCmdOpts(argv: list):
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.root_dir, args.marker, args.year, args.doy, args.rnxdir, args.compress, args.overwrite, args.logging
+    return args.root_dir, args.marker, args.year, args.doy, args.startepoch, args.endepoch, args.rnxdir, args.compress, args.overwrite, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -101,13 +104,18 @@ def combine_sbffiles(sbfdir: str, overwrite: bool = False, logger: logging.Logge
     return sbff
 
 
-def sbf_rnx3(sbffile: str, sbfdir: str, rnxdir: str, logger: logging.Logger = None) -> Tuple[str, str]:
+def sbf_rnx3(sbffile: str, sbfdir: str, rnxdir: str, start_ep: str, end_ep: str, logger: logging.Logger = None) -> Tuple[str, str]:
     """
     sbf_rnx3 converts created SBF file to a RNX 3 observation/navigation file by calling sbf_rinex.py
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     sys.argv = ['--sbff', os.path.join(sbfdir, sbffile), '--rnxdir', rnxdir]
+
+    if start_ep != '00:00:00':
+        sys.argv += ['--startepoch', start_ep]
+    if end_ep != '23:59:59':
+        sys.argv += ['--endepoch', end_ep]
 
     if logger is not None:
         logger.info('=== {func:s}: passing control to {scr:s}  (options: {opts!s}) ==='.format(scr=colored('sbf_rinex.py', 'red'), opts=colored(' '.join(sys.argv), 'blue'), func=cFuncName))
@@ -129,7 +137,7 @@ def main_prepare_rnx_data(argv):
     dProc['cli'] = {}
     dProc['rnx'] = {}
 
-    dProc['dirs']['root'], dProc['cli']['marker'], dProc['cli']['yyyy'], dProc['cli']['doy'], rnxdir, dProc['cli']['compress'], dProc['cli']['overwrite'], logLevels = treatCmdOpts(argv)
+    dProc['dirs']['root'], dProc['cli']['marker'], dProc['cli']['yyyy'], dProc['cli']['doy'], dProc['cli']['startepoch'], dProc['cli']['endepoch'], rnxdir, dProc['cli']['compress'], dProc['cli']['overwrite'], logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
@@ -148,7 +156,7 @@ def main_prepare_rnx_data(argv):
         dProc['dirs']['rnxdir'] = rnxdir
 
     # convert the daily SBFFile to RINEX v3.x observation and navigation file
-    dProc['rnx']['obs3f'], dProc['rnx']['nav3f'] = sbf_rnx3(sbffile=dProc['sbffile'], sbfdir=dProc['dirs']['sbf'], rnxdir=dProc['dirs']['rnxdir'], logger=logger)
+    dProc['rnx']['obs3f'], dProc['rnx']['nav3f'] = sbf_rnx3(sbffile=dProc['sbffile'], sbfdir=dProc['dirs']['sbf'], start_ep=dProc['cli']['startepoch'], end_ep=dProc['cli']['endepoch'], rnxdir=dProc['dirs']['rnxdir'], logger=logger)
     logger.info('>>>>>> {func:s}: obtained RINEX observation file = {obs3f:s}'.format(obs3f=colored(dProc['rnx']['obs3f'], 'yellow'), func=cFuncName))
     logger.info('>>>>>> {func:s}: obtained RINEX navigation files = {nav3f:s}'.format(nav3f=colored(dProc['rnx']['nav3f'], 'yellow'), func=cFuncName))
 
