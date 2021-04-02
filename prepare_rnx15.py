@@ -15,7 +15,7 @@ from gfzrnx import gfzrnx_constants as gfzc
 
 from ampyutils import amutils, compress_utils, location
 
-from rnx15_combine import combine_rnx15
+from rnx15_combine import main_combine_rnx15
 __author__ = 'amuls'
 
 
@@ -90,7 +90,7 @@ def check_arguments(logger: logging.Logger = None):
     #     sys.exit(amc.E_DIR_NOT_EXIST)
 
 
-def combine_P3RS2_data(p3rs2_dir: str, rnx_dir: str, marker: str, year: int, doy: int, cruxf: str, logger: logging.Logger = None) -> Tuple[str, str, str]:
+def combine_P3RS2_data(p3rs2_dir: str, rnx_dir: str, marker: str, year: int, doy: int, start_ep: str, end_ep: str, cruxf: str, logger: logging.Logger = None) -> Tuple[str, str, str]:
     """
     calls rnx15_combine to get the ::RX3:: corrected P3RS2 files for this day
     """
@@ -98,12 +98,12 @@ def combine_P3RS2_data(p3rs2_dir: str, rnx_dir: str, marker: str, year: int, doy
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # prepare the options to call rnx15_combine.py
-    sys.argv = ['--from_dir', p3rs2_dir, '--rnx_dir', rnx_dir, '--marker', marker, '--year', str(year), '--doy', str(doy), '--crux', cruxf]
+    sys.argv = ['--from_dir', p3rs2_dir, '--rnx_dir', rnx_dir, '--marker', marker, '--year', str(year), '--doy', str(doy), '--crux', cruxf, '--startepoch', start_ep, '--endepoch', end_ep]
 
     if logger is not None:
         logger.info('=== {func:s}: passing control to {scr:s} (options: {opts!s}) ==='.format(scr=colored('rnx15_combine.py', 'red'), opts=colored(' '.join(sys.argv), 'blue'), func=cFuncName))
 
-    rnxdir, obs3f, nav3f = combine_rnx15(argv=sys.argv)
+    rnxdir, obs3f, nav3f = main_combine_rnx15(argv=sys.argv)
 
     return rnxdir, obs3f, nav3f
 
@@ -132,7 +132,16 @@ def main_prepare_P3RS2_data(argv) -> Tuple[str, str, str]:
     # dProc['dirs']['yydoy'] = os.path.expanduser(os.path.join(gco.P3RS2RNXDIR, '{yy:02d}{doy:03d}'.format(yy=(dProc['cli']['yyyy'] % 100), doy=dProc['cli']['doy'])))
 
     # call combination of partial rnx files
-    dProc['dirs']['yydoy'], dProc['rnx']['obs3f'], dProc['rnx']['nav3f'] = combine_P3RS2_data(p3rs2_dir=dProc['dirs']['pvt'], rnx_dir=dProc['dirs']['rnx_root'], marker=dProc['cli']['marker'], year=dProc['cli']['yyyy'], doy=dProc['cli']['doy'], cruxf=dProc['cli']['cruxf'], logger=logger)
+    dProc['dirs']['yydoy'], dProc['rnx']['obs3f'], dProc['rnx']['nav3f'] = \
+        combine_P3RS2_data(p3rs2_dir=dProc['dirs']['pvt'],
+                           rnx_dir=dProc['dirs']['rnx_root'],
+                           marker=dProc['cli']['marker'],
+                           year=dProc['cli']['yyyy'],
+                           doy=dProc['cli']['doy'],
+                           start_ep=dProc['cli']['startepoch'],
+                           end_ep=dProc['cli']['endepoch'],
+                           cruxf=dProc['cli']['cruxf'],
+                           logger=logger)
 
     logger.info('>>>>>> {func:s}: RINEX directory = {rnxd:s}'.format(rnxd=colored(dProc['dirs']['yydoy'], 'yellow'), func=cFuncName))
     logger.info('>>>>>> {func:s}: obtained RINEX observation file = {obs3f:s}'.format(obs3f=colored(dProc['rnx']['obs3f'], 'yellow'), func=cFuncName))
