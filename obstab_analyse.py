@@ -50,8 +50,6 @@ def treatCmdOpts(argv):
 
     parser.add_argument('--snr_th', help='threshold for detecting variation in SNR levels (default {snrtr:s})'.format(snrtr=colored('2', 'green')), type=float, required=False, default=2, action=gco.snrth_action)
 
-    parser.add_argument('--interval', help='measurement interval in seconds (default {interv:s}s)'.format(interv=colored('1', 'green')), required=False, default=1., type=float, action=gco.interval_action)
-
     parser.add_argument('--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
     parser.add_argument('--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
