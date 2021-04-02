@@ -126,4 +126,4 @@ def main_combine_sbf(argv):
 if __name__ == "__main__":
     daily_sbf = main_combine_sbf(argv=sys.argv[1:])
 
-    print('daily_sbf = {!s}'.format(daily_sbf))
+    # print('daily_sbf = {!s}'.format(daily_sbf))

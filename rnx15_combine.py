@@ -249,7 +249,7 @@ def convert_obsrnx3(gfzrnx: str, rnxf_tmp: str, cruxf: str, rnxdir: str, yyyy: i
             logger.error('{func:s}: error {err!s} creating ::RX3:: filename'.format(err=err_code, func=cFuncName))
         sys.exit(err_code)
 
-    # gfzrnx -finp P3RS3010.20O -fout P3RS3010.rnx -crux ~/amPython/rnxproc/test.crux  -hded
+    # gfzrnx -finp P3RS3010.20O -fout P3RS3010.rnx -crux ~/amPython/RX3proc/test.crux  -hded
     args4gfzrnx = [gfzrnx, '-finp', rnxf_tmp, '-crux', cruxf, '-f', '-fout', os.path.join(rnxdir, rnx3f)]
 
     # adjust final file for the start / end times

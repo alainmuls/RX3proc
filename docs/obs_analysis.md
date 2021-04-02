@@ -13,7 +13,7 @@ The following scripts convert the RINEX obtained files to a tabular observation 
 \scriptsize
     
 ```bash
-[amuls:~/amPython/rnxproc] [rnxproc]$ rnxobs_tabular.py --help
+[amuls:~/amPython/RX3proc] [RX3proc]$ rnxobs_tabular.py --help
 usage: rnxobs_tabular.py [-h] -r RNXOBSF [-g GNSSS [GNSSS ...]] [-l LOGGING LOGGING]
 
 rnxobs_tabular.py creates observation tabular/statistics file for selected GNSSs
@@ -35,7 +35,7 @@ optional arguments:
 \tiny
     
 ```bash
-[amuls:~/amPython/rnxproc] [rnxproc]$ rnxobs_tabular.py --rnxobsf ~/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx \
+[amuls:~/amPython/RX3proc] [RX3proc]$ rnxobs_tabular.py --rnxobsf ~/RxTURP/BEGPIOS/ASTX/rinex/19134/SEPT00BEL_R_20191340000_01D_01S_MO.rnx \
         -g G E
 INFO: location.py - locateProg: gfzrnx is /home/amuls/bin/gfzrnx
 INFO: rnxobs_analysis.py - RX3obs_header_info extracting observation header info from SEPT00BEL_R_20191340000_01D_01S_MO.rnx
@@ -215,7 +215,7 @@ dObstabs = {'G': {'obs_G_tabf': 'SEPT00BEL_R_20191340000_01D_01S_MO_G.obstab', \
 \scriptsize
     
 ```bash
-[amuls:~/amPython/rnxproc] [rnxproc]$ ll -R
+[amuls:~/amPython/RX3proc] [RX3proc]$ ll -R
 .:
 total 569628
 drwxrwxr-x 2 amuls amuls      4096 Mar  2 14:37 ltx
