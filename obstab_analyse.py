@@ -326,8 +326,6 @@ def main_obstab_analyse(argv):
     dTab['ltx'] = {}
     dTab['plots'] = {}
     dTab['lock'] = {}
-    dTab['lock']['loss'] = {}
-    dTab['lock']['reacq'] = {}
     dTab['info'] = {}
 
     dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
@@ -387,11 +385,11 @@ def main_obstab_analyse(argv):
                                                          lst_ObsFreqs=dTab['obsfreqs'])
     dTab['ltx']['obstab'] = '{marker:s}_{gnss:s}_03_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss'])
 
-    # dict for storing loss of lock, reacquisition and created plots per PRN
-    dt_gaps = {}
-    dt_reaqs = {}
-
     for nav_signal in dTab['nav_signals']:
+        # dict for keeping the obtained info
+        dTab['plots'][nav_signal] = {}
+        dTab['lock'][nav_signal] = {}
+
         nav_signal_name = '{gnss:s}{navs:s}'.format(gnss=dTab['info']['gnss'], navs=nav_signal)
         logger.info('{func:s}: working on navigation signal {navs:s}'.format(navs=colored(nav_signal, 'green'), func=cFuncName))
 
@@ -404,7 +402,6 @@ def main_obstab_analyse(argv):
         amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
 
         # create plot with all selected PRNs vs the TLE part per navigation signal
-        dTab['plots'][nav_signal] = {}
         dTab['plots'][nav_signal]['tle-obs'] = tleobs_plot.obstle_plot_arcs_prns(marker=dTab['marker'],
                                                                                  obsf=dTab['obstabf'],
                                                                                  dTime=dTab['time'],
@@ -455,12 +452,13 @@ def main_obstab_analyse(argv):
                                                             logger=logger)
 
             dTab['plots'][nav_signal][prn] = prn_plots
-            dTab['lock']['loss'][prn] = prn_loss
-            dTab['lock']['reacq'][prn] = prn_reacq
+            dTab['lock'][nav_signal][prn] = {}
+
+            dTab['lock'][nav_signal][prn]['loss'] = prn_loss
+            dTab['lock'][nav_signal][prn]['reacq'] = prn_reacq
 
     print("dTab['plots'][nav_signal] = {}\n--------------------------\n".format(dTab['plots'][nav_signal]))
 
-    print('type = {}'.format(type(dTab['lock']['loss']['E02'])))
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dfTle=dfTLE,
