@@ -463,7 +463,7 @@ def obstle_plot_arcs_prns(marker: str,
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
     for ext in ['pdf']:
-        plt_name = os.path.join('png', '{basen:s}-TLE-{navs:s}-arcs.{ext:s}'.format(basen=obsf.split('.')[0], navs=navsig_name, ext=ext))
+        plt_name = os.path.join('png', '{basen:s}-{navs:s}-TLE-arcs.{ext:s}'.format(basen=obsf.split('.')[0], navs=navsig_name, ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
@@ -471,13 +471,14 @@ def obstle_plot_arcs_prns(marker: str,
 
 
 def plot_prn_navsig_obs(marker: str,
+                        dTime: dict,
                         obsf: str,
+                        prn: str,
                         dfPrnObst: pd.DataFrame,
                         dfTlePrn: pd.DataFrame,
                         obst: str,
                         posidx_gaps: list,
                         snrth: float,
-                        dTime: dict,
                         show_plot: bool = False,
                         logger: logging.Logger = None) -> str:
     """
@@ -507,7 +508,7 @@ def plot_prn_navsig_obs(marker: str,
         # go over the time intervals
         for posidx_start, posidx_stop in zip(posidx_gaps[:-1], posidx_gaps[1:]):
             dfTimeSegment = dfPrnObst.iloc[posidx_start:posidx_stop]
-            print('dfTimeSegment = \n{}'.format(dfTimeSegment))
+            # print('dfTimeSegment = \n{}'.format(dfTimeSegment))
 
             axObst.plot(dfTimeSegment['DATE_TIME'],
                         dfTimeSegment[obst],
@@ -534,7 +535,7 @@ def plot_prn_navsig_obs(marker: str,
                        marker='v', markersize=14)
 
     # create title
-    fig.suptitle('{marker:s}: {obst:s} for {prn:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, prn=dfPrnObst.PRN.iloc[0], dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))
+    fig.suptitle('{marker:s}: {obst:s} for {prn:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, prn=prn, dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))
 
     # beautify plot
     axObst.xaxis.grid(b=True, which='both')
@@ -573,13 +574,12 @@ def plot_prn_navsig_obs(marker: str,
         tick.label1.set_horizontalalignment('center')
 
     # save the plot in subdir png
-    print(os.getcwd())
     amutils.mkdir_p('png')
     for ext in ['pdf']:
-        tmp_name = '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, prn=dfPrnObst.PRN.iloc[0])
+        tmp_name = '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, prn=prn)
         plt_name = os.path.join('png', tmp_name)
         print('plt_name = {}'.format(plt_name))
-        fig.savefig('plt_name', dpi=150, bbox_inches='tight', format=ext)
+        fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
     if show_plot:
@@ -608,13 +608,15 @@ def obstle_plot_gnss_obst(marker: str,
     # set up the plot
     plt.style.use('ggplot')
 
-    # get min and max times according the observation smade
-    amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
-    amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
-
     # used markers
     max_prn = 36
     lst_colors, title_font = amutils.create_colormap_font(nrcolors=max_prn, font_size=12)
+
+    # return plot names created
+    lst_pltnames = []
+
+    # get the date of observations
+    cur_date = dfNavSig.DATE_TIME.iloc[0]
 
     # plot per obst all PRN  for this navigation signal
     for obst in navsig_obst_lst:
@@ -630,27 +632,81 @@ def obstle_plot_gnss_obst(marker: str,
 
             axObst.plot(dfNavSigObstPRN['DATE_TIME'],
                         dfNavSigObstPRN[obst],
-                        linestyle='', marker='.', markersize=2,
+                        linestyle='--', dashes=(1, 2), marker='.', markersize=2,
                         color=prn_color, label=prn)
 
             # read in the timings for the TLE of this PRN
             dfTlePrn = dfTle.loc[prn]
             iPRN = int(prn[1:])
             for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
-                axTLE.plot_date([dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_rise),
-                                 dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_set)],
+                print('prn = {}'.format(prn))
+                print('tle_rise = {}'.format(tle_rise))
+                print('tle_set = {}'.format(tle_set))
+                print('tle_cul = {}'.format(tle_cul))
+                print('cur_date = {}'.format(cur_date))
+
+                axTLE.plot_date([dt.datetime.combine(cur_date, tle_rise),
+                                 dt.datetime.combine(cur_date, tle_set)],
                                 [iPRN, iPRN],
                                 linestyle='-', linewidth=2, marker='', color=prn_color)
 
                 # add a tick at culmination point
                 if isinstance(tle_cul, dt.time):
-                    axTLE.plot(dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_cul),
+                    axTLE.plot(dt.datetime.combine(cur_date, tle_cul),
                                iPRN,
                                marker='v', markersize=3, color=prn_color)
+
+        # create title
+        fig.suptitle('{marker:s}: {obst:s} for {navsig:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, navsig=navsig_name, dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))
+
+        # axObst.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=4)
+        axObst.legend(bbox_to_anchor=(1.01, 1), loc='upper left', markerscale=4, fancybox=True, shadow=True, fontsize='x-small')
+
+        # beautify plot
+        axObst.xaxis.grid(b=True, which='both')
+        axObst.yaxis.grid(b=True, which='both')
+        axObst.set_ylabel(obst)
+
+        axTLE.xaxis.grid(b=True)
+        axTLE.yaxis.grid(b=False)
+        axTLE.tick_params(left=False)
+        axTLE.get_yaxis().set_ticklabels([])
+        axTLE.set_ylabel('TLE span')
+
+        # create the ticks for the time ax
+        axTLE.set_xlim([dTime['start'], dTime['end']])
+        dtFormat = plot_utils.determine_datetime_ticks(startDT=dTime['start'], endDT=dTime['end'])
+
+        if dtFormat['minutes']:
+            # ax.xaxis.set_major_locator(dates.MinuteLocator(byminute=range(10, 60, 10), interval=1))
+            pass
+        else:
+            axTLE.xaxis.set_major_locator(dates.HourLocator(interval=dtFormat['hourInterval']))   # every 4 hours
+        axTLE.xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))  # hours and minutes
+
+        axTLE.xaxis.set_minor_locator(dates.DayLocator(interval=1))    # every day
+        axTLE.xaxis.set_minor_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+
+        axTLE.xaxis.set_tick_params(rotation=0)
+        for tick in axTLE.xaxis.get_major_ticks():
+            # tick.tick1line.set_markersize(0)
+            # tick.tick2line.set_markersize(0)
+            tick.label1.set_horizontalalignment('center')
+
+        # save the plot in subdir png
+        amutils.mkdir_p('png')
+        for ext in ['pdf']:
+            tmp_name = '{basen:s}-{navsig:s}-{obst:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, navsig=navsig_name)
+            plt_name = os.path.join('png', tmp_name)
+            print('plt_name = {}'.format(plt_name))
+            fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
+            logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
+
+            lst_pltnames.append(plt_name)
 
         if show_plot:
             plt.show(block=True)
         else:
             plt.close(fig)
 
-    sys.exit(6)
+    return lst_pltnames
