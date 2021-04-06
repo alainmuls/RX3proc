@@ -451,8 +451,13 @@ def create_colormap_font(nrcolors: int, font_size: int) -> Tuple[list, dict]:
     # get the color names
     # color_names = [name for name in mcd.XKCD_COLORS]
     color_names = [name for name in mcd.XKCD_COLORS]
+    # color_names = [name for name in mcd.CSS4_COLORS]
+    # color_names = [name for name in mcd.TABLEAU_COLORS]
 
     color_step = len(color_names) // nrcolors
+    # print(len(color_names))
+    # print(nrcolors)
+    # print(color_step)
     color_used = color_names[::color_step]
 
     font = {'family': 'serif',

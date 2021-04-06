@@ -345,17 +345,17 @@ def obstle_plot_relative(marker: str, obsf: str, dfObsTle: pd.DataFrame, dTime: 
     return plt_name
 
 
-def obstle_plot_prns(marker: str,
-                     obsf: str,
-                     dTime: dict,
-                     navsig_name: str,
-                     lst_PRNs: list,
-                     dfNavSig: pd.DataFrame,
-                     dfTle: pd.DataFrame,
-                     show_plot: bool = False,
-                     logger: logging.Logger = None):
+def obstle_plot_arcs_prns(marker: str,
+                          obsf: str,
+                          dTime: dict,
+                          navsig_name: str,
+                          lst_PRNs: list,
+                          dfNavSig: pd.DataFrame,
+                          dfTle: pd.DataFrame,
+                          show_plot: bool = False,
+                          logger: logging.Logger = None) -> str:
     """
-    tle_plot_arcs plots the arcs caclculated by TLE for the GNSS
+    obstle_plot_arcs_prns plots the arcs caclculated by TLE for the GNSS and selected PRNs
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -491,7 +491,7 @@ def plot_prn_navsig_obs(marker: str,
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
     lst_colors, title_font = amutils.create_colormap_font(nrcolors=1, font_size=12)
 
-    if obst[0] == 'S':  # more detailled plot for SNR analysis
+    if obst[0] == 'S':  # more detailed plot for SNR analysis
         fig = plt.figure(figsize=(12, 7))
         gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[4, 2, 1])
         axObst, axSNR, axTLE = gs.subplots(sharex=True)
@@ -588,3 +588,69 @@ def plot_prn_navsig_obs(marker: str,
         plt.close(fig)
 
     return plt_name
+
+
+def obstle_plot_gnss_obst(marker: str,
+                          obsf: str,
+                          dTime: dict,
+                          navsig_name: str,
+                          lst_PRNs: list,
+                          dfNavSig: pd.DataFrame,
+                          navsig_obst_lst: list,
+                          dfTle: pd.DataFrame,
+                          show_plot: bool = False,
+                          logger: logging.Logger = None) -> list:
+    """
+    obstle_plot_gnss_obst plots for a GNSS the selected obst for all selected PRNs on 1 plot
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+    # set up the plot
+    plt.style.use('ggplot')
+
+    # get min and max times according the observation smade
+    amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
+
+    # used markers
+    max_prn = 36
+    lst_colors, title_font = amutils.create_colormap_font(nrcolors=max_prn, font_size=12)
+
+    # plot per obst all PRN  for this navigation signal
+    for obst in navsig_obst_lst:
+        fig = plt.figure(figsize=(9, 7))
+        gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[5, 1])
+        axObst, axTLE = gs.subplots(sharex=True)
+
+        # retain only the current obst in dataframe
+        dfNavSigObst = dfNavSig[['DATE_TIME', 'PRN', obst]]
+        for prn, prn_color in zip(lst_PRNs, lst_colors[:len(lst_PRNs)]):
+            dfNavSigObstPRN = dfNavSigObst[(dfNavSigObst['PRN'] == prn)]
+            amutils.logHeadTailDataFrame(df=dfNavSigObstPRN, dfName='dfNavSigObstPRN', callerName=cFuncName, logger=logger)
+
+            axObst.plot(dfNavSigObstPRN['DATE_TIME'],
+                        dfNavSigObstPRN[obst],
+                        linestyle='', marker='.', markersize=2,
+                        color=prn_color, label=prn)
+
+            # read in the timings for the TLE of this PRN
+            dfTlePrn = dfTle.loc[prn]
+            iPRN = int(prn[1:])
+            for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
+                axTLE.plot_date([dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_rise),
+                                 dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_set)],
+                                [iPRN, iPRN],
+                                linestyle='-', linewidth=2, marker='')
+
+                # add a tick at culmination point
+                if isinstance(tle_cul, dt.time):
+                    axTLE.plot(dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_cul),
+                               iPRN,
+                               marker='v', markersize=3)
+
+        if show_plot:
+            plt.show(block=True)
+        else:
+            plt.close(fig)
+
+    sys.exit(6)

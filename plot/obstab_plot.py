@@ -4,7 +4,6 @@ from termcolor import colored
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
-from typing import Tuple
 import matplotlib.ticker as ticker
 import pandas as pd
 from matplotlib import dates

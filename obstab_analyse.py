@@ -199,7 +199,7 @@ def analyse_obsprn(marker: str,
                    dfPrnNavSig: pd.DataFrame,
                    dfPrnTle: pd.DataFrame,
                    prn: str,
-                   navsig_obs_lst: list,
+                   navsig_obst_lst: list,
                    snrth: float,
                    interval: int,
                    show_plot: bool = False,
@@ -234,8 +234,8 @@ def analyse_obsprn(marker: str,
     amutils.logHeadTailDataFrame(df=dfPrnNavSig, dfName='dfPrnNavSig', callerName=cFuncName, logger=logger)
 
     # examine the requested observations for this navigation signal
-    print('{}: navsig_obs_lst = {}'.format(prn, navsig_obs_lst))
-    for navsig_obs in navsig_obs_lst:
+    print('{}: navsig_obst_lst = {}'.format(prn, navsig_obst_lst))
+    for navsig_obs in navsig_obst_lst:
         print('{}: navsig_obs = {}'.format(prn, navsig_obs))
         # select only the elements for this prn
         dfPrnNSObs = dfPrnNavSig[['DATE_TIME', 'dt', 'PRN', navsig_obs]].dropna()
@@ -382,19 +382,31 @@ def main_obstab_analyse(argv):
 
         amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
 
-
-        dTab['plots'][nav_signal] = tleobs_plot.obstle_plot_prns(marker=dTab['marker'],
-                                                                obsf=dTab['obstabf'],
-                                                                dTime=dTab['time'],
-                                                                navsig_name=nav_signal_name,
-                                                                lst_PRNs=dTab['lst_CmnPRNs'],
-                                                                dfNavSig=dfNavSig,
-                                                                dfTle=dfTLE,
-                                                                logger=logger,
-                                                                show_plot=show_plot)
+        dTab['plots'][nav_signal] = tleobs_plot.obstle_plot_arcs_prns(marker=dTab['marker'],
+                                                                      obsf=dTab['obstabf'],
+                                                                      dTime=dTab['time'],
+                                                                      navsig_name=nav_signal_name,
+                                                                      lst_PRNs=dTab['lst_CmnPRNs'],
+                                                                      dfNavSig=dfNavSig,
+                                                                      dfTle=dfTLE,
+                                                                      logger=logger,
+                                                                      show_plot=show_plot)
 
         # perform analysis of the observations done per PRN and per navigation signal
-        lst_navsig_obs = [navsig_obs for navsig_obs in dTab['obsfreqs'] if navsig_obs.endswith(nav_signal)]
+        lst_navsig_obst = [navsig_obs for navsig_obs in dTab['obsfreqs'] if navsig_obs.endswith(nav_signal)]
+
+        # create plot with all selected PRNs for the selected obstypes
+
+        tleobs_plot.obstle_plot_gnss_obst(marker=dTab['marker'],
+                                          obsf=dTab['obstabf'],
+                                          dTime=dTab['time'],
+                                          navsig_name=nav_signal_name,
+                                          lst_PRNs=dTab['lst_CmnPRNs'],
+                                          dfNavSig=dfNavSig,
+                                          navsig_obst_lst=lst_navsig_obst,
+                                          dfTle=dfTLE,
+                                          logger=logger,
+                                          show_plot=show_plot)
 
         for prn in dTab['lst_CmnPRNs']:
 
@@ -414,7 +426,7 @@ def main_obstab_analyse(argv):
                            prn=prn,
                            dfPrnTle=dfTLEPrn,
                            dfPrnNavSig=dfNavSigPRN,
-                           navsig_obs_lst=lst_navsig_obs,
+                           navsig_obst_lst=lst_navsig_obst,
                            snrth=dTab['cli']['snrth'],
                            interval=dTab['time']['interval'],
                            show_plot=show_plot,
@@ -428,7 +440,6 @@ def main_obstab_analyse(argv):
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
     sec_obstab.append(ssec_tleobs)
-
 
     sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))
     sys.exit(55)
