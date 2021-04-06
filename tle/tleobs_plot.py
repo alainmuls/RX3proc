@@ -640,13 +640,13 @@ def obstle_plot_gnss_obst(marker: str,
                 axTLE.plot_date([dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_rise),
                                  dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_set)],
                                 [iPRN, iPRN],
-                                linestyle='-', linewidth=2, marker='')
+                                linestyle='-', linewidth=2, marker='', color=prn_color)
 
                 # add a tick at culmination point
                 if isinstance(tle_cul, dt.time):
                     axTLE.plot(dt.datetime.combine(dfNavSigObstPRN.DATE_TIME.iloc[0], tle_cul),
                                iPRN,
-                               marker='v', markersize=3)
+                               marker='v', markersize=3, color=prn_color)
 
         if show_plot:
             plt.show(block=True)
