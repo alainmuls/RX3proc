@@ -260,6 +260,7 @@ def obstab_tleobs_overview(dfTle: pd.DataFrame,
     print('navsigs = {}'.format(navsigs))
     for navsig in navsigs:
         print('navsig = {}'.format(navsig))
+        print('navsig_plts = {}'.format(navsig_plts))
 
         # add figures representing the observations per navigation signal
         sssec.append(NoEscape(r'Figure \vref{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navs:s}'.format(navs=navsig) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE).'.format(gnss=gnss, navs=navsig)))
