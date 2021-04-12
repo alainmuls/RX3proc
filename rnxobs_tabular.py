@@ -38,11 +38,25 @@ def treatCmdOpts(argv):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('--obsfile', help='RINEX observation file', type=str, required=True)
+    parser.add_argument('--obsfile',
+                        help='RINEX observation file',
+                        type=str,
+                        required=True)
 
-    parser.add_argument('--gnsss', help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')), default=gfzc.lst_GNSSs[0], type=str, required=False, action=gco.gnss_action, nargs='+')
+    parser.add_argument('--gnsss',
+                        help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')),
+                        default=gfzc.lst_GNSSs[0],
+                        type=str,
+                        required=False,
+                        action=gco.gnss_action,
+                        nargs='+')
 
-    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
+    parser.add_argument('--logging',
+                        help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')),
+                        nargs=2,
+                        required=False,
+                        default=gco.lst_logging_choices[3:5],
+                        action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv[1:])
@@ -51,7 +65,10 @@ def treatCmdOpts(argv):
     return args.obsfile, args.gnsss, args.logging
 
 
-def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: logging.Logger = None) -> Tuple[str, str]:
+def create_tabular_observations(gfzrnx: str,
+                                obsf: str,
+                                gnss: str,
+                                logger: logging.Logger = None) -> Tuple[str, str]:
     """
     create_create_tabular_observations creates for the selected GNSSs the tabular observation file and returns its name
     """
@@ -60,14 +77,20 @@ def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: loggi
     # create the observation tabular file
     obs_tabf = '{basen:s}_{gnss:s}.obstab'.format(basen=os.path.splitext(obsf)[0], gnss=gnss)
 
-    args4GFZRNX = [gfzrnx, '-finp', obsf, '-tab_obs', '-fout', obs_tabf, '-f', '-tab_sep', ',', '-satsys', gnss]
+    args4GFZRNX = [gfzrnx, '-finp', obsf,
+                           '-tab_obs',
+                           '-fout', obs_tabf,
+                           '-f', '-tab_sep', ',',
+                           '-satsys', gnss]
 
     if logger is not None:
         logger.info('{func:s} creating observation tabular file {obstab:s}'.format(obstab=colored(obs_tabf, 'blue'), func=cFuncName))
     # run program
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=args4GFZRNX, logger=logger)
     if err_code != amc.E_SUCCESS:
-        logger.error('{func:s}: error {err!s} creating observation tabular file {obstab:s}'.format(err=err_code, obstab=colored(obs_tabf, 'blue'), func=cFuncName))
+        logger.error('{func:s}: error {err!s} creating observation tabular file {obstab:s}'.format(err=err_code,
+                                                                                                   obstab=colored(obs_tabf, 'blue'),
+                                                                                                   func=cFuncName))
         sys.exit(err_code)
     else:
         print('proc_out = \n{!s}'.format(proc_out))
@@ -75,14 +98,20 @@ def create_tabular_observations(gfzrnx: str, obsf: str, gnss: str, logger: loggi
     # create the observation statistics file
     # gfzrnx -finp COMB00XXX_R_20191340000_01D_01S_MO.rnx -stk_obs -obs_types S
     obs_statf = '{basen:s}_{gnss:s}.obsstat'.format(basen=os.path.splitext(obsf)[0], gnss=gnss)
-    args4GFZRNX = [gfzrnx, '-finp', obsf, '-stk_obs', '-fout', obs_statf, '-f', '-satsys', gnss]
+    args4GFZRNX = [gfzrnx, '-finp', obsf,
+                           '-stk_obs',
+                           '-fout', obs_statf,
+                           '-f',
+                           '-satsys', gnss]
 
     if logger is not None:
         logger.info('{func:s} creating observation statistics file {obstab:s}'.format(obstab=colored(obs_statf, 'blue'), func=cFuncName))
     # run program
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=args4GFZRNX, logger=logger)
     if err_code != amc.E_SUCCESS:
-        logger.error('{func:s}: error {err!s} creating observation statistics file {obstab:s}'.format(err=err_code, obstab=colored(obs_statf, 'blue'), func=cFuncName))
+        logger.error('{func:s}: error {err!s} creating observation statistics file {obstab:s}'.format(err=err_code,
+                                                                                                      obstab=colored(obs_statf, 'blue'),
+                                                                                                      func=cFuncName))
         sys.exit(err_code)
     else:
         print('proc_out = \n{!s}'.format(proc_out))
@@ -113,9 +142,9 @@ def check_arguments(logger: logging.Logger = None):
         sys.exit(amc.E_FAILURE)
 
 
-def main_rnx_tabular(argv) -> dict:
+def main_rnx_obstab(argv) -> dict:
     """
-    main_rnx_tabular creates observation tabular/statistics file for selected GNSSs
+    main_rnx_obstab creates observation tabular/statistics file for selected GNSSs
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -146,8 +175,14 @@ def main_rnx_tabular(argv) -> dict:
     dGFZ['bin']['gfzrnx'] = location.locateProg(progName='gfzrnx', logger=logger)
 
     # examine the header of the RX3 observation file
-    dGFZ['hdr'] = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZ['bin']['gfzrnx'], obs3f=dGFZ['cli']['obsf'], logger=logger)
-    logger.info('{func:s}: dGFZ[hdr] =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor)))
+    dGFZ['hdr'] = rnxobs_analysis.RX3obs_header_info(gfzrnx=dGFZ['bin']['gfzrnx'],
+                                                     obs3f=dGFZ['cli']['obsf'],
+                                                     logger=logger)
+    logger.info('{func:s}: dGFZ[hdr] =\n{json!s}'.format(func=cFuncName,
+                                                         json=json.dumps(dGFZ['hdr'],
+                                                                         sort_keys=False,
+                                                                         indent=4,
+                                                                         default=amutils.json_convertor)))
 
     # save the header info for later usage
     dGFZ['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dCLI['obsf'])[0])
@@ -162,11 +197,20 @@ def main_rnx_tabular(argv) -> dict:
     dGFZ['info']['yyyy'] = int(dGFZ['cli']['obsf'][12:16])
     dGFZ['info']['doy'] = int(dGFZ['cli']['obsf'][16:19])
 
-    logger.info('{func:s}: dGFZ =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    logger.info('{func:s}: dGFZ =\n{json!s}'.format(func=cFuncName,
+                                                    json=json.dumps(dGFZ,
+                                                                    sort_keys=False,
+                                                                    indent=4,
+                                                                    default=amutils.json_convertor)))
 
-    sec_script = ltx_rnxobs_reporting.rnxobs_script_information(dCli=dGFZ['cli'], dHdr=dGFZ['hdr'], dInfo=dGFZ['info'], script_name=os.path.basename(__file__))
+    sec_script = ltx_rnxobs_reporting.rnxobs_script_information(dCli=dGFZ['cli'],
+                                                                dHdr=dGFZ['hdr'],
+                                                                dInfo=dGFZ['info'],
+                                                                script_name=os.path.basename(__file__))
 
-    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], '{marker:s}_{gnsss:s}_01_script_info'.format(marker=dGFZ['info']['marker'], gnsss=''.join(dGFZ['cli']['GNSSs'])))
+    dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'],
+                                         '{marker:s}_01_{gnsss:s}_script_info'.format(marker=dGFZ['info']['marker'],
+                                                                                      gnsss=''.join(dGFZ['cli']['GNSSs'])))
     sec_script.generate_tex(dGFZ['ltx']['script'])
 
     # create the tabular observation file for the selected GNSSs
@@ -175,13 +219,20 @@ def main_rnx_tabular(argv) -> dict:
         # create names for obs_tab and obs_stat files for current gnss
         obs_tabf = 'obs_{gnss:s}_tabf'.format(gnss=gnss)
         obs_statf = 'obs_{gnss:s}_statf'.format(gnss=gnss)
-        dGFZ['obstab'][gnss][obs_tabf], dGFZ['obstab'][gnss][obs_statf] = create_tabular_observations(gfzrnx=dGFZ['bin']['gfzrnx'], obsf=dGFZ['cli']['obsf'], gnss=gnss, logger=logger)
+        dGFZ['obstab'][gnss][obs_tabf], dGFZ['obstab'][gnss][obs_statf] = create_tabular_observations(gfzrnx=dGFZ['bin']['gfzrnx'],
+                                                                                                      obsf=dGFZ['cli']['obsf'],
+                                                                                                      gnss=gnss,
+                                                                                                      logger=logger)
 
         # plot the observation statistics
         # obsstat_plot.obsstat_plot_obscount(obs_statf=dGFZ['obstab'][obs_statf], gnss=gnss, gfzrnx=dGFZ['bin']['gfzrnx'], show_plot=show_plot, logger=logger)
 
     # report to the user
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dGFZ, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName,
+                                                                   json=json.dumps(dGFZ,
+                                                                                   sort_keys=False,
+                                                                                   indent=4,
+                                                                                   default=amutils.json_convertor)))
 
     copyfile(log_name, os.path.join(dGFZ['cli']['path'], '{:s}.log'.format(os.path.basename(__file__).replace('.', '_'))))
     os.remove(log_name)
@@ -190,6 +241,6 @@ def main_rnx_tabular(argv) -> dict:
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    dObstabs = main_rnx_tabular(sys.argv)
+    dObstabs = main_rnx_obstab(sys.argv)
 
     print('dObstabs = {!s}'.format(dObstabs))

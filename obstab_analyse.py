@@ -383,7 +383,7 @@ def main_obstab_analyse(argv):
                                                          lst_PRNs=dTab['lst_CmnPRNs'],
                                                          lst_NavSignals=dTab['nav_signals'],
                                                          lst_ObsFreqs=dTab['obsfreqs'])
-    dTab['ltx']['obstab'] = '{marker:s}_{gnss:s}_03_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss'])
+    dTab['ltx']['obstab'] = '{marker:s}_03_{gnss:s}_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss'])
 
     for nav_signal in dTab['nav_signals']:
         # dict for keeping the obtained info

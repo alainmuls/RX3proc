@@ -1,7 +1,6 @@
 import os
-import sys
 from math import isnan
-from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection
+from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, MultiColumn
 import datetime as dt
 from pylatex.utils import bold
 from nested_lookup import nested_lookup
@@ -96,7 +95,8 @@ def rnxobs_script_information(dCli: dict,
 
 def obsstat_analyse(obsstatf: str,
                     dfObsTle: pd.DataFrame,
-                    plots: dict) -> Subsection:
+                    plots: dict,
+                    script_name: str) -> Subsection:
     """
     obsstat_analyse summarises the observations compared to TLE information obtained from file obsstatf
     """
@@ -106,39 +106,63 @@ def obsstat_analyse(obsstatf: str,
     col_names = dfObsTle.columns.tolist()
     GNSS = col_names[col_names.index('PRN') - 1]
     obstypes = [x for x in col_names[col_names.index('PRN') + 1:]]
-
+    print('obstypes = {}'.format(obstypes))
     # we only look at the SNR values since the same value for C/L/D, thus remove starting S
-    obst_txt = ['Observation type: +{:s}'.format(x[1:]) for x in obstypes[:-1]]
-    obst_txt.append(obstypes[-1])
-
-    ssec.append('The following observations for {gnss:s} were logged: {obst:s}'.format(gnss=gfzc.dict_GNSSs[GNSS], obst=' '.join(obst_txt)))
+    navsigs = ['{gnss:s}{navsig:s}'.format(gnss=GNSS, navsig=x[1:]) for x in obstypes[:-1]]
+    ssec.append('Logged navigation signals for {gnss:s}: {obst:s}'.format(gnss=gfzc.dict_GNSSs[GNSS],
+                                                                          obst=' '.join(navsigs)))
+    # add TLE_count to navsigs
+    # navsigs.append(obstypes[-1])
 
     with ssec.create(Subsubsection(title='Observables count per navigation signal', numbering=True)) as sssec:
         # add timing and observation count info
-        sssec.append('The percentages for each navigation signal are calculated by using the possible number of observations obtained from TLEs for each individual satellite.')
+        sssec.append('The percentages for each navigation signal are calculated by using the possible number of observations obtained from TLEs for each satellite.')
 
         # determine align formats for langtabu
-        fmt_tabu = 'l|' + 'r' * (len(obstypes) - 1) + '|r'
+        fmt_tabu = 'l|' + 'rr' * len(navsigs) + '|r'
 
         with sssec.create(LongTabu(fmt_tabu, pos='l', col_space='2pt')) as longtabu:
-            longtabu.add_row(['PRN'] + obst_txt, mapper=[bold])  # header row
+            print(['PRN'] + navsigs + [obstypes[-1]])
+
+            col_row = ['PRN']
+            for navsig in navsigs:
+                col_row += [MultiColumn(size=2, align='|c|', data=navsig)]
+            col_row += [obstypes[-1]]
+            print(col_row)
+
+            longtabu.add_row(col_row, mapper=[bold])  # header row
             longtabu.add_hline()
             longtabu.end_table_header()
-            longtabu.add_row(['PRN'] + obst_txt, mapper=[bold])  # header row
-            longtabu.add_hline()
-
-            # for name, values in dfObsTle.iteritems():
 
             for index, row in dfObsTle.iterrows():
-                longtabu.add_row([row.PRN] + [int(x) for x in row[obstypes].tolist()])
 
                 # add percentage in the following row if TLE_count differs 0
-                tle_obs = row[obstypes[-1]] / 100
-                if tle_obs > 0:
-                    longtabu.add_row([''] + ['{:.1f}% '.format(float(x / tle_obs)) for x in row[obstypes[:-1]].tolist()] + [''])
-                else:
-                    longtabu.add_row([''] + ['---'] * len(obstypes[:-1]) + [''])  # add emty row
+                # tle_obs = row[obstypes[-1]] / 100
+                # if tle_obs > 0:
+                #     obstle_perc = ['{:.1f}%'.format(float(x / tle_obs)) for x in row[obstypes[:-1]].tolist()]
+                #     # longtabu.add_row([''] + ['{:.1f}% '.format(float(x / tle_obs)) for x in row[obstypes[:-1]].tolist()] + [''])
+                # else:
+                #     obstle_perc = ['---'] * len(obstypes[:-1])
+                #     # longtabu.add_row([''] + ['---'] * len(obstypes[:-1]) + [''])  # add emty row
 
+                prn_row = [row.PRN]
+                tle_obs = row[obstypes[-1]] / 100
+                for obstype in obstypes[:-1]:
+                    print("type(row[obstype]) = {}".format(type(row[obstype])))
+                    prn_row += ['{}'.format(row[obstype])]
+
+                    if tle_obs > 0:
+                        print("row[obstype]/tle = {:.1f}%".format(row[obstype] / tle_obs))
+                        prn_row += ['{:.1f}%'.format(row[obstype] / tle_obs)]
+                        prn_row += ['{}'.format(row[obstypes[-1]])]
+                    else:
+                        prn_row += ['---']
+                        prn_row += ['{}'.format(row[obstypes[-1]])]
+
+                print('prn_row = {}'.format(prn_row))
+
+                # print([row.PRN, '{}'.format(row[obstypes[:-1]].tolist()), '{}'.format(obstle_perc), '{}'.format(obstypes[-1])])
+                longtabu.add_row(prn_row)
             longtabu.add_hline()
 
         # add figures representing the observations
@@ -266,7 +290,7 @@ def obstab_tleobs_overview(dfTle: pd.DataFrame,
         sssec.append(NoEscape(r'Figure \vref{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navs:s}'.format(navs=navsig) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE).'.format(gnss=gnss, navs=navsig)))
 
         with sssec.create(Figure(position='htbp')) as plot:
-            plot.add_image(navsig_plts[navsig],
+            plot.add_image(navsig_plts[navsig]['tle-obs'],
                            width=NoEscape(r'0.8\textwidth'),
                            placement=NoEscape(r'\centering'))
 

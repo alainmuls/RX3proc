@@ -253,6 +253,6 @@ def tle_rise_set_times(prn: int, df_tle: pd.DataFrame, marker: sf.Topos, t0: sf.
             logger.info('{func:s}:          arc[{nr:d}]: {stdt:s} -> {culdt:s} -> {enddt:s}'.format(nr=i, stdt=colored(stdt.strftime('%H:%M:%S'), 'yellow'), culdt=colored(str_culdt, 'yellow'), enddt=colored(enddt.strftime('%H:%M:%S'), 'yellow'), func=cFuncName))
 
     except IndexError:
-        logger.info('{func:s}: No NARAD TLE file present for {prn:s}'.format(prn=colored(prn, 'red'), func=cFuncName))
+        logger.info('{func:s}: No NORAD TLE file present for {prn:s}'.format(prn=colored(prn, 'red'), func=cFuncName))
 
     return dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count

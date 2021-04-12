@@ -196,9 +196,9 @@ def tle_cvs(dfTle: pd.DataFrame, cvs_name: str, logger: logging.Logger = None):
         amutils.logHeadTailDataFrame(df=dfCvs, dfName='dfCvs', callerName=cFuncName, logger=logger)
 
 
-def main_obsstat_analyse(argv):
+def main_rnx_obsstat(argv):
     """
-    main_obsstat_analyse analyses the created OBSSTAT files and compares with TLE data
+    main_rnx_obsstat analyses the created OBSSTAT files and compares with TLE data
     """
 
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
@@ -227,7 +227,11 @@ def main_obsstat_analyse(argv):
         with open(dStat['obshdr'], 'rb') as handle:
             dStat['hdr'] = pickle.load(handle)
         dStat['marker'] = dStat['hdr']['file']['site']
+        # get interval,  start and end times of observation
         dStat['time']['interval'] = float(dStat['hdr']['file']['interval'])
+        dStat['time']['first'] = datetime.strptime(dStat['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
+        dStat['time']['last'] = datetime.strptime(dStat['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
+        # get frequencies in the observation file
         dStat['info']['freqs'] = dStat['hdr']['file']['sysfrq'][dStat['info']['gnss']]
     except IOError as e:
         logger.error('{func:s}: error {err!s} reading header file {hdrf:s}'.format(hdrf=colored(dStat['obshdr'], 'red'), err=e, func=cFuncName))
@@ -240,30 +244,40 @@ def main_obsstat_analyse(argv):
 
     logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dStat['obshdr'], 'blue')))
 
-    # determine start and end times of observation
-    DTGobs_start = datetime.strptime(dStat['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
-    DTGobs_end = datetime.strptime(dStat['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
-    # print(DTGobs_start)
-    # print(type(DTGobs_start))
+    # dStat['time']['first'] = datetime.strptime(dStat['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
+    # dStat['time']['last'] = datetime.strptime(dStat['hdr']['data']['epoch']['last'].split('.')[0], '%Y %m %d %H %M %S')
+    # print(dStat['time']['first'])
+    # print(type(dStat['time']['first']))
 
     # read obsstat into a dataframe and select the SNR for the selected frequencies
     dfObsStat = read_obsstat(logger=logger)
     amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
 
     # get the observation time spans based on TLE values
-    # dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(), cur_date=dStat['time']['date'], interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
-    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(), DTG_start=DTGobs_start, DTG_end=DTGobs_end, interval=dStat['time']['interval'], cutoff=dStat['cli']['mask'], logger=logger)
+    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(),
+                                           DTG_start=dStat['time']['first'],
+                                           DTG_end=dStat['time']['last'],
+                                           interval=dStat['time']['interval'],
+                                           cutoff=dStat['cli']['mask'],
+                                           logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
 
     # combine the observation count and TLE count per PRN
     dfTLEtmp = pd.DataFrame(columns=['PRN', 'TLE_count'])  # , dtype={'PRN':'object','TLE_count':'int'})
-    dfTLEtmp.PRN = dfTLE.index
+    dfTLEtmp.PRN = dfTLE.index  # convert the TLE index (which are the PRNs) to a column
+
+    # add colmun which contains the total number of observations over all arcs
     for i, (prn, tle_prn) in enumerate(dfTLE.iterrows()):
         dfTLEtmp.iloc[i].TLE_count = sum(tle_prn.tle_arc_count)
+
+    # combine TLE and actual observations (only SNR column used since values for all other obst are the same)
     dfObsTLE = pd.merge(dfObsStat, dfTLEtmp, on='PRN')
-    amutils.logHeadTailDataFrame(df=dfObsTLE, dfName='dfObsTLE', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfObsTLE,
+                                 dfName='dfObsTLE',
+                                 callerName=cFuncName,
+                                 logger=logger)
     # store the observation / TLE info  in CVS file
-    obsstat_name = '{base:s}.obstle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
+    obsstat_name = '{basen:s}.obstle'.format(basen=os.path.basename(dStat['obsstatf']).split('.')[0])
     dfObsTLE.to_csv(obsstat_name, index=False)
 
     # store the information in cvsdb
@@ -272,21 +286,44 @@ def main_obsstat_analyse(argv):
     cvsdb_ops.cvsdb_sort(cvsdb_name=dStat['cli']['cvsdb'], logger=logger)
 
     # plot the Observation and TLE observation count
-    dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=False, show_plot=show_plot, logger=logger)
-    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'], obsf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], reduce2percentage=True, show_plot=show_plot, logger=logger)
-    dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(marker=dStat['marker'], obsf=dStat['obsstatf'], dfObsTle=dfObsTLE, dTime=dStat['time'], show_plot=show_plot, logger=logger)
+    dStat['plots']['obs_count'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'],
+                                                                   obsf=dStat['obsstatf'],
+                                                                   dfObsTle=dfObsTLE,
+                                                                   dTime=dStat['time'],
+                                                                   reduce2percentage=False,
+                                                                   show_plot=show_plot,
+                                                                   logger=logger)
+    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'],
+                                                                  obsf=dStat['obsstatf'],
+                                                                  dfObsTle=dfObsTLE,
+                                                                  dTime=dStat['time'],
+                                                                  reduce2percentage=True,
+                                                                  show_plot=show_plot,
+                                                                  logger=logger)
+    dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(marker=dStat['marker'],
+                                                                  obsf=dStat['obsstatf'],
+                                                                  dfObsTle=dfObsTLE,
+                                                                  dTime=dStat['time'],
+                                                                  show_plot=show_plot,
+                                                                  logger=logger)
 
-    sec_obsstat = ltx_rnxobs_reporting.obsstat_analyse(obsstatf=dStat['obsstatf'], dfObsTle=dfObsTLE, plots=dStat['plots'], script_name=os.path.basename(__file__))
+    # create a section for latex reporting
+    sec_obsstat = ltx_rnxobs_reporting.obsstat_analyse(obsstatf=dStat['obsstatf'],
+                                                       dfObsTle=dfObsTLE,
+                                                       plots=dStat['plots'],
+                                                       script_name=os.path.basename(__file__))
+    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'],
+                                           '{marker:s}_02_{gnss:s}_obs_stat'.format(marker=dStat['obsstatf'][:9],
+                                                                                    gnss=dStat['info']['gnss']))
+    sec_obsstat.generate_tex(dStat['ltx']['obsstat'])
 
     # store the observation info from TLE in CVS file
-    tle_name = '{base:s}.tle'.format(base=os.path.basename(dStat['obsstatf']).split('.')[0])
+    tle_name = '{basen:s}.tle'.format(basen=os.path.basename(dStat['obsstatf']).split('.')[0])
     tle_cvs(dfTle=dfTLE, cvs_name=tle_name, logger=logger)
     # dfTLE.to_csv(tle_name, index=True, date_format='%H:%M:%S')
 
     # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dStat, sort_keys=False, indent=4, default=amutils.json_convertor)))
-    dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'], '{marker:s}_{gnss:s}_02_obs_stat'.format(marker=dStat['obsstatf'][:9], gnss=dStat['info']['gnss']))
-    sec_obsstat.generate_tex(dStat['ltx']['obsstat'])
 
     # report to the user
 
@@ -301,4 +338,4 @@ def main_obsstat_analyse(argv):
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    main_obsstat_analyse(sys.argv)
+    main_rnx_obsstat(sys.argv)
