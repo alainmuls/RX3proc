@@ -308,10 +308,10 @@ def main_rnx_obsstat(argv):
                                                                   logger=logger)
 
     # create a section for latex reporting
-    sec_obsstat = ltx_rnxobs_reporting.obsstat_analyse(obsstatf=dStat['obsstatf'],
-                                                       dfObsTle=dfObsTLE,
-                                                       plots=dStat['plots'],
-                                                       script_name=os.path.basename(__file__))
+    sec_obsstat = ltx_rnxobs_reporting.ltx_obsstat_analyse(obsstatf=dStat['obsstatf'],
+                                                           dfObsTle=dfObsTLE,
+                                                           plots=dStat['plots'],
+                                                           script_name=os.path.basename(__file__))
     dStat['ltx']['obsstat'] = os.path.join(dStat['ltx']['path'],
                                            '{marker:s}_02_{gnss:s}_obs_stat'.format(marker=dStat['obsstatf'][:9],
                                                                                     gnss=dStat['info']['gnss']))

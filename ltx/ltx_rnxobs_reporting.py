@@ -1,8 +1,9 @@
 import os
 from math import isnan
-from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, MultiColumn
-import datetime as dt
+from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, Enumerate
 from pylatex.utils import bold
+from pylatex.section import Paragraph
+import datetime as dt
 from nested_lookup import nested_lookup
 import pandas as pd
 
@@ -26,7 +27,7 @@ def rnxobs_script_information(dCli: dict,
 
     ssec = Subsection('Script details')
     with ssec.create(Subsubsection(title='Program information', numbering=True)) as sssec:
-        with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+        with sssec.create(LongTabu('rcl', pos='l', col_space='4pt')) as longtabu:
             longtabu.add_row(('Script', ':', script_name))
             longtabu.add_row(('Run at', ':', '{dt!s}'.format(dt=dt.datetime.now().strftime("%d/%m/%Y %H:%M"))))
             longtabu.add_row(('Run by', ':', '{author:s}'.format(author=', '.join(info_report['author']))))
@@ -34,7 +35,7 @@ def rnxobs_script_information(dCli: dict,
             # longtabu.add_empty_row()
 
     with ssec.create(Subsubsection(title='Parameters', numbering=True)) as sssec:
-        with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+        with sssec.create(LongTabu('rcl', pos='l', col_space='4pt')) as longtabu:
             longtabu.add_row(('RINEX root directory', ':', os.path.expanduser(dCli['path'])))
             longtabu.add_row(('RINEX observation file', ':', dCli['obsf']))
             longtabu.add_row(('RINEX version', ':', dHdr['file']['version']))
@@ -43,7 +44,7 @@ def rnxobs_script_information(dCli: dict,
             longtabu.add_empty_row()
 
     with ssec.create(Subsubsection(title='Observation header information', numbering=True)) as sssec:
-        with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+        with sssec.create(LongTabu('rcl', pos='l', col_space='4pt')) as longtabu:
             # add start / end DTG and interval
             epoch_first = nested_lookup(key='first', document=dHdr)[0]
             epoch_last = nested_lookup(key='last', document=dHdr)[0]
@@ -76,7 +77,7 @@ def rnxobs_script_information(dCli: dict,
 
     with ssec.create(Subsubsection(title='Logged observables', numbering=True)) as sssec:
         # add info about observable types logged
-        with sssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+        with sssec.create(LongTabu('rcl', pos='l', col_space='4pt')) as longtabu:
             for gnss, obstypes in dHdr['file']['sysobs'].items():
                 if gnss in dCli['GNSSs']:
                     if len(obstypes) > n:
@@ -93,12 +94,12 @@ def rnxobs_script_information(dCli: dict,
     return ssec
 
 
-def obsstat_analyse(obsstatf: str,
-                    dfObsTle: pd.DataFrame,
-                    plots: dict,
-                    script_name: str) -> Subsection:
+def ltx_obsstat_analyse(obsstatf: str,
+                        dfObsTle: pd.DataFrame,
+                        plots: dict,
+                        script_name: str) -> Subsection:
     """
-    obsstat_analyse summarises the observations compared to TLE information obtained from file obsstatf
+    ltx_obsstat_analyse summarises the observations compared to TLE information obtained from file obsstatf
     """
     ssec = Subsection('Observation statistics')
 
@@ -116,21 +117,23 @@ def obsstat_analyse(obsstatf: str,
 
     with ssec.create(Subsubsection(title='Observables count per navigation signal', numbering=True)) as sssec:
         # add timing and observation count info
-        sssec.append('The percentages for each navigation signal are calculated by using the possible number of observations obtained from TLEs for each satellite.')
+        sssec.append('The following table represents the number of observations made for each examined navigation signal. The percentages per navigation signal are calculated by dividing by the  number of observations obtained from Two Line Elements (TLE) at the recorded interval. The last column represents the number of observations possible during the observed time interval.')
 
         # determine align formats for langtabu
-        fmt_tabu = 'l|' + 'rr' * len(navsigs) + '|r'
+        fmt_tabu = 'l|' + 'rr|' * len(navsigs) + 'r'
 
-        with sssec.create(LongTabu(fmt_tabu, pos='l', col_space='2pt')) as longtabu:
+        # with sssec.create(Table(position='H')) as table:
+        with sssec.create(LongTabu(fmt_tabu, pos='l', col_space='4pt')) as longtabu:
             print(['PRN'] + navsigs + [obstypes[-1]])
 
             col_row = ['PRN']
             for navsig in navsigs:
-                col_row += [MultiColumn(size=2, align='|c|', data=navsig)]
+                # col_row += [MultiColumn(size=2, align='|c|', data=navsig)]
+                col_row += [navsig, '']
             col_row += [obstypes[-1]]
             print(col_row)
 
-            longtabu.add_row(col_row, mapper=[bold])  # header row
+            longtabu.add_row(col_row, mapper=[bold])  # header row , mapper=[bold]
             longtabu.add_hline()
             longtabu.end_table_header()
 
@@ -145,6 +148,9 @@ def obsstat_analyse(obsstatf: str,
                 #     obstle_perc = ['---'] * len(obstypes[:-1])
                 #     # longtabu.add_row([''] + ['---'] * len(obstypes[:-1]) + [''])  # add emty row
 
+                print('index = {}'.format(index))
+                print('row = {}'.format(row))
+
                 prn_row = [row.PRN]
                 tle_obs = row[obstypes[-1]] / 100
                 for obstype in obstypes[:-1]:
@@ -154,36 +160,34 @@ def obsstat_analyse(obsstatf: str,
                     if tle_obs > 0:
                         print("row[obstype]/tle = {:.1f}%".format(row[obstype] / tle_obs))
                         prn_row += ['{:.1f}%'.format(row[obstype] / tle_obs)]
-                        prn_row += ['{}'.format(row[obstypes[-1]])]
                     else:
                         prn_row += ['---']
-                        prn_row += ['{}'.format(row[obstypes[-1]])]
 
+                prn_row += ['{}'.format(row[obstypes[-1]])]
                 print('prn_row = {}'.format(prn_row))
 
                 # print([row.PRN, '{}'.format(row[obstypes[:-1]].tolist()), '{}'.format(obstle_perc), '{}'.format(obstypes[-1])])
                 longtabu.add_row(prn_row)
-            longtabu.add_hline()
 
         # add figures representing the observations
-        ssec.append(NoEscape(r'Figure \vref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the Two Line Elements (TLE). The relative observation count is represented in ' + r'Figure \vref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} and ' + r'Figure \vref{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
+        ssec.append(NoEscape(r'Figure \ref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the TLEs. The relative observation count is represented in ' + r'Figure \ref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} and ' + r'Figure \ref{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
 
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['obs_count'],
-                           width=NoEscape(r'0.8\textwidth'),
+                           width=NoEscape(r'0.95\textwidth'),
                            placement=NoEscape(r'\centering'))
             # plot.add_caption('Observation count per navigation signal')
             plot.add_caption(NoEscape(r'\label{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Observables overview for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['obs_perc'],
-                           width=NoEscape(r'0.8\textwidth'),
+                           width=NoEscape(r'0.95\textwidth'),
                            placement=NoEscape(r'\centering'))
             plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['relative'],
-                           width=NoEscape(r'0.8\textwidth'),
+                           width=NoEscape(r'0.95\textwidth'),
                            placement=NoEscape(r'\centering'))
             plot.add_caption(NoEscape(r'\label{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
@@ -193,7 +197,8 @@ def obsstat_analyse(obsstatf: str,
 def obstab_tleobs_ssec(obstabf: str,
                        lst_PRNs: list,
                        lst_NavSignals: list,
-                       lst_ObsFreqs) -> Subsection:
+                       lst_ObsFreqs: list,
+                       dfTle: pd.DataFrame) -> Subsection:
     """
     obstab_tleobs_ssec creates a subsection used for adding info about analysis of the observations
     """
@@ -202,7 +207,7 @@ def obstab_tleobs_ssec(obstabf: str,
     ssec = Subsection('Detailed analysis of observation types')
     ssec.append('Observation tabular file: {tabf:s}'.format(tabf=obstabf))
 
-    with ssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+    with ssec.create(LongTabu('rcl', pos='l', col_space='4pt')) as longtabu:
         if len(lst_PRNs) > n:
             sublst_PRNs = [lst_PRNs[i * n:(i + 1) *n] for i in range((len(lst_PRNs) + n - 1) // n)]
             for i, subsublst_PRNs in enumerate(sublst_PRNs):
@@ -213,7 +218,7 @@ def obstab_tleobs_ssec(obstabf: str,
         else:
             longtabu.add_row(('Examined satellites', ':', '{prns:s}'.format(prns=' '.join(lst_PRNs))))
 
-        longtabu.add_empty_row()
+        # longtabu.add_empty_row()
 
         if len(lst_NavSignals) > n:
             sublst_NavSignals = [lst_NavSignals[i * n:(i + 1) * n] for i in range((len(lst_NavSignals) + n - 1) // n)]
@@ -225,7 +230,7 @@ def obstab_tleobs_ssec(obstabf: str,
         else:
             longtabu.add_row(('Examined navigation signals', ':', '{obst:s}'.format(obst=' '.join(lst_NavSignals))))
 
-        longtabu.add_empty_row()
+        # longtabu.add_empty_row()
 
         if len(lst_ObsFreqs) > n:
             sublst_ObsFreqs = [lst_ObsFreqs[i * n:(i + 1) * n] for i in range((len(lst_ObsFreqs) + n - 1) // n)]
@@ -236,7 +241,28 @@ def obstab_tleobs_ssec(obstabf: str,
                     longtabu.add_row(('', '', '{obst:s}'.format(obst=' '.join(subsublst_ObsFreqs))))
         else:
             longtabu.add_row(('Examined observables', ':', '{obst:s}'.format(obst=' '.join(lst_ObsFreqs))))
-    ssec.append(' ')
+
+    # add the TLE rise / set / cul info
+    with ssec.create(Subsubsection(r'TLE time spans')) as sssec:
+        sssec.append(NoEscape(r'The table below represents the calculated rise and set times within the observation time span for a PRN based on the TLEs. When a culmination is within this interval, it is represented in the table.'))
+
+        with sssec.create(LongTabu('l|l|l|l|l', pos='l', col_space='4pt')) as longtabu2:
+            longtabu2.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+            longtabu2.add_hline()
+            longtabu2.end_table_header()
+            # longtabu2.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+            # longtabu2.add_hline()
+            # longtabu2.end_header()
+
+            for prn, row in dfTle.iterrows():
+                tabu_row = [prn]
+                for col in dfTle.columns.tolist():
+                    tle_toadd = [tle_conversion(tle_val) for tle_val in row[col]]
+                    tabu_row.append(', '.join(tle_toadd))
+
+                longtabu2.add_row(tabu_row)
+
+            longtabu2.add_hline()
 
     return ssec
 
@@ -254,31 +280,34 @@ def tle_conversion(tle_value):
             return str(tle_value)
 
 
-def obstab_tleobs_overview(dfTle: pd.DataFrame,
-                           gnss: str,
+def obstab_tleobs_overview(gnss: str,
                            navsigs: list,
-                           navsig_plts: dict) -> Subsubsection:
+                           navsig_plts: dict,
+                           navsig_obst_lst: dict) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
     """
-    sssec = Subsubsection('Comparison between navigation signal and TLE time spans')
+    sssec = Subsubsection(r'Navigation signals analysis')
 
-    with sssec.create(LongTabu('l|l|l|l|l', pos='l', col_space='2pt')) as longtabu:
-        longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-        longtabu.add_hline()
-        longtabu.end_table_header()
-        longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-        longtabu.add_hline()
+    # sssec.append(NoEscape(r'The table below represents the calculated rise and set times within the observation time span for a PRN based on the TLEs. When a culmination is within this interval, it is represented in the table.'))
 
-        for prn, row in dfTle.iterrows():
-            tabu_row = [prn]
-            for col in dfTle.columns.tolist():
-                tle_toadd = [tle_conversion(tle_val) for tle_val in row[col]]
-                tabu_row.append(', '.join(tle_toadd))
+    # with sssec.create(LongTabu('l|l|l|l|l', pos='l', col_space='4pt')) as longtabu:
+    #     longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+    #     longtabu.add_hline()
+    #     longtabu.end_table_header()
+    #     # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+    #     # longtabu.add_hline()
+    #     # longtabu.end_header()
 
-            longtabu.add_row(tabu_row)
+    #     for prn, row in dfTle.iterrows():
+    #         tabu_row = [prn]
+    #         for col in dfTle.columns.tolist():
+    #             tle_toadd = [tle_conversion(tle_val) for tle_val in row[col]]
+    #             tabu_row.append(', '.join(tle_toadd))
 
-        longtabu.add_hline()
+    #         longtabu.add_row(tabu_row)
+
+    #     longtabu.add_hline()
 
     # go over the available navigation signals
     print('navsigs = {}'.format(navsigs))
@@ -286,16 +315,25 @@ def obstab_tleobs_overview(dfTle: pd.DataFrame,
         print('navsig = {}'.format(navsig))
         print('navsig_plts = {}'.format(navsig_plts))
 
-        # add figures representing the observations per navigation signal
-        sssec.append(NoEscape(r'Figure \vref{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navs:s}'.format(navs=navsig) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE).'.format(gnss=gnss, navs=navsig)))
+        with sssec.create(Paragraph(r'Analysis of navigation signal {gnss:s}{navs:s}'.format(gnss=gnss, navs=navsig))) as paragraph:
 
-        with sssec.create(Figure(position='htbp')) as plot:
-            plot.add_image(navsig_plts[navsig]['tle-obs'],
-                           width=NoEscape(r'0.8\textwidth'),
-                           placement=NoEscape(r'\centering'))
+            with paragraph.create(Enumerate()) as enum:
 
-            # print(r'\label{fig:tle_navsig_' + r'{gnss:s}'.format(gnss=gnss) + r'{navs:s}'.format(navs=navsig) + r'}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig))
+                # add figures representing the observations per navigation signal
+                enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE). The culmination point is represented by a triangle.'.format(gnss=gnss, navs=navsig)))
 
-            plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig)))
+                with enum.create(Figure(position='htbp')) as plot:
+                    plot.add_image(navsig_plts[navsig]['tle-obs'],
+                                   width=NoEscape(r'0.95\textwidth'),
+                                   placement=NoEscape(r'\centering'))
+
+                    # print(r'\label{fig:tle_navsig_' + r'{gnss:s}'.format(gnss=gnss) + r'{navs:s}'.format(navs=navsig) + r'}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig))
+
+                    plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig)))
+
+                print('navsig_obst_lst[{}] = {}'.format(navsig, navsig_obst_lst[navsig]))
+
+                for navsig in navsig_obst_lst[navsig]:
+                    enum.add_item(r'Evolution of observation type {obst:s}'.format(obst=navsig))
 
     return sssec

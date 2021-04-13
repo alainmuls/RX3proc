@@ -17,7 +17,7 @@ def navtab_rinex_information(gnss: str, dnavInfo: dict) -> Subsection:
     ssec = Subsection(title='RINEX navigation analysis for {gnss:s}'.format(gnss=gfzc.dict_GNSSs[gnss]))
 
     # report the PRNs for which a navigation was received
-    with ssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+    with ssec.create(LongTabu('rcl', pos='l', col_space='4pt')) as longtabu:
         if len(dnavInfo['PRNs']) > n:
             subPRNs = [dnavInfo['PRNs'][i * n:(i + 1) * n] for i in range((len(dnavInfo['PRNs']) + n - 1) // n)]
             for i, subsubPRNs in enumerate(subPRNs):
@@ -28,7 +28,7 @@ def navtab_rinex_information(gnss: str, dnavInfo: dict) -> Subsection:
             # longtabu.add_empty_row()
 
         # only calculated for GALILEO
-    with ssec.create(LongTabu('rcl', pos='l', col_space='2pt')) as longtabu:
+    with ssec.create(LongTabu('rcl', pos='l', col_space='4pt')) as longtabu:
         if ('IODnav_errs' in dnavInfo.keys()) and dnavInfo['IODnav_errs'] > 0:
             longtabu.add_row(('Navigation data with IODnav = 0', ':', '{errnav:d}'.format(errnav=dnavInfo['IODnav_errs'])))
 
