@@ -404,6 +404,20 @@ def main_obstab_analyse(argv):
 
         amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
 
+        # create dataframe for this navsig with count of PRN at each date_time
+        dfNavSigPRNCount = dfNavSig.pivot_table(index=['DATE_TIME'], aggfunc='size').to_frame()
+        dfNavSigPRNCount.reset_index(inplace=True)
+        dfNavSigPRNCount.rename(columns={0: 'PRNcnt'}, inplace=True)
+        # add difference in PRNcnt and difference in DATE_TIME
+        dfNavSigPRNCount["dPRNcnt"] = dfNavSigPRNCount["PRNcnt"].diff(1)
+        dfNavSigPRNCount["dt"] = dfNavSigPRNCount["DATE_TIME"].diff(dTab['time']['interval']).dt.total_seconds()
+
+        # create a dataframe containing the times where there is a change in PRNcnt or a interval detected
+        dfPRNdiff = dfNavSigPRNCount.loc[(dfNavSigPRNCount['dPRNcnt'] != 0) | (dfNavSigPRNCount['dt'] > dTab['time']['interval'])]
+
+        amutils.logHeadTailDataFrame(df=dfNavSigPRNCount, dfName='dfNavSigPRNCount', callerName=cFuncName, logger=logger)
+        amutils.logHeadTailDataFrame(df=dfPRNdiff, dfName='dfPRNdiff', callerName=cFuncName, logger=logger)
+
         # create plot with all selected PRNs vs the TLE part per navigation signal
         dTab['plots'][nav_signal]['tle-obs'] = tleobs_plot.obstle_plot_arcs_prns(marker=dTab['marker'],
                                                                                  obsf=dTab['obstabf'],
@@ -425,10 +439,13 @@ def main_obstab_analyse(argv):
                                                                               navsig_name=nav_signal_name,
                                                                               lst_PRNs=dTab['lst_CmnPRNs'],
                                                                               dfNavSig=dfNavSig,
+                                                                              dfNavSigPRNcnt=dfNavSigPRNCount,
                                                                               navsig_obst_lst=lst_navsig_obst[nav_signal],
                                                                               dfTle=dfTLE,
                                                                               logger=logger,
                                                                               show_plot=show_plot)
+
+        sys.exit(99)
 
         for prn in dTab['lst_CmnPRNs']:
 

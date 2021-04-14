@@ -8,8 +8,7 @@ import logging
 import datetime as dt
 from matplotlib import dates
 from typing import Tuple
-from matplotlib.ticker import MultipleLocator
-import matplotlib.ticker as ticker
+from matplotlib.ticker import MultipleLocator, MaxNLocator
 
 from ampyutils import amutils
 from plot import plot_utils
@@ -651,6 +650,7 @@ def obstle_plot_gnss_obst(marker: str,
                           navsig_name: str,
                           lst_PRNs: list,
                           dfNavSig: pd.DataFrame,
+                          dfNavSigPRNcnt: pd.DataFrame,
                           navsig_obst_lst: list,
                           dfTle: pd.DataFrame,
                           show_plot: bool = False,
@@ -675,9 +675,9 @@ def obstle_plot_gnss_obst(marker: str,
 
     # plot per obst all PRN  for this navigation signal
     for obst in navsig_obst_lst:
-        fig = plt.figure(figsize=(9, 7))
-        gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[5, 1])
-        axObst, axTLE = gs.subplots(sharex=True)
+        fig = plt.figure(figsize=(10, 7))
+        gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[5, 2, 2])
+        axObst, axPRNcnt, axTLE = gs.subplots(sharex=True)
 
         # retain only the current obst in dataframe
         dfNavSigObst = dfNavSig[['DATE_TIME', 'PRN', obst]]
@@ -694,11 +694,11 @@ def obstle_plot_gnss_obst(marker: str,
             dfTlePrn = dfTle.loc[prn]
             iPRN = int(prn[1:])
             for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
-                print('prn = {}'.format(prn))
-                print('tle_rise = {}'.format(tle_rise))
-                print('tle_set = {}'.format(tle_set))
-                print('tle_cul = {}'.format(tle_cul))
-                print('cur_date = {}'.format(cur_date))
+                # print('prn = {}'.format(prn))
+                # print('tle_rise = {}'.format(tle_rise))
+                # print('tle_set = {}'.format(tle_set))
+                # print('tle_cul = {}'.format(tle_cul))
+                # print('cur_date = {}'.format(cur_date))
 
                 axTLE.plot_date([dt.datetime.combine(cur_date, tle_rise),
                                  dt.datetime.combine(cur_date, tle_set)],
@@ -710,6 +710,23 @@ def obstle_plot_gnss_obst(marker: str,
                     axTLE.plot(dt.datetime.combine(cur_date, tle_cul),
                                iPRN,
                                marker='v', markersize=3, color=prn_color)
+
+        # display the number of PRNs still observed
+        axPRNcnt.plot(dfNavSigPRNcnt[dfNavSigPRNcnt.PRNcnt >= 4].DATE_TIME,
+                      dfNavSigPRNcnt[dfNavSigPRNcnt.PRNcnt >= 4].PRNcnt,
+                      color='green',
+                      linestyle='', marker='.', markersize=2)
+        axPRNcnt.plot(dfNavSigPRNcnt[dfNavSigPRNcnt.PRNcnt < 4].DATE_TIME,
+                      dfNavSigPRNcnt[dfNavSigPRNcnt.PRNcnt < 4].PRNcnt,
+                      color='red',
+                      linestyle='', marker='.', markersize=2)
+
+        # set integer ticks
+        axPRNcnt.yaxis.set_major_locator(MaxNLocator(integer=True))
+        # axPRNcnt.set_ylim([0, dfNavSigPRNcnt.PRNcnt.max() + 1])
+        y_ticks = np.arange(0, dfNavSigPRNcnt.PRNcnt.max() + 1, int(dfNavSigPRNcnt.PRNcnt.max() / 5 + 1))
+        axPRNcnt.set_yticks(y_ticks)
+        axPRNcnt.set_ylabel('PRN count [-]')
 
         # create title
         fig.suptitle('{marker:s}: {obst:s} for {navsig:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, navsig=navsig_name, dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))
