@@ -183,7 +183,13 @@ def pprint_df(dframe: pd.DataFrame, tablefmt: str = 'simple'):
     print(tabulate(dframe, headers='keys', tablefmt=tablefmt, showindex=False))
 
 
-def logHeadTailDataFrame(logger: logging.Logger, callerName: str, df: DataFrame, dfName: str = 'DataFrame', head: int = 10, tail: int = 10, index: bool = True):
+def logHeadTailDataFrame(callerName: str,
+                         df: DataFrame,
+                         dfName: str = 'DataFrame',
+                         logger: logging.Logger = None,
+                         head: int = 10,
+                         tail: int = 10,
+                         index: bool = True):
     """
     logHeadTailDataFrame logs the head first/tail last rows of the dataframe df
 
@@ -200,13 +206,13 @@ def logHeadTailDataFrame(logger: logging.Logger, callerName: str, df: DataFrame,
     """
     # cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    print('{func:s}: dataframe {dfname:s} dtypes\n{dtypes!s}'.format(dtypes=df.dtypes, dfname=colored(dfName, 'green'), func=callerName))
-
     if df.shape[0] <= (head + tail):
-        logger.info('{func:s}: dataframe {dfname:s} (#{shape:d})\n{df:s}'.format(func=callerName, dfname=colored(dfName, 'green'), shape=df.shape[0], df=df.to_string(index=index)))
+        if logger is not None:
+            logger.info('{func:s}: dataframe {dfname:s} (#{shape:d})\n{df:s}'.format(func=callerName, dfname=colored(dfName, 'green'), shape=df.shape[0], df=df.to_string(index=index)))
     else:
-        logger.info('{func:s}: head of dataframe {dfname:s} (#{shape:d})\n{df:s}'.format(func=callerName, dfname=colored(dfName, 'green'), shape=df.shape[0], df=df.head(n=head).to_string(index=index)))
-        logger.info('{func:s}: tail of dataframe {dfname:s} (#{shape:d})\n{df:s}'.format(func=callerName, dfname=colored(dfName, 'green'), shape=df.shape[0], df=df.tail(n=tail).to_string(index=index)))
+        if logger is not None:
+            logger.info('{func:s}: head of dataframe {dfname:s} (#{shape:d})\n{df:s}'.format(func=callerName, dfname=colored(dfName, 'green'), shape=df.shape[0], df=df.head(n=head).to_string(index=index)))
+            logger.info('{func:s}: tail of dataframe {dfname:s} (#{shape:d})\n{df:s}'.format(func=callerName, dfname=colored(dfName, 'green'), shape=df.shape[0], df=df.tail(n=tail).to_string(index=index)))
 
 
 def get_spaced_colors(n):

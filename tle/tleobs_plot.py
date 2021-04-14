@@ -654,7 +654,7 @@ def obstle_plot_gnss_obst(marker: str,
                           navsig_obst_lst: list,
                           dfTle: pd.DataFrame,
                           show_plot: bool = False,
-                          logger: logging.Logger = None) -> list:
+                          logger: logging.Logger = None) -> dict:
     """
     obstle_plot_gnss_obst plots for a GNSS the selected obst for all selected PRNs on 1 plot
     """
@@ -668,7 +668,7 @@ def obstle_plot_gnss_obst(marker: str,
     lst_colors, title_font = amutils.create_colormap_font(nrcolors=max_prn, font_size=12)
 
     # return plot names created
-    lst_pltnames = []
+    lst_pltnames = {}
 
     # get the date of observations
     cur_date = dfNavSig.DATE_TIME.iloc[0]
@@ -774,7 +774,7 @@ def obstle_plot_gnss_obst(marker: str,
             fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
             logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
-            lst_pltnames.append(plt_name)
+            lst_pltnames[obst] = plt_name
 
         if show_plot:
             plt.show(block=True)

@@ -1,3 +1,4 @@
+import sys
 import os
 from math import isnan
 from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, Enumerate
@@ -10,6 +11,8 @@ import pandas as pd
 from gfzrnx import gfzrnx_constants as gfzc
 
 from ltx import ltx_gfzrnx_report
+
+from ampyutils import amutils
 
 __author__ = 'amuls'
 
@@ -283,7 +286,8 @@ def tle_conversion(tle_value):
 def obstab_tleobs_overview(gnss: str,
                            navsigs: list,
                            navsig_plts: dict,
-                           navsig_obst_lst: dict) -> Subsubsection:
+                           navsig_obst_lst: dict,
+                           dfPrnDiff: pd.DataFrame) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
     """
@@ -320,7 +324,7 @@ def obstab_tleobs_overview(gnss: str,
             with paragraph.create(Enumerate()) as enum:
 
                 # add figures representing the observations per navigation signal
-                enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE). The culmination point is represented by a triangle.'.format(gnss=gnss, navs=navsig)))
+                enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE). If present, the culmination point for a satellite is represented by a triangle.'.format(gnss=gnss, navs=navsig)))
 
                 with enum.create(Figure(position='htbp')) as plot:
                     plot.add_image(navsig_plts[navsig]['tle-obs'],
@@ -333,7 +337,23 @@ def obstab_tleobs_overview(gnss: str,
 
                 print('navsig_obst_lst[{}] = {}'.format(navsig, navsig_obst_lst[navsig]))
 
-                for navsig in navsig_obst_lst[navsig]:
-                    enum.add_item(r'Evolution of observation type {obst:s}'.format(obst=navsig))
+                for navsig_obst in navsig_obst_lst[navsig]:
+                    print('navsig_obst = {}'.format(navsig_obst))
+                    enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} displays the evolution of observation type {obst:s}'.format(obst=navsig_obst)))
+                    with enum.create(Figure(position='htbp')) as plot:
+                        plot.add_image(navsig_plts[navsig]['obst'][navsig_obst],
+                                       width=NoEscape(r'0.95\textwidth'),
+                                       placement=NoEscape(r'\centering'))
+
+                        # print(r'\label{fig:tle_navsig_' + r'{gnss:s}'.format(gnss=gnss) + r'{navs:s}'.format(navs=navsig) + r'}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig))
+
+                        plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} Navigation signal {navsobst:s} evolution'.format(navsobst=navsig_obst)))
+
+                    # add evolution of the PRNcnt over time (more or less than 4) and report time jumps
+                    enum.append('The table below summarises the PRN count statistics, if present data gaps are reported')
+
+                    print(dfPrnDiff)
+
+                    sys.exit(1)
 
     return sssec

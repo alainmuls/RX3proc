@@ -445,8 +445,6 @@ def main_obstab_analyse(argv):
                                                                               logger=logger,
                                                                               show_plot=show_plot)
 
-        sys.exit(99)
-
         for prn in dTab['lst_CmnPRNs']:
 
             print('\nPRN = {} {}'.format(prn, nav_signal_name))
@@ -484,7 +482,8 @@ def main_obstab_analyse(argv):
     ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(gnss=dTab['info']['gnss'],
                                                               navsigs=dTab['nav_signals'],
                                                               navsig_plts=dTab['plots'],
-                                                              navsig_obst_lst=lst_navsig_obst)
+                                                              navsig_obst_lst=lst_navsig_obst,
+                                                              dfPrnDiff=dfPRNdiff)
     # report to the user
     sec_obstab.append(ssec_tleobs)
 
