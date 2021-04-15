@@ -412,11 +412,21 @@ def main_obstab_analyse(argv):
         dfNavSigPRNCount["dPRNcnt"] = dfNavSigPRNCount["PRNcnt"].diff(1)
         dfNavSigPRNCount["dt"] = dfNavSigPRNCount["DATE_TIME"].diff(dTab['time']['interval']).dt.total_seconds()
 
-        # create a dataframe containing the times where there is a change in PRNcnt or a interval detected
-        dfPRNdiff = dfNavSigPRNCount.loc[(dfNavSigPRNCount['dPRNcnt'] != 0) | (dfNavSigPRNCount['dt'] > dTab['time']['interval'])]
+        # create a dataframe containing the times where there is a change in PRNcnt or a gap is detected
+        idx_list = dfNavSigPRNCount.index[(dfNavSigPRNCount['dPRNcnt'] != 0) | (dfNavSigPRNCount['dt'] > dTab['time']['interval'])].tolist()
+        idx_prev_list = [x - 1 for x in idx_list if x > 0]
+        idx_merged = idx_list + idx_prev_list
+        idx_merged.sort()
+        # print('idx_list = {}'.format(idx_list))
+        # print('idx_prev_list = {}'.format(idx_prev_list))
+        # print('idx_merged = {}'.format(idx_merged))
+        dfPRNEvol = dfNavSigPRNCount.iloc[idx_merged]
+        dfPRNEvol.reset_index(drop=True, inplace=True)
+
+        print('dfPRNEvol = \n{}'.format(dfPRNEvol))
 
         amutils.logHeadTailDataFrame(df=dfNavSigPRNCount, dfName='dfNavSigPRNCount', callerName=cFuncName, logger=logger)
-        amutils.logHeadTailDataFrame(df=dfPRNdiff, dfName='dfPRNdiff', callerName=cFuncName, logger=logger)
+        amutils.logHeadTailDataFrame(df=dfPRNEvol, dfName='dfPRNEvol', callerName=cFuncName, logger=logger)
 
         # create plot with all selected PRNs vs the TLE part per navigation signal
         dTab['plots'][nav_signal]['tle-obs'] = tleobs_plot.obstle_plot_arcs_prns(marker=dTab['marker'],
@@ -480,10 +490,11 @@ def main_obstab_analyse(argv):
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(gnss=dTab['info']['gnss'],
+                                                              dHdr=dTab['hdr'],
                                                               navsigs=dTab['nav_signals'],
                                                               navsig_plts=dTab['plots'],
                                                               navsig_obst_lst=lst_navsig_obst,
-                                                              dfPrnDiff=dfPRNdiff)
+                                                              dfPrnEvol=dfPRNEvol)
     # report to the user
     sec_obstab.append(ssec_tleobs)
 

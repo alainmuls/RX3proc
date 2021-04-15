@@ -284,10 +284,11 @@ def tle_conversion(tle_value):
 
 
 def obstab_tleobs_overview(gnss: str,
+                           dHdr: dict,
                            navsigs: list,
                            navsig_plts: dict,
                            navsig_obst_lst: dict,
-                           dfPrnDiff: pd.DataFrame) -> Subsubsection:
+                           dfPrnEvol: pd.DataFrame) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
     """
@@ -352,8 +353,61 @@ def obstab_tleobs_overview(gnss: str,
                     # add evolution of the PRNcnt over time (more or less than 4) and report time jumps
                     enum.append('The table below summarises the PRN count statistics, if present data gaps are reported')
 
-                    print(dfPrnDiff)
+                    print(dfPrnEvol)
+                    dfPrnEvol.to_csv('/tmp/test.csv')
+                    print(dfPrnEvol[dfPrnEvol['PRNcnt'] < 5])
+                    print(dfPrnEvol[dfPrnEvol['PRNcnt'] == 4])
 
-                    sys.exit(1)
+                    # find the times when we leave / enter a period where we have at least 5 satellites
+                    t_prev = dfPrnEvol.DATE_TIME.iloc[0]
+                    print('t_prev = {}'.format(t_prev))
+
+                    interval = float(nested_lookup(key='interval', document=dHdr)[0])
+
+                    # print('intertuples = {}'.format(dfPrnEvol.itertuples()))
+                    # for row in dfPrnEvol.itertuples():
+                    #     print(row)
+                    #     # print(row['DATE_TIME'])
+                    #     # print(row['PRNcnt'])
+                    #     break
+
+                    # print('-' * 25)
+                    for i, row in dfPrnEvol.iterrows():
+                        if i > 0:
+                            t_cur = row['DATE_TIME']
+                            if row['dt'] == interval:
+                                print('{row:3d}: {prev:s} -> {cur:s}: {prnc:5d}'.format(row=i,
+                                                                                        prev=t_prev.strftime('%H:%M:%S'),
+                                                                                        cur=t_cur.strftime('%H:%M:%S'),
+                                                                                        prnc=row['PRNcnt']))
+                            else:
+                                print('{row:3d}: {prev:s} -> {cur:s}: {gap:5.0f}'.format(row=i,
+                                                                                         prev=t_prev.strftime('%H:%M:%S'),
+                                                                                         cur=t_cur.strftime('%H:%M:%S'),
+                                                                                         gap=row['dt']))
+                            t_prev = t_cur
+
+                    for i, row in dfPrnEvol.iterrows():
+                        if i == 0:
+                            prev_t = row['DATE_TIME']
+                            prev_prnc = row['PRNcnt']
+                        else:
+                            cur_t = row['DATE_TIME']
+
+                            # we start with PNT, serach for time when strict less than 4 PRNs or data_gap
+                            if prev_prnc >= 4:
+                                if row['PRNcnt'] < 4:
+                                    print('row now = {}'.format(row))
+                                    end_t = dfPrnEvol.iloc[i - 1]['DATE_TIME']
+                                    print('{row:3d}: {prev:s} -> {cur:s}: {gap:}'.format(row=i,
+                                                                                         prev=prev_t.strftime('%H:%M:%S'),
+                                                                                         cur=end_t.strftime('%H:%M:%S'),
+                                                                                         gap=(end_t - prev_t).total_seconds()))
+                                    sys.exit(1)
+
+
+
+
+
 
     return sssec
