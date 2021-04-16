@@ -1,7 +1,7 @@
 import sys
 import os
 from math import isnan
-from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, Enumerate
+from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, Enumerate, MultiColumn, NewPage, TextColor
 from pylatex.utils import bold
 from pylatex.section import Paragraph
 import datetime as dt
@@ -11,8 +11,6 @@ import pandas as pd
 from gfzrnx import gfzrnx_constants as gfzc
 
 from ltx import ltx_gfzrnx_report
-
-from ampyutils import amutils
 
 __author__ = 'amuls'
 
@@ -249,13 +247,13 @@ def obstab_tleobs_ssec(obstabf: str,
     with ssec.create(Subsubsection(r'TLE time spans')) as sssec:
         sssec.append(NoEscape(r'The table below represents the calculated rise and set times within the observation time span for a PRN based on the TLEs. When a culmination is within this interval, it is represented in the table.'))
 
-        with sssec.create(LongTabu('l|l|l|l|l', pos='l', col_space='4pt')) as longtabu2:
-            longtabu2.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-            longtabu2.add_hline()
-            longtabu2.end_table_header()
-            # longtabu2.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-            # longtabu2.add_hline()
-            # longtabu2.end_header()
+        with sssec.create(LongTabu('l|l|l|l|l', pos='l', col_space='4pt')) as longtabu:
+            longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+            longtabu.add_hline()
+            longtabu.end_table_header()
+            # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+            # longtabu.add_hline()
+            # longtabu.end_header()
 
             for prn, row in dfTle.iterrows():
                 tabu_row = [prn]
@@ -263,9 +261,9 @@ def obstab_tleobs_ssec(obstabf: str,
                     tle_toadd = [tle_conversion(tle_val) for tle_val in row[col]]
                     tabu_row.append(', '.join(tle_toadd))
 
-                longtabu2.add_row(tabu_row)
+                longtabu.add_row(tabu_row)
 
-            longtabu2.add_hline()
+            longtabu.add_hline()
 
     return ssec
 
@@ -284,41 +282,22 @@ def tle_conversion(tle_value):
 
 
 def obstab_tleobs_overview(gnss: str,
-                           dHdr: dict,
                            navsigs: list,
                            navsig_plts: dict,
                            navsig_obst_lst: dict,
-                           dfPrnEvol: pd.DataFrame) -> Subsubsection:
+                           dPNT: dict) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
     """
     sssec = Subsubsection(r'Navigation signals analysis')
-
-    # sssec.append(NoEscape(r'The table below represents the calculated rise and set times within the observation time span for a PRN based on the TLEs. When a culmination is within this interval, it is represented in the table.'))
-
-    # with sssec.create(LongTabu('l|l|l|l|l', pos='l', col_space='4pt')) as longtabu:
-    #     longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-    #     longtabu.add_hline()
-    #     longtabu.end_table_header()
-    #     # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-    #     # longtabu.add_hline()
-    #     # longtabu.end_header()
-
-    #     for prn, row in dfTle.iterrows():
-    #         tabu_row = [prn]
-    #         for col in dfTle.columns.tolist():
-    #             tle_toadd = [tle_conversion(tle_val) for tle_val in row[col]]
-    #             tabu_row.append(', '.join(tle_toadd))
-
-    #         longtabu.add_row(tabu_row)
-
-    #     longtabu.add_hline()
 
     # go over the available navigation signals
     print('navsigs = {}'.format(navsigs))
     for navsig in navsigs:
         print('navsig = {}'.format(navsig))
         print('navsig_plts = {}'.format(navsig_plts))
+
+        sssec.append(NewPage())
 
         with sssec.create(Paragraph(r'Analysis of navigation signal {gnss:s}{navs:s}'.format(gnss=gnss, navs=navsig))) as paragraph:
 
@@ -350,64 +329,22 @@ def obstab_tleobs_overview(gnss: str,
 
                         plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} Navigation signal {navsobst:s} evolution'.format(navsobst=navsig_obst)))
 
-                    # add evolution of the PRNcnt over time (more or less than 4) and report time jumps
-                    enum.append('The table below summarises the PRN count statistics, if present data gaps are reported')
+                # add evolution of the PRNcnt over time (more or less than 4) and report time jumps
+                if len(dPNT[navsig]['loss']) > 0:
+                    enum.append('The table below summarises the PRN count statistics which determines the loss and reacquisition of PNT.')
 
-                    print(dfPrnEvol)
-                    dfPrnEvol.to_csv('/tmp/test.csv')
-                    print(dfPrnEvol[dfPrnEvol['PRNcnt'] < 5])
-                    print(dfPrnEvol[dfPrnEvol['PRNcnt'] == 4])
+                    with enum.create(LongTabu('r|r|r', pos='l', col_space='4pt')) as longtabu:
+                        longtabu.add_row((MultiColumn(3, align='c', data=TextColor('blue','Navigation signal {navs:s}'.format(navs=navsig))),))
+                        longtabu.add_row(['Loss of PNT', 'PNT Reacquisition', 'Duration [s]'], mapper=[bold])  # header row
+                        longtabu.add_hline()
+                        longtabu.end_table_header()
+                        # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+                        # longtabu.add_hline()
+                        # longtabu.end_header()
 
-                    # find the times when we leave / enter a period where we have at least 5 satellites
-                    t_prev = dfPrnEvol.DATE_TIME.iloc[0]
-                    print('t_prev = {}'.format(t_prev))
-
-                    interval = float(nested_lookup(key='interval', document=dHdr)[0])
-
-                    # print('intertuples = {}'.format(dfPrnEvol.itertuples()))
-                    # for row in dfPrnEvol.itertuples():
-                    #     print(row)
-                    #     # print(row['DATE_TIME'])
-                    #     # print(row['PRNcnt'])
-                    #     break
-
-                    # print('-' * 25)
-                    for i, row in dfPrnEvol.iterrows():
-                        if i > 0:
-                            t_cur = row['DATE_TIME']
-                            if row['dt'] == interval:
-                                print('{row:3d}: {prev:s} -> {cur:s}: {prnc:5d}'.format(row=i,
-                                                                                        prev=t_prev.strftime('%H:%M:%S'),
-                                                                                        cur=t_cur.strftime('%H:%M:%S'),
-                                                                                        prnc=row['PRNcnt']))
-                            else:
-                                print('{row:3d}: {prev:s} -> {cur:s}: {gap:5.0f}'.format(row=i,
-                                                                                         prev=t_prev.strftime('%H:%M:%S'),
-                                                                                         cur=t_cur.strftime('%H:%M:%S'),
-                                                                                         gap=row['dt']))
-                            t_prev = t_cur
-
-                    for i, row in dfPrnEvol.iterrows():
-                        if i == 0:
-                            prev_t = row['DATE_TIME']
-                            prev_prnc = row['PRNcnt']
-                        else:
-                            cur_t = row['DATE_TIME']
-
-                            # we start with PNT, serach for time when strict less than 4 PRNs or data_gap
-                            if prev_prnc >= 4:
-                                if row['PRNcnt'] < 4:
-                                    print('row now = {}'.format(row))
-                                    end_t = dfPrnEvol.iloc[i - 1]['DATE_TIME']
-                                    print('{row:3d}: {prev:s} -> {cur:s}: {gap:}'.format(row=i,
-                                                                                         prev=prev_t.strftime('%H:%M:%S'),
-                                                                                         cur=end_t.strftime('%H:%M:%S'),
-                                                                                         gap=(end_t - prev_t).total_seconds()))
-                                    sys.exit(1)
-
-
-
-
-
+                        print('len loss / reacq = {} {}'.format(len(dPNT[navsig]['loss']), len(dPNT[navsig]['reacq'])))
+                        for loss, reacq, gap in zip(dPNT[navsig]['loss'], dPNT[navsig]['reacq'], dPNT[navsig]['gap']):
+                            print('{} -> {}: {}'.format(loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), gap))
+                            longtabu.add_row([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), gap])
 
     return sssec
