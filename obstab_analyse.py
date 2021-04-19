@@ -444,13 +444,7 @@ def main_obstab_analyse(argv):
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
-    sec_obstab = ltx_rnxobs_reporting.obstab_tleobs_ssec(obstabf=dTab['obstabf'],
-                                                         lst_PRNs=dTab['lst_CmnPRNs'],
-                                                         lst_NavSignals=dTab['nav_signals'],
-                                                         lst_ObsFreqs=dTab['obsfreqs'],
-                                                         dfTle=dfTLE)
-    dTab['ltx']['obstab'] = '{marker:s}_03_{gnss:s}_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss'])
-
+    # list with observable types per navigation signal
     lst_navsig_obst = {}
 
     for navsig in dTab['nav_signals']:
@@ -557,16 +551,21 @@ def main_obstab_analyse(argv):
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
+    # report to the user
+    dTab['ltx']['obstab'] = '{marker:s}_03_{gnss:s}_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss'])
+
+    sec_obstab = ltx_rnxobs_reporting.obstab_tleobs_ssec(obstabf=dTab['obstabf'],
+                                                         lst_PRNs=dTab['lst_CmnPRNs'],
+                                                         lst_NavSignals=dTab['nav_signals'],
+                                                         lst_ObsFreqs=dTab['obsfreqs'],
+                                                         dfTle=dfTLE)
     ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(gnss=dTab['info']['gnss'],
                                                               navsigs=dTab['nav_signals'],
                                                               navsig_plts=dTab['plots'],
                                                               navsig_obst_lst=lst_navsig_obst,
                                                               dPNT=dTab['PNT'])
-    # report to the user
     sec_obstab.append(ssec_tleobs)
-
     sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))
-    sys.exit(55)
 
     # store the json structure
     jsonName = os.path.join(dTab['dir'], '{scrname:s}.json'.format(scrname=os.path.splitext(os.path.basename(__file__))[0]))

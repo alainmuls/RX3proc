@@ -334,18 +334,30 @@ def obstle_plot_relative(marker: str,
 
             # plot the current percentages per PRN and per OBST
             if i == 0:
-                ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs),
-                        obs_perc,
-                        marker=plotmarker,
-                        color=color,
-                        label=obst,
-                        markersize=4)
+                # ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs),
+                #         obs_perc,
+                #         marker=plotmarker,
+                #         color=color,
+                #         label=obst,
+                #         markersize=4)
+                ax.bar(x=x_prn + dx_obs[j] + dx_skip / len(dx_obs),
+                       height=obs_perc,
+                       width=dx_skip,
+                       color=color,
+                       label=obst,
+                       align='center')
             else:
-                ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs),
-                        obs_perc,
-                        marker=plotmarker,
-                        color=color,
-                        markersize=4)
+                # ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs),
+                #         obs_perc,
+                #         marker=plotmarker,
+                #         color=color,
+                #         markersize=4)
+                ax.bar(x=x_prn + dx_obs[j] + dx_skip / len(dx_obs),
+                       height=obs_perc,
+                       width=dx_skip,
+                       color=color,
+                       align='center')
+
 
     # beautify plot
     ax.xaxis.grid(b=False)
