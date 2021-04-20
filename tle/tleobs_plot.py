@@ -136,7 +136,7 @@ def tle_plot_arcs(marker: str,
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
-    for ext in ['pdf']:
+    for ext in ['png']:
         plt_name = os.path.join('png', '{basen:s}-TLEarcs.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
@@ -146,7 +146,6 @@ def obstle_plot_obscount(marker: str,
                          obsf: str,
                          dfObsTle: pd.DataFrame,
                          dTime: dict,
-                         reduce2percentage: bool = False,
                          show_plot: bool = False, logger: logging.Logger = None) -> str:
     """
     obstle_plot_arcs plots count of observations wrt to number obtained from TLE
@@ -177,33 +176,17 @@ def obstle_plot_obscount(marker: str,
                                                            list(reversed(dy_obstypes)),
                                                            list(reversed(bar_colors)))):
             prn_width = dfObsTle.iloc[i][obst]
-            if not reduce2percentage:
-                if i == 0:
-                    ax.barh(y=y_prn + dy_obst,
-                            width=prn_width,
-                            height=bar_width,
-                            color=bar_color,
-                            label=obst)
-                else:
-                    ax.barh(y=y_prn + dy_obst,
-                            width=prn_width,
-                            height=bar_width,
-                            color=bar_color)
+            if i == 0:
+                ax.barh(y=y_prn + dy_obst,
+                        width=prn_width,
+                        height=bar_width,
+                        color=bar_color,
+                        label=obst)
             else:
-                if j == 0:
-                    tle_width = prn_width / 100
-                if tle_width != 0:
-                    if i == 0:
-                        ax.barh(y=y_prn + dy_obst,
-                                width=prn_width / tle_width,
-                                height=bar_width,
-                                color=bar_color,
-                                label=obst)
-                    else:
-                        ax.barh(y=y_prn + dy_obst,
-                                width=prn_width / tle_width,
-                                height=bar_width,
-                                color=bar_color)
+                ax.barh(y=y_prn + dy_obst,
+                        width=prn_width,
+                        height=bar_width,
+                        color=bar_color)
 
     # beautify plot
     ax.xaxis.grid(b=True, which='major')
@@ -212,10 +195,7 @@ def obstle_plot_obscount(marker: str,
 
     # ax.set_xlabel('PRN', fontdict=title_font)
     ax.set_ylabel('PRNs', fontdict=title_font)
-    if not reduce2percentage:
-        ax.set_xlabel('Observations Count [-]', fontdict=title_font)
-    else:
-        ax.set_xlabel('Observations Count [%]', fontdict=title_font)
+    ax.set_xlabel('Observations Count [-]', fontdict=title_font)
 
     # plot title
     plt.title('Observations vs TLE: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker,
@@ -229,10 +209,7 @@ def obstle_plot_obscount(marker: str,
     ylim_left, ylim_right = ax.get_ylim()
     for i in np.arange(int(ylim_left), int(ylim_right)):
         if i % 2 == 0:
-            if not reduce2percentage:
-                ax.barh(y=i, height=0.95, width=xlim_right, color='black', alpha=0.1)
-            else:
-                ax.barh(y=i, height=0.95, width=100, color='black', alpha=0.1)
+            ax.barh(y=i, height=0.95, width=xlim_right, color='black', alpha=0.1)
 
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
     tick_labels = []
@@ -250,14 +227,11 @@ def obstle_plot_obscount(marker: str,
         plt.show(block=True)
     else:
         plt.close(fig)
-    amutils.mkdir_p('png')
 
     # save the plot in subdir png of GNSSSystem
-    for ext in ['pdf']:
-        if not reduce2percentage:
-            plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
-        else:
-            plt_name = os.path.join('png', '{basen:s}-ObsTLEperc.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
+    amutils.mkdir_p('png')
+    for ext in ['png']:
+        plt_name = os.path.join('png', '{basen:s}-ObsTLE.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
@@ -334,12 +308,6 @@ def obstle_plot_relative(marker: str,
 
             # plot the current percentages per PRN and per OBST
             if i == 0:
-                # ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs),
-                #         obs_perc,
-                #         marker=plotmarker,
-                #         color=color,
-                #         label=obst,
-                #         markersize=4)
                 ax.bar(x=x_prn + dx_obs[j] + dx_skip / len(dx_obs),
                        height=obs_perc,
                        width=dx_skip,
@@ -347,11 +315,6 @@ def obstle_plot_relative(marker: str,
                        label=obst,
                        align='center')
             else:
-                # ax.plot(x_prn + dx_obs[j] + dx_skip / len(dx_obs),
-                #         obs_perc,
-                #         marker=plotmarker,
-                #         color=color,
-                #         markersize=4)
                 ax.bar(x=x_prn + dx_obs[j] + dx_skip / len(dx_obs),
                        height=obs_perc,
                        width=dx_skip,
@@ -403,7 +366,7 @@ def obstle_plot_relative(marker: str,
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
-    for ext in ['pdf']:
+    for ext in ['png']:
         plt_name = os.path.join('png', '{basen:s}-PERC.{ext:s}'.format(basen=obsf.split('.')[0], ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
@@ -528,7 +491,7 @@ def obstle_plot_arcs_prns(marker: str,
 
     # save the plot in subdir png of GNSSSystem
     amutils.mkdir_p('png')
-    for ext in ['pdf']:
+    for ext in ['png']:
         plt_name = os.path.join('png', '{basen:s}-{navs:s}-TLE-arcs.{ext:s}'.format(basen=obsf.split('.')[0], navs=navsig_name, ext=ext))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
@@ -641,7 +604,7 @@ def plot_prn_navsig_obs(marker: str,
 
     # save the plot in subdir png
     amutils.mkdir_p('png')
-    for ext in ['pdf']:
+    for ext in ['png']:
         tmp_name = '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, prn=prn)
         plt_name = os.path.join('png', tmp_name)
         print('plt_name = {}'.format(plt_name))
@@ -779,8 +742,9 @@ def obstle_plot_gnss_obst(marker: str,
 
         # save the plot in subdir png
         amutils.mkdir_p('png')
-        for ext in ['pdf']:
+        for ext in ['png']:
             tmp_name = '{basen:s}-{navsig:s}-{obst:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, navsig=navsig_name)
+
             plt_name = os.path.join('png', tmp_name)
             print('plt_name = {}'.format(plt_name))
             fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)

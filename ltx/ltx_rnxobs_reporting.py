@@ -174,7 +174,7 @@ def ltx_obsstat_analyse(obsstatf: str,
                 longtabu.add_row(prn_row)
 
         # add figures representing the observations
-        ssec.append(NoEscape(r'Figure \ref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the TLEs. The relative observation count is represented in ' + r'Figure \ref{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} and ' + r'Figure \ref{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
+        ssec.append(NoEscape(r'Figure \ref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the TLEs. The relative observation count is represented in ' + r'Figure \ref{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
 
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['obs_count'],
@@ -349,8 +349,8 @@ def obstab_tleobs_overview(gnss: str,
                         # longtabu.end_header()
 
                         print('len loss / reacq = {} {}'.format(len(dPNT[navsig]['loss']), len(dPNT[navsig]['reacq'])))
-                        for loss, reacq, gap in zip(dPNT[navsig]['loss'], dPNT[navsig]['reacq'], dPNT[navsig]['gap']):
-                            print('{} -> {}: {}'.format(loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), gap))
-                            longtabu.add_row([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), gap])
+                        for loss, reacq, PNTgap in zip(dPNT[navsig]['loss'], dPNT[navsig]['reacq'], dPNT[navsig]['PNTgap']):
+                            print('{} -> {}: {}'.format(loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap))
+                            longtabu.add_row([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap])
 
     return sssec

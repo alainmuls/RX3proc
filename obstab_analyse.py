@@ -243,7 +243,7 @@ def analyse_obsprn(marker: str,
         posidx_time_gaps.append(dfPrnNavSig.shape[0] - 1)
 
     print('{}: posidx_time_gaps = \n{}'.format(prn, posidx_time_gaps))
-    print('{}: posidx_time_gaps + 1 = \n{}'.format(prn, [x - 1 for x in posidx_time_gaps[1:-1]]))
+    print('{}: posidx_time_gaps - 1 = \n{}'.format(prn, [x - 1 for x in posidx_time_gaps[1:-1]]))
 
     time_reaqs = dfPrnNavSig.iloc[posidx_time_gaps]['DATE_TIME']
     time_gaps = dfPrnNavSig.iloc[[x - 1 for x in posidx_time_gaps[1:-1]]]['DATE_TIME']
@@ -314,6 +314,7 @@ def analyse_obsprn(marker: str,
 
 
 def pnt_available(dfPrnEvol: pd.DataFrame,
+                  interval: int,
                   logger: logging.Logger = None) -> dict:
     """
     pnt_available deterimes the data_times corresponding to loss / reacquisition of PNT
@@ -328,7 +329,7 @@ def pnt_available(dfPrnEvol: pd.DataFrame,
     dPNT = {}
     dPNT['loss'] = []
     dPNT['reacq'] = []
-    dPNT['gap'] = []
+    dPNT['PNTgap'] = []
 
     print(dfPrnEvol)
     print(dfPrnEvol.shape)
@@ -353,6 +354,7 @@ def pnt_available(dfPrnEvol: pd.DataFrame,
                 # get corresponding timings and PNT time gap
                 dPNT['loss'].append(dfPrnEvol.iloc[idx_PNTloss - 1]['DATE_TIME'])
                 dPNT['reacq'].append(dfPrnEvol.iloc[idx_PNTreacq]['DATE_TIME'])
+
             else:  # did not have PNT at start
                 # lost PNT at start
                 dPNT['loss'].append(dfPrnEvol.iloc[0]['DATE_TIME'])
@@ -364,12 +366,13 @@ def pnt_available(dfPrnEvol: pd.DataFrame,
                 # we now have a new start where we have PNT
                 start_PNT = True
 
-            dPNT['gap'].append((dPNT['reacq'][-1] - dPNT['loss'][-1]).total_seconds())
+            dPNT['PNTgap'].append((dPNT['reacq'][-1] - dPNT['loss'][-1]).total_seconds())
             if logger is not None:
                 logger.info('{func:s}: PNT loss @ {loss:s} => {reacq:s} for {gap:.1f} s'.format(loss=dPNT['loss'][-1].strftime('%H:%M:%S'),
                                                                                                 reacq=dPNT['reacq'][-1].strftime('%H:%M:%S'),
-                                                                                                gap=dPNT['gap'][-1],
+                                                                                                gap=dPNT['PNTgap'][-1],
                                                                                                 func=cFuncName))
+
         except IndexError:
             break
 
@@ -483,9 +486,13 @@ def main_obstab_analyse(argv):
         dfPRNEvol = dfNavSigPRNCount.iloc[idx_merged]
         dfPRNEvol.reset_index(drop=True, inplace=True)
         print('dfPRNEvol = \n{}'.format(dfPRNEvol))
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(dfPRNEvol)
 
         # create lists with DateTimes of loss / reacquisition of PNT
-        dTab['PNT'][navsig] = pnt_available(dfPrnEvol=dfPRNEvol, logger=logger)
+        dTab['PNT'][navsig] = pnt_available(dfPrnEvol=dfPRNEvol,
+                                            interval=dTab['time']['interval'],
+                                            logger=logger)
         print("dTab['PNT'][navsig] = {}".format(dTab['PNT'][navsig]))
 
         amutils.logHeadTailDataFrame(df=dfPRNEvol, dfName='dfPRNEvol', callerName=cFuncName, logger=logger)
@@ -567,6 +574,7 @@ def main_obstab_analyse(argv):
     sec_obstab.append(ssec_tleobs)
     sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))
 
+    sys.exit(88)
     # store the json structure
     jsonName = os.path.join(dTab['dir'], '{scrname:s}.json'.format(scrname=os.path.splitext(os.path.basename(__file__))[0]))
     with open(jsonName, 'w+') as f:
