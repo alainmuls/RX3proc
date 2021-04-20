@@ -5,7 +5,7 @@
 
 ### __rnx15_combine.py__
 
-`rnx15_combine.py` combines the 15 minutes RINEX files from P3RS2 Rx for a specific day to create observation and navigation files in correct RINEX v3.x format.
+`rnx15_combine.py` combines the 15 minutes RINEX files from P3RS2 Rx for a specific day to create observation and navigation files in correct RINEX v3.x format. The P3RS2 files contain errors for the open signals of Galileo and will report these errors and delete them from the obtained RINEX observation file.
 
 #### Usage
 

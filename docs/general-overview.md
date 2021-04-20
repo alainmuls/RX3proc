@@ -1,5 +1,5 @@
 
-# Overview of `rnxproc`
+# Overview of `RX3proc`
 
 ## General directory structure for (semi-)permanent monitoring
 
@@ -33,7 +33,7 @@ where `YYDDD` represents 2 digits for the year and 3 digits for the day of year.
 
 During processing, in each receiver type directory (`ASTX`, `BEGP`, ...) a `rinex` sub-directory is created with sub-directories with the same `YYDDD` as the original raw binary data sub-directories.
 
-[^1]: I never tested this repository using another directory structure.
+[^1]: This directory structure is suggested for daily continuous measurements, but another directory structure can be applied.
 
 The P3RS2 outputs RINEX observation and navigation files each 15 minutes into a single directory `LOG/pvt_ls` and need to be treated differently. These files uses the following naming convention, loosely based on the official RINEX v3 naming convention:
 
@@ -46,7 +46,7 @@ where:
 + __DOY__ ... 3 digit day of year number
 + __HHMM__ ... hour and minutes of file creation
 
-The resulting ::RX3:: formatted daily files are stored under directory `/home/amuls/RxTURP/BEGPIOS/P3RS2/rinex`. In this directory the daily created files are organised in sub-directories __YYDOY__ similar to the structure followed for the other receivers. The ::RX3:: files are stored in Hatanaka compressed form for observation files, while __gzip__ compresses the navigation files. As example:
+The resulting ::RX3:: formatted daily files are stored under directory \newline `/home/amuls/RxTURP/BEGPIOS/P3RS2/rinex`. \newline In this directory the (daily) created files are organised in sub-directories __YYDOY__ similar to the structure followed for the other receivers. The ::RX3:: files are stored in Hatanaka compressed form for observation files, while __gzip__ compresses the navigation files if compression is selected. As example:
 
 \scriptsize
 
@@ -61,7 +61,7 @@ total 1740
 
 ## Purpose
 
-`rnxproc` provides several python scripts which can be run in stand alone mode or be called from other python scripts. The purpose is to create  scripts performing a specific task. Some tasks will be grouped in a more general (super-)script to perform several elementary steps in a row.
+`RX3proc` provides several python scripts which can be run in stand alone mode or be called from other python scripts. The purpose is to create  scripts performing a specific task. Some tasks will be grouped in a more general (super-)script to perform several elementary steps in a row.
 
 ### Converting (six-)hourly SBF files to (compressed) RINEX v3.x files
 
@@ -82,5 +82,11 @@ total 1740
 
 | __Script__             | __Task__                                                       |
 | :----------------:     | :-----------------------------------------------               |
-| __rnxobs_tabular.py__  | creates observation tabular/statistics file for selected GNSSs |
+| __rnxobs_tabular.py__  | creates observation statistics/tabular file for selected GNSSs |
 | __obsstat_analyse.py__ | analyses observation statistics file for selected GNSSs        |
+| __obstab_analyse.py__  | analyses observation tabular file for selected GNSSs           |
+
+
+\newpage
+
+# Description of `python` scripts

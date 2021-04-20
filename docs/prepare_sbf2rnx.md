@@ -1,13 +1,9 @@
 
-\newpage
-
-# Python scripts
-
 ## Converting (six-)hourly SBF files to (compressed) RINEX v3.x files
 
 ### __sbf_daily.py__
 
-`sbf_daily.py` creates a (daily) SBF file based on ((six) hourly) SBF files found in given directory.
+`sbf_daily.py` creates a (daily) SBF file based on ((six) hourly) SBF files found in given directory. This script is oriented towards the continuous logging 
 
 #### Usage
 
@@ -167,7 +163,7 @@ INFO: sbf_rinex.py - main_sbf2rnx3: dRnx =
 
 ### __prepare_sbf2rnx.py__
 
-This script combines the scripts `sbf_daily.py` and `sbf-rinex.py` and offers the possibility to perform compression of these files:
+This script combines the scripts `sbf_daily.py` and `sbf_rinex.py` and offers the possibility to perform compression of these files:
 
 - RINEX observation file undergoes a Hatanaka compression using the program `rnx2crz`,
 - RINEX navigation file is `gzip` compressed.
