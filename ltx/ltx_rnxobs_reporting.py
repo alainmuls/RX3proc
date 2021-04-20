@@ -183,11 +183,11 @@ def ltx_obsstat_analyse(obsstatf: str,
             # plot.add_caption('Observation count per navigation signal')
             plot.add_caption(NoEscape(r'\label{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Observables overview for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
-        with sssec.create(Figure(position='htbp')) as plot:
-            plot.add_image(plots['obs_perc'],
-                           width=NoEscape(r'0.95\textwidth'),
-                           placement=NoEscape(r'\centering'))
-            plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
+        # with sssec.create(Figure(position='htbp')) as plot:
+        #     plot.add_image(plots['obs_perc'],
+        #                    width=NoEscape(r'0.95\textwidth'),
+        #                    placement=NoEscape(r'\centering'))
+        #     plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
         with sssec.create(Figure(position='htbp')) as plot:
             plot.add_image(plots['relative'],

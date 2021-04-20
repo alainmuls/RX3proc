@@ -293,13 +293,13 @@ def main_rnx_obsstat(argv):
                                                                    reduce2percentage=False,
                                                                    show_plot=show_plot,
                                                                    logger=logger)
-    dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'],
-                                                                  obsf=dStat['obsstatf'],
-                                                                  dfObsTle=dfObsTLE,
-                                                                  dTime=dStat['time'],
-                                                                  reduce2percentage=True,
-                                                                  show_plot=show_plot,
-                                                                  logger=logger)
+    # dStat['plots']['obs_perc'] = tleobs_plot.obstle_plot_obscount(marker=dStat['marker'],
+    #                                                               obsf=dStat['obsstatf'],
+    #                                                               dfObsTle=dfObsTLE,
+    #                                                               dTime=dStat['time'],
+    #                                                               reduce2percentage=True,
+    #                                                               show_plot=show_plot,
+    #                                                               logger=logger)
     dStat['plots']['relative'] = tleobs_plot.obstle_plot_relative(marker=dStat['marker'],
                                                                   obsf=dStat['obsstatf'],
                                                                   dfObsTle=dfObsTLE,

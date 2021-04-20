@@ -12,6 +12,9 @@
 	[
 		{
 			"path": "."
+		},
+		{
+			"path": "/home/amuls/RxTURP/CHIRPSAWTOOTH/rnx/20349"
 		}
 	],
 	"settings":
