@@ -156,7 +156,7 @@ def read_obstab(obstabf: str,
 
     # created the possible navigation signals we have
     nav_signals = list(set([obsfreq[1:] for obsfreq in obsfreqs]))
-    print(nav_signals)
+    # print(nav_signals)
 
     logger.info('{func:s}: loading from {tab:s}: {cols:s}'.format(tab=obstabf, cols=colored(', '.join(obstypes), 'green'), func=cFuncName))
 
@@ -165,8 +165,8 @@ def read_obstab(obstabf: str,
     # check whether the selected PRNs are in the dataframe, else remove this PRN from
     # print('lst_PRNs = {}'.format(lst_PRNs))
     lst_ObsPRNs = sorted(dfTmp.PRN.unique())
-    print('lst_obsPRNs = {}'.format(lst_ObsPRNs))
-    print("dfTmp[dfTmp['PRN'] == 'E07'] = \n{}".format(dfTmp[dfTmp['PRN'] == 'E07']))
+    # print('lst_obsPRNs = {}'.format(lst_ObsPRNs))
+    # print("dfTmp[dfTmp['PRN'] == 'E07'] = \n{}".format(dfTmp[dfTmp['PRN'] == 'E07']))
 
     lst_CommonPRNS = [prn for prn in lst_ObsPRNs if prn in lst_PRNs]
     # print('lst_CommonPRNS = {}'.format(lst_CommonPRNS))
@@ -242,18 +242,18 @@ def analyse_obsprn(marker: str,
     if posidx_time_gaps[-1] != dfPrnNavSig.shape[0] - 1:
         posidx_time_gaps.append(dfPrnNavSig.shape[0] - 1)
 
-    print('{}: posidx_time_gaps = \n{}'.format(prn, posidx_time_gaps))
-    print('{}: posidx_time_gaps - 1 = \n{}'.format(prn, [x - 1 for x in posidx_time_gaps[1:-1]]))
+    # print('{}: posidx_time_gaps = \n{}'.format(prn, posidx_time_gaps))
+    # print('{}: posidx_time_gaps - 1 = \n{}'.format(prn, [x - 1 for x in posidx_time_gaps[1:-1]]))
 
     time_reaqs = dfPrnNavSig.iloc[posidx_time_gaps]['DATE_TIME']
     time_gaps = dfPrnNavSig.iloc[[x - 1 for x in posidx_time_gaps[1:-1]]]['DATE_TIME']
-    print('{}: time_reaqs = \n{}'.format(prn, time_reaqs))
-    print('{}: time_gaps = \n{}'.format(prn, time_gaps))
+    # print('{}: time_reaqs = \n{}'.format(prn, time_reaqs))
+    # print('{}: time_gaps = \n{}'.format(prn, time_gaps))
 
     # examine the requested observations for this navigation signal
-    print('{}: navsig_obst_lst = {}'.format(prn, navsig_obst_lst))
+    # print('{}: navsig_obst_lst = {}'.format(prn, navsig_obst_lst))
     for navsig_obs in navsig_obst_lst:
-        print('{}: navsig_obs = {}'.format(prn, navsig_obs))
+        # print('{}: navsig_obs = {}'.format(prn, navsig_obs))
         # select only the elements for this prn
         dfPrnNSObs = dfPrnNavSig[['DATE_TIME', 'dt', 'PRN', navsig_obs]].dropna()
 
@@ -262,7 +262,7 @@ def analyse_obsprn(marker: str,
                           column='d{nso:s}'.format(nso=navsig_obs),
                           value=(dfPrnNSObs[navsig_obs] - dfPrnNSObs[navsig_obs].shift(1)).astype(float))
 
-        print('dfPrnNSObs = {}'.format(dfPrnNSObs))
+        # print('dfPrnNSObs = {}'.format(dfPrnNSObs))
 
         # find the exponential moving average
         # dfPrnNSObs['EMA05'] = dfPrnNSObs[navsig_obs].ewm(halflife='5 seconds', adjust=False, times=dfPrnNSObs['DATE_TIME']).mean()
@@ -270,19 +270,19 @@ def analyse_obsprn(marker: str,
 
         # for idx_gap in idx_time_gaps[1:]:
         #     pos_idx_gap = dfPrnNSObs.index.get_loc(idx_gap)
-        #     print(dfPrnNSObs.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
+        #     # print(dfPrnNSObs.iloc[pos_idx_gap - 2 * span:pos_idx_gap + int(span / 2)])
 
         # find the SNR differences that are higher than snrth (SNR threshold)
         if navsig_obs[0] == 'S':
             idx_snr_posjumps = dfPrnNSObs.index[dfPrnNSObs['d{nso:s}'.format(nso=navsig_obs)] > snrth].tolist()
             # convert to poisionla indices
             posidx_snr_posjumps[navsig_obs] = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_posjumps]
-            print('posidx_snr_posjumps[navsig_obs] = {} #{}'.format(posidx_snr_posjumps[navsig_obs], len(posidx_snr_posjumps[navsig_obs])))
+            # print('posidx_snr_posjumps[navsig_obs] = {} #{}'.format(posidx_snr_posjumps[navsig_obs], len(posidx_snr_posjumps[navsig_obs])))
 
             idx_snr_negjumps = dfPrnNSObs.index[dfPrnNSObs['d{nso:s}'.format(nso=navsig_obs)] < -snrth].tolist()
             # convert to poisionla indices
             posidx_snr_negjumps[navsig_obs] = [dfPrnNSObs.index.get_loc(jump) for jump in idx_snr_negjumps]
-            print('posidx_snr_negjumps[navsig_obs] = {} #{}'.format(posidx_snr_negjumps[navsig_obs], len(posidx_snr_negjumps[navsig_obs])))
+            # print('posidx_snr_negjumps[navsig_obs] = {} #{}'.format(posidx_snr_negjumps[navsig_obs], len(posidx_snr_negjumps[navsig_obs])))
         else:
             posidx_snr_posjumps[navsig_obs] = None
             posidx_snr_negjumps[navsig_obs] = None
@@ -304,10 +304,10 @@ def analyse_obsprn(marker: str,
                                                             show_plot=show_plot,
                                                             logger=logger)
 
-    print('plots = {}'.format(plots))
-    print('posidx_time_gaps = {}'.format(posidx_time_gaps))
-    print('posidx_snr_posjumps[navsig_obs] = {}'.format(posidx_snr_posjumps[navsig_obs]))
-    print('posidx_snr_negjumps[navsig_obs] = {}'.format(posidx_snr_negjumps[navsig_obs]))
+    # print('plots = {}'.format(plots))
+    # print('posidx_time_gaps = {}'.format(posidx_time_gaps))
+    # print('posidx_snr_posjumps[navsig_obs] = {}'.format(posidx_snr_posjumps[navsig_obs]))
+    # print('posidx_snr_negjumps[navsig_obs] = {}'.format(posidx_snr_negjumps[navsig_obs]))
 
     # return posidx_time_gaps, posidx_snr_posjumps[navsig_obs], posidx_snr_negjumps[navsig_obs], plots
     return time_gaps.tolist(), time_reaqs.tolist()[1:-1], plots
@@ -331,8 +331,8 @@ def pnt_available(dfPrnEvol: pd.DataFrame,
     dPNT['reacq'] = []
     dPNT['PNTgap'] = []
 
-    print(dfPrnEvol)
-    print(dfPrnEvol.shape)
+    # print(dfPrnEvol)
+    # print(dfPrnEvol.shape)
 
     # check at first period whether we have PNT or not available
     if dfPrnEvol.iloc[0]['PRNcnt'] >= 4:
@@ -461,7 +461,7 @@ def main_obstab_analyse(argv):
         # keep the observables for this navigatoion signal
         col_navsig = [column for column in dfObsTab.columns.tolist()[:2]]
         col_navsig += [column for column in dfObsTab.columns.tolist()[2:] if column.endswith(navsig)]
-        print('col_navsig = {}'.format(col_navsig))
+        # print('col_navsig = {}'.format(col_navsig))
         dfNavSig = dfObsTab[col_navsig].dropna()
 
         amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
@@ -480,20 +480,20 @@ def main_obstab_analyse(argv):
         idx_prev_list = [x - 1 for x in idx_list if x > 0]
         idx_merged = idx_list + idx_prev_list
         idx_merged.sort()
-        print('idx_list = {}'.format(idx_list))
-        print('idx_prev_list = {}'.format(idx_prev_list))
-        print('idx_merged = {}'.format(idx_merged))
+        # print('idx_list = {}'.format(idx_list))
+        # print('idx_prev_list = {}'.format(idx_prev_list))
+        # print('idx_merged = {}'.format(idx_merged))
         dfPRNEvol = dfNavSigPRNCount.iloc[idx_merged]
         dfPRNEvol.reset_index(drop=True, inplace=True)
-        print('dfPRNEvol = \n{}'.format(dfPRNEvol))
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(dfPRNEvol)
+        # print('dfPRNEvol = \n{}'.format(dfPRNEvol))
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            # print(dfPRNEvol)
 
         # create lists with DateTimes of loss / reacquisition of PNT
         dTab['PNT'][navsig] = pnt_available(dfPrnEvol=dfPRNEvol,
                                             interval=dTab['time']['interval'],
                                             logger=logger)
-        print("dTab['PNT'][navsig] = {}".format(dTab['PNT'][navsig]))
+        # print("dTab['PNT'][navsig] = {}".format(dTab['PNT'][navsig]))
 
         amutils.logHeadTailDataFrame(df=dfPRNEvol, dfName='dfPRNEvol', callerName=cFuncName, logger=logger)
 
@@ -526,13 +526,13 @@ def main_obstab_analyse(argv):
 
         for prn in dTab['lst_CmnPRNs']:
 
-            print('\nPRN = {} {}'.format(prn, navsig_name))
+            # print('\nPRN = {} {}'.format(prn, navsig_name))
             # select the TLE row for this PRN
             dfTLEPrn = dfTLE.loc[prn]
 
             # select the TLE row for this PRN
             dfNavSigPRN = dfNavSig[dfNavSig['PRN'] == prn].dropna()
-            print('dfNavSigPRN = \n{}'.format(dfNavSigPRN))
+            # print('dfNavSigPRN = \n{}'.format(dfNavSigPRN))
 
             # posidx_time_gaps, posidx_snr_posjumps[navsig_obs], posidx_snr_negjumps[navsig_obs], plots
             prn_loss, prn_reacq, prn_plots = analyse_obsprn(marker=dTab['marker'],
@@ -554,7 +554,7 @@ def main_obstab_analyse(argv):
             dTab['lock'][navsig][prn]['loss'] = prn_loss
             dTab['lock'][navsig][prn]['reacq'] = prn_reacq
 
-    print("dTab['plots'][navsig] = {}\n--------------------------\n".format(dTab['plots'][navsig]))
+    # print("dTab['plots'][navsig] = {}\n--------------------------\n".format(dTab['plots'][navsig]))
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
@@ -570,6 +570,7 @@ def main_obstab_analyse(argv):
                                                               navsigs=dTab['nav_signals'],
                                                               navsig_plts=dTab['plots'],
                                                               navsig_obst_lst=lst_navsig_obst,
+                                                              lst_PRNs=dTab['lst_CmnPRNs'],
                                                               dPNT=dTab['PNT'])
     sec_obstab.append(ssec_tleobs)
     sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))

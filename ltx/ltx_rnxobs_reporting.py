@@ -108,7 +108,7 @@ def ltx_obsstat_analyse(obsstatf: str,
     col_names = dfObsTle.columns.tolist()
     GNSS = col_names[col_names.index('PRN') - 1]
     obstypes = [x for x in col_names[col_names.index('PRN') + 1:]]
-    print('obstypes = {}'.format(obstypes))
+    # print('obstypes = {}'.format(obstypes))
     # we only look at the SNR values since the same value for C/L/D, thus remove starting S
     navsigs = ['{gnss:s}{navsig:s}'.format(gnss=GNSS, navsig=x[1:]) for x in obstypes[:-1]]
 
@@ -128,47 +128,37 @@ def ltx_obsstat_analyse(obsstatf: str,
 
         # with sssec.create(Table(position='H')) as table:
         with sssec.create(LongTabu(fmt_tabu, pos='c', col_space='4pt')) as longtabu:
-            print(['PRN'] + navsigs + [obstypes[-1]])
+            # print(['PRN'] + navsigs + [obstypes[-1]])
 
             col_row = ['PRN']
             for navsig in navsigs:
                 # col_row += [MultiColumn(size=2, align='|c|', data=navsig)]
                 col_row += [navsig, '']
             col_row += [obstypes[-1]]
-            print(col_row)
+            # print(col_row)
 
             longtabu.add_row(col_row, mapper=[bold])  # header row , mapper=[bold]
             longtabu.add_hline()
             longtabu.end_table_header()
 
             for index, row in dfObsTle.iterrows():
-
-                # add percentage in the following row if TLE_count differs 0
-                # tle_obs = row[obstypes[-1]] / 100
-                # if tle_obs > 0:
-                #     obstle_perc = ['{:.1f}%'.format(float(x / tle_obs)) for x in row[obstypes[:-1]].tolist()]
-                #     # longtabu.add_row([''] + ['{:.1f}% '.format(float(x / tle_obs)) for x in row[obstypes[:-1]].tolist()] + [''])
-                # else:
-                #     obstle_perc = ['---'] * len(obstypes[:-1])
-                #     # longtabu.add_row([''] + ['---'] * len(obstypes[:-1]) + [''])  # add emty row
-
-                print('index = {}'.format(index))
-                print('row = {}'.format(row))
+                # print('index = {}'.format(index))
+                # print('row = {}'.format(row))
 
                 prn_row = [row.PRN]
                 tle_obs = row[obstypes[-1]] / 100
                 for obstype in obstypes[:-1]:
-                    print("type(row[obstype]) = {}".format(type(row[obstype])))
+                    # print("type(row[obstype]) = {}".format(type(row[obstype])))
                     prn_row += ['{}'.format(row[obstype])]
 
                     if tle_obs > 0:
-                        print("row[obstype]/tle = {:.1f}%".format(row[obstype] / tle_obs))
+                        # print("row[obstype]/tle = {:.1f}%".format(row[obstype] / tle_obs))
                         prn_row += ['{:.1f}%'.format(row[obstype] / tle_obs)]
                     else:
                         prn_row += ['---']
 
                 prn_row += ['{}'.format(row[obstypes[-1]])]
-                print('prn_row = {}'.format(prn_row))
+                # print('prn_row = {}'.format(prn_row))
 
                 # print([row.PRN, '{}'.format(row[obstypes[:-1]].tolist()), '{}'.format(obstle_perc), '{}'.format(obstypes[-1])])
                 longtabu.add_row(prn_row)
@@ -176,20 +166,20 @@ def ltx_obsstat_analyse(obsstatf: str,
         # add figures representing the observations
         ssec.append(NoEscape(r'Figure \ref{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} represents the absolute count of observables for each navigation signal set out against the maximum possible observations obtained from the TLEs. The relative observation count is represented in ' + r'Figure \ref{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '}.'))
 
-        with sssec.create(Figure(position='htbp')) as plot:
+        with sssec.create(Figure(position='H')) as plot:
             plot.add_image(plots['obs_count'],
                            width=NoEscape(r'0.95\textwidth'),
                            placement=NoEscape(r'\centering'))
             # plot.add_caption('Observation count per navigation signal')
             plot.add_caption(NoEscape(r'\label{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Observables overview for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
-        # with sssec.create(Figure(position='htbp')) as plot:
+        # with sssec.create(Figure(position='H')) as plot:
         #     plot.add_image(plots['obs_perc'],
         #                    width=NoEscape(r'0.95\textwidth'),
         #                    placement=NoEscape(r'\centering'))
         #     plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
 
-        with sssec.create(Figure(position='htbp')) as plot:
+        with sssec.create(Figure(position='H')) as plot:
             plot.add_image(plots['relative'],
                            width=NoEscape(r'0.95\textwidth'),
                            placement=NoEscape(r'\centering'))
@@ -291,6 +281,7 @@ def obstab_tleobs_overview(gnss: str,
                            navsigs: list,
                            navsig_plts: dict,
                            navsig_obst_lst: dict,
+                           lst_PRNs: list,
                            dPNT: dict) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
@@ -298,10 +289,10 @@ def obstab_tleobs_overview(gnss: str,
     sssec = Subsubsection(r'Navigation signals analysis')
 
     # go over the available navigation signals
-    print('navsigs = {}'.format(navsigs))
+    # print('navsigs = {}'.format(navsigs))
     for navsig in navsigs:
-        print('navsig = {}'.format(navsig))
-        print('navsig_plts = {}'.format(navsig_plts))
+        # print('navsig = {}'.format(navsig))
+        # print('navsig_plts = {}'.format(navsig_plts))
 
         sssec.append(NewPage())
 
@@ -310,9 +301,9 @@ def obstab_tleobs_overview(gnss: str,
             with paragraph.create(Enumerate()) as enum:
 
                 # add figures representing the observations per navigation signal
-                enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE). If present, the culmination point for a satellite is represented by a triangle.'.format(gnss=gnss, navs=navsig)))
+                enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} represents the observed time span for navigation signal {gnss:s}{navs:s} set out against the maximum time span calculated from the  Two Line Elements (TLE). If present, the culmination point for a satellite is represented by a triangle. The time span from TLEs is represented by the lighter area while the real observations are represented by the dark super-imposed areas.'.format(gnss=gnss, navs=navsig)))
 
-                with enum.create(Figure(position='htbp')) as plot:
+                with enum.create(Figure(position='H')) as plot:
                     plot.add_image(navsig_plts[navsig]['tle-obs'],
                                    width=NoEscape(r'0.95\textwidth'),
                                    placement=NoEscape(r'\centering'))
@@ -321,12 +312,12 @@ def obstab_tleobs_overview(gnss: str,
 
                     plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{navs:s}'.format(navs=navsig) + '{gnss:s}'.format(gnss=gnss) + '}} Navigation signal {gnss:s}{navs:s} versus TLE time span'.format(gnss=gnss, navs=navsig)))
 
-                print('navsig_obst_lst[{}] = {}'.format(navsig, navsig_obst_lst[navsig]))
+                # print('navsig_obst_lst[{}] = {}'.format(navsig, navsig_obst_lst[navsig]))
 
                 for navsig_obst in navsig_obst_lst[navsig]:
-                    print('navsig_obst = {}'.format(navsig_obst))
-                    enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} displays the evolution of observation type {obst:s}'.format(obst=navsig_obst)))
-                    with enum.create(Figure(position='htbp')) as plot:
+                    # print('navsig_obst = {}'.format(navsig_obst))
+                    enum.add_item(NoEscape(r'Figure \ref{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} displays the evolution of observation type {obst:s}. \\newline The upper plot represents the variation of the observation type while the middle plot (if available) displays the variation of this observable between 2 consecutive epochs. The bottom plot displays the TLE time spans for the satellies.'.format(obst=navsig_obst)))
+                    with enum.create(Figure(position='H')) as plot:
                         plot.add_image(navsig_plts[navsig]['obst'][navsig_obst],
                                        width=NoEscape(r'0.95\textwidth'),
                                        placement=NoEscape(r'\centering'))
@@ -335,22 +326,29 @@ def obstab_tleobs_overview(gnss: str,
 
                         plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} Navigation signal {navsobst:s} evolution'.format(navsobst=navsig_obst)))
 
-                # add evolution of the PRNcnt over time (more or less than 4) and report time jumps
-                if len(dPNT[navsig]['loss']) > 0:
-                    enum.append('The table below summarises the PRN count statistics which determines the loss and reacquisition of PNT.')
+                    # add evolution of the PRNcnt over time (more or less than 4) and report time jumps
+                    if len(dPNT[navsig]['loss']) > 0:
+                        enum.append('The table below reports the loss and reacquisition of PNT for observable {obst:s}.'.format(obst=navsig_obst))
 
-                    with enum.create(LongTabu('r|r|r', pos='c', col_space='4pt')) as longtabu:
-                        longtabu.add_row((MultiColumn(3, align='c', data=TextColor('blue','Navigation signal {navs:s}'.format(navs=navsig))),))
-                        longtabu.add_row(['Loss of PNT', 'PNT Reacquisition', 'Duration [s]'], mapper=[bold])  # header row
-                        longtabu.add_hline()
-                        longtabu.end_table_header()
-                        # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-                        # longtabu.add_hline()
-                        # longtabu.end_header()
+                        with enum.create(LongTabu('r|r|r', pos='c', col_space='4pt')) as longtabu:
+                            longtabu.add_row((MultiColumn(3, align='c', data=TextColor('blue','Navigation signal {navs:s}'.format(navs=navsig))),))
+                            longtabu.add_row(['Loss of PNT', 'PNT Reacquisition', 'Duration [s]'], mapper=[bold])  # header row
+                            longtabu.add_hline()
+                            longtabu.end_table_header()
+                            # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+                            # longtabu.add_hline()
+                            # longtabu.end_header()
 
-                        print('len loss / reacq = {} {}'.format(len(dPNT[navsig]['loss']), len(dPNT[navsig]['reacq'])))
-                        for loss, reacq, PNTgap in zip(dPNT[navsig]['loss'], dPNT[navsig]['reacq'], dPNT[navsig]['PNTgap']):
-                            print('{} -> {}: {}'.format(loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap))
-                            longtabu.add_row([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap])
+                            # print('len loss / reacq = {} {}'.format(len(dPNT[navsig]['loss']), len(dPNT[navsig]['reacq'])))
+                            for loss, reacq, PNTgap in zip(dPNT[navsig]['loss'], dPNT[navsig]['reacq'], dPNT[navsig]['PNTgap']):
+                                # print('{} -> {}: {}'.format(loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap))
+                                longtabu.add_row([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap])
+
+                    enum.add_item('Analysis of navigation signal {gnss:s}{navs:s} for each observed satellite.\\newline The following plots display the same information as described above per satellite.'.format(gnss=gnss, navs=navsig))
+                    for prn in lst_PRNs:
+                        with enum.create(Figure(position='H')) as plot:
+                            plot.add_image(navsig_plts[navsig][prn][navsig_obst],
+                                           width=NoEscape(r'0.95\linewidth'),
+                                           placement=NoEscape(r'\centering'))
 
     return sssec
