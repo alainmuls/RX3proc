@@ -1,7 +1,7 @@
 import sys
 import os
 from math import isnan
-from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, Enumerate, MultiColumn, NewPage, TextColor
+from pylatex import Subsection, NoEscape, Figure, LongTabu, Subsubsection, Enumerate, MultiColumn, NewPage, TextColor, Tabular, NewLine
 from pylatex.utils import bold
 from pylatex.section import Paragraph
 import datetime as dt
@@ -141,6 +141,16 @@ def ltx_obsstat_analyse(obsstatf: str,
             longtabu.add_hline()
             longtabu.end_table_header()
 
+            longtabu.add_hline()
+            longtabu.add_row((MultiColumn(len(fmt_tabu),
+                                          align='r',
+                                          data='Continued on Next Page'),))
+            longtabu.add_hline()
+            longtabu.end_table_footer()
+
+            longtabu.add_hline()
+            longtabu.end_table_last_footer()
+
             for index, row in dfObsTle.iterrows():
                 # print('index = {}'.format(index))
                 # print('row = {}'.format(row))
@@ -251,6 +261,15 @@ def obstab_tleobs_ssec(obstabf: str,
             # longtabu.add_hline()
             # longtabu.end_header()
 
+            longtabu.add_hline()
+            longtabu.add_row((MultiColumn(5, align='r',
+                                          data='Continued on Next Page'),))
+            longtabu.add_hline()
+            longtabu.end_table_footer()
+
+            longtabu.add_hline()
+            longtabu.end_table_last_footer()
+
             for prn, row in dfTle.iterrows():
                 tabu_row = [prn]
                 for col in dfTle.columns.tolist():
@@ -283,7 +302,8 @@ def obstab_tleobs_overview(gnss: str,
                            navsig_obst_lst: dict,
                            lst_PRNs: list,
                            dPRNLoss: dict,
-                           dPNT: dict) -> Subsubsection:
+                           dPNT: dict,
+                           dEvents_df) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
     """
@@ -327,9 +347,44 @@ def obstab_tleobs_overview(gnss: str,
 
                         plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} Navigation signal {navsobst:s} evolution'.format(navsobst=navsig_obst)))
 
-                    # add evolution of the PRNcnt over time (more or less than 4) and report time jumps
-                    if len(dPNT[navsig]['loss']) > 0:
+                    # add evolution of the PNT
+                    print('dEvents_df[navsig] = {}'.format(dEvents_df[navsig]))
+                    print('dEvents_df[navsig].columns = {}'.format(dEvents_df[navsig].columns))
+                    df_PNT = dEvents_df[navsig][(dEvents_df[navsig]['type'] == 'PNT') & (dEvents_df[navsig]['event'] == 'Loss')]
+                    df_PNT['reacq'] = dEvents_df[navsig][(dEvents_df[navsig]['type'] == 'PNT') & (dEvents_df[navsig]['event'] == 'Reacquisition')]['DATE_TIME'].tolist()
+                    print('df_PNT = \n{}'.format(df_PNT))
+                    print('df_PNT.columns = \n{}'.format(df_PNT.columns))
+
+                    if df_PNT.shape[0] > 0:
                         enum.append('The table below reports the loss and reacquisition of PNT for observable {obst:s}.'.format(obst=navsig_obst))
+                        enum.append('')
+
+                        nr_cols = len(df_PNT.columns)
+                        with enum.create(LongTabu('c' * nr_cols)) as longtabu:
+                            longtabu.add_hline()
+                            longtabu.add_row((MultiColumn(nr_cols, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
+                            longtabu.add_row(df_PNT.columns, mapper=[bold])  # header row
+                            longtabu.add_hline()
+                            longtabu.end_table_header()
+                            # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+                            # longtabu.add_hline()
+                            # longtabu.end_header()
+
+                            longtabu.add_hline()
+                            longtabu.add_row((MultiColumn(nr_cols, align='r',
+                                                          data='Continued on Next Page'),))
+                            longtabu.add_hline()
+                            longtabu.end_table_footer()
+
+                            longtabu.add_hline()
+                            longtabu.end_table_last_footer()
+
+                            for row in df_PNT.index:
+                                print('row= {}'.format(row))
+                                print('list(df_PNT.loc[row, :] ={}'.format(list(df_PNT.loc[row, :])))
+                                longtabu.add_row(list(df_PNT.loc[row, :]))
+                            longtabu.add_hline()
+
 
                         with enum.create(LongTabu('r|r|r', pos='c', col_space='4pt')) as longtabu:
                             longtabu.add_row((MultiColumn(3, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
@@ -340,11 +395,22 @@ def obstab_tleobs_overview(gnss: str,
                             # longtabu.add_hline()
                             # longtabu.end_header()
 
+                            longtabu.add_hline()
+                            longtabu.add_row((MultiColumn(3, align='r',
+                                                          data='Continued on Next Page'),))
+                            longtabu.add_hline()
+                            longtabu.end_table_footer()
+
+                            longtabu.add_hline()
+                            longtabu.end_table_last_footer()
+
                             # print('len loss / reacq = {} {}'.format(len(dPNT[navsig]['loss']), len(dPNT[navsig]['reacq'])))
                             for loss, reacq, PNTgap in zip(dPNT[navsig]['loss'], dPNT[navsig]['reacq'], dPNT[navsig]['PNTgap']):
                                 # print('{} -> {}: {}'.format(loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap))
                                 longtabu.add_row([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap])
+                                print([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap])
 
+                    # start reporting for each PRN
                     enum.add_item('Analysis of navigation signal {gnss:s}{navs:s} for each observed satellite.\\newline The following plots display the same information as described above per satellite. Each plot is accompanied by a table displaying the time of loss of lock and reacquisition of the satellite when such events are detected.'.format(gnss=gnss, navs=navsig))
                     for prn in lst_PRNs:
                         with enum.create(Figure(position='H')) as plot:
@@ -361,6 +427,15 @@ def obstab_tleobs_overview(gnss: str,
                                 longtabu.add_row(['PRN Loss of lock', 'PRN Reacquisition', 'Duration [s]'], mapper=[bold])  # header row
                                 longtabu.add_hline()
                                 longtabu.end_table_header()
+
+                                longtabu.add_hline()
+                                longtabu.add_row((MultiColumn(3, align='r',
+                                                              data='Continued on Next Page'),))
+                                longtabu.add_hline()
+                                longtabu.end_table_footer()
+
+                                longtabu.add_hline()
+                                longtabu.end_table_last_footer()
 
                                 for prn_loss, prn_reacq in zip(prn_loss_reacq['loss'], prn_loss_reacq['reacq']):
                                     prn_gap = (prn_reacq - prn_loss).total_seconds()

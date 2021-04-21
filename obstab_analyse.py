@@ -12,7 +12,7 @@ import pandas as pd
 from shutil import copyfile
 from typing import Tuple
 import pickle
-from nested_lookup import nested_lookup
+import numpy as np
 
 from gfzrnx import gfzrnx_constants as gfzc
 from ampyutils import gnss_cmd_opts as gco
@@ -382,6 +382,42 @@ def pnt_available(dfPrnEvol: pd.DataFrame,
     return dPNT
 
 
+def loss_lock_combine(navsig: str,
+                      dPNT: dict,
+                      lst_prns: list,
+                      dPRNs: dict,
+                      logger: logging.Logger) -> pd.DataFrame:
+    """
+    loss_lock_combine combines loss and reacq over PNT and per navsig and PRN
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+    # create the dataframe holding the venets
+    df_event = pd.DataFrame(columns=['DATE_TIME', 'event', 'type', 'duration'])
+
+    # add to dataframe the events on PNT loss/reacquisition
+    for dt_loss, t_gap in zip(dPNT['loss'], dPNT['PNTgap']):
+        new_row = {'DATE_TIME': dt_loss, 'event': 'Loss', 'type': 'PNT', 'duration': t_gap}
+        df_event = df_event.append(new_row, ignore_index=True)
+    for dt_reacq in dPNT['reacq']:
+        new_row = {'DATE_TIME': dt_reacq, 'event': 'Reacquisition', 'type': 'PNT', 'duration': np.nan}
+        df_event = df_event.append(new_row, ignore_index=True)
+
+    for prn in lst_prns:
+        for dt_loss, t_gap in zip(dPRNs[prn]['loss'], dPRNs[prn]['gap']):
+            new_row = {'DATE_TIME': dt_loss, 'event': 'Loss', 'type': '{prn:s}'.format(prn=prn), 'duration': t_gap}
+            df_event = df_event.append(new_row, ignore_index=True)
+        for dt_reacq in dPRNs[prn]['reacq']:
+            new_row = {'DATE_TIME': dt_reacq, 'event': 'Reacquisition', 'type': '{prn:s}'.format(prn=prn), 'duration': np.nan}
+            df_event = df_event.append(new_row, ignore_index=True)
+
+    df_event.sort_values(by='DATE_TIME').reset_index(inplace=True)
+
+    amutils.logHeadTailDataFrame(df=df_event, dfName='df_event', callerName=cFuncName, logger=logger)
+
+    return df_event
+
+
 def main_obstab_analyse(argv):
     """
     main_obstab_analyse analyses the created OBSTAB files and compares with TLE data.
@@ -452,6 +488,8 @@ def main_obstab_analyse(argv):
 
     # list with observable types per navigation signal
     lst_navsig_obst = {}
+    # dict containing the oss / reacquisition events
+    ddf_events = {}
 
     for navsig in dTab['nav_signals']:
         # dict for keeping the obtained info
@@ -552,14 +590,20 @@ def main_obstab_analyse(argv):
                                                             logger=logger)
 
             dTab['plots'][navsig][prn] = prn_plots
-            dTab['lock'][navsig][prn] = {}
 
+            dTab['lock'][navsig][prn] = {}
             dTab['lock'][navsig][prn]['loss'] = prn_loss
             dTab['lock'][navsig][prn]['reacq'] = prn_reacq
+            dTab['lock'][navsig][prn]['gap'] = [(dt_reacq - dt_loss).total_seconds() for dt_loss, dt_reacq in zip(prn_loss, prn_reacq)]
 
-    # print("dTab['plots'][navsig] = {}\n--------------------------\n".format(dTab['plots'][navsig]))
-
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
+            print("xxx dTab[lock][{}][{}] = {}".format(navsig, prn, dTab['lock'][navsig][prn]))
+        # combine the loss / reacquisition events in a dataframe
+        ddf_events[navsig] = loss_lock_combine(navsig=navsig,
+                                               dPNT=dTab['PNT'][navsig],
+                                               lst_prns=dTab['lst_CmnPRNs'],
+                                               dPRNs=dTab['lock'][navsig],
+                                               logger=logger)
+        amutils.logHeadTailDataFrame(df=ddf_events[navsig], dfName='ddf_events[navsig]', callerName=cFuncName, logger=logger)
 
     # report to the user
     dTab['ltx']['obstab'] = '{marker:s}_03_{gnss:s}_obs_tab'.format(marker=dTab['obstabf'][:9], gnss=dTab['info']['gnss'])
@@ -575,12 +619,12 @@ def main_obstab_analyse(argv):
                                                               navsig_obst_lst=lst_navsig_obst,
                                                               lst_PRNs=dTab['lst_CmnPRNs'],
                                                               dPRNLoss=dTab['lock'],
-                                                              dPNT=dTab['PNT'])
+                                                              dEvents_df=ddf_events)
     sec_obstab.append(ssec_tleobs)
     sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))
 
-    sys.exit(88)
     # store the json structure
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
     jsonName = os.path.join(dTab['dir'], '{scrname:s}.json'.format(scrname=os.path.splitext(os.path.basename(__file__))[0]))
     with open(jsonName, 'w+') as f:
         json.dump(dTab, f, ensure_ascii=False, indent=4, default=amutils.json_convertor)
