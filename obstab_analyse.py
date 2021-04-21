@@ -226,7 +226,7 @@ def analyse_obsprn(marker: str,
     # check whether data is available for this PRN, if no data available, just return with empty stuff
     if dfPrnNavSig.shape[0] == 0:
         time_gaps = None
-        time_reaqs = None
+        time_reacqs = None
         # posidx_snr_posjumps = None
         # posidx_snr_negjumps = None
         plots = None
@@ -245,9 +245,9 @@ def analyse_obsprn(marker: str,
     # print('{}: posidx_time_gaps = \n{}'.format(prn, posidx_time_gaps))
     # print('{}: posidx_time_gaps - 1 = \n{}'.format(prn, [x - 1 for x in posidx_time_gaps[1:-1]]))
 
-    time_reaqs = dfPrnNavSig.iloc[posidx_time_gaps]['DATE_TIME']
+    time_reacqs = dfPrnNavSig.iloc[posidx_time_gaps]['DATE_TIME']
     time_gaps = dfPrnNavSig.iloc[[x - 1 for x in posidx_time_gaps[1:-1]]]['DATE_TIME']
-    # print('{}: time_reaqs = \n{}'.format(prn, time_reaqs))
+    # print('{}: time_reacqs = \n{}'.format(prn, time_reacqs))
     # print('{}: time_gaps = \n{}'.format(prn, time_gaps))
 
     # examine the requested observations for this navigation signal
@@ -310,7 +310,10 @@ def analyse_obsprn(marker: str,
     # print('posidx_snr_negjumps[navsig_obs] = {}'.format(posidx_snr_negjumps[navsig_obs]))
 
     # return posidx_time_gaps, posidx_snr_posjumps[navsig_obs], posidx_snr_negjumps[navsig_obs], plots
-    return time_gaps.tolist(), time_reaqs.tolist()[1:-1], plots
+    print('time_gaps = \n{}'.format(time_gaps))
+    print('time_reacqs = \n{}'.format(time_reacqs))
+
+    return time_gaps.tolist(), time_reacqs.tolist()[1:-1], plots
 
 
 def pnt_available(dfPrnEvol: pd.DataFrame,
@@ -571,6 +574,7 @@ def main_obstab_analyse(argv):
                                                               navsig_plts=dTab['plots'],
                                                               navsig_obst_lst=lst_navsig_obst,
                                                               lst_PRNs=dTab['lst_CmnPRNs'],
+                                                              dPRNLoss=dTab['lock'],
                                                               dPNT=dTab['PNT'])
     sec_obstab.append(ssec_tleobs)
     sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))
