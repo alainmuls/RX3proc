@@ -310,8 +310,8 @@ def analyse_obsprn(marker: str,
     # print('posidx_snr_negjumps[navsig_obs] = {}'.format(posidx_snr_negjumps[navsig_obs]))
 
     # return posidx_time_gaps, posidx_snr_posjumps[navsig_obs], posidx_snr_negjumps[navsig_obs], plots
-    print('time_gaps = \n{}'.format(time_gaps))
-    print('time_reacqs = \n{}'.format(time_reacqs))
+    # print('time_gaps = \n{}'.format(time_gaps))
+    # print('time_reacqs = \n{}'.format(time_reacqs))
 
     return time_gaps.tolist(), time_reacqs.tolist()[1:-1], plots
 
@@ -596,7 +596,7 @@ def main_obstab_analyse(argv):
             dTab['lock'][navsig][prn]['reacq'] = prn_reacq
             dTab['lock'][navsig][prn]['gap'] = [(dt_reacq - dt_loss).total_seconds() for dt_loss, dt_reacq in zip(prn_loss, prn_reacq)]
 
-            print("xxx dTab[lock][{}][{}] = {}".format(navsig, prn, dTab['lock'][navsig][prn]))
+            # print("xxx dTab[lock][{}][{}] = {}".format(navsig, prn, dTab['lock'][navsig][prn]))
         # combine the loss / reacquisition events in a dataframe
         ddf_events[navsig] = loss_lock_combine(navsig=navsig,
                                                dPNT=dTab['PNT'][navsig],
@@ -618,7 +618,6 @@ def main_obstab_analyse(argv):
                                                               navsig_plts=dTab['plots'],
                                                               navsig_obst_lst=lst_navsig_obst,
                                                               lst_PRNs=dTab['lst_CmnPRNs'],
-                                                              dPRNLoss=dTab['lock'],
                                                               dEvents_df=ddf_events)
     sec_obstab.append(ssec_tleobs)
     sec_obstab.generate_tex(os.path.join(dTab['ltx']['path'], dTab['ltx']['obstab']))

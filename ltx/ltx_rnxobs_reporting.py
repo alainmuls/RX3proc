@@ -301,8 +301,6 @@ def obstab_tleobs_overview(gnss: str,
                            navsig_plts: dict,
                            navsig_obst_lst: dict,
                            lst_PRNs: list,
-                           dPRNLoss: dict,
-                           dPNT: dict,
                            dEvents_df) -> Subsubsection:
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
@@ -316,6 +314,8 @@ def obstab_tleobs_overview(gnss: str,
         # print('navsig_plts = {}'.format(navsig_plts))
 
         sssec.append(NewPage())
+
+        df_events_navsig = dEvents_df[navsig]
 
         with sssec.create(Paragraph(r'Analysis of navigation signal {gnss:s}{navs:s}'.format(gnss=gnss, navs=navsig))) as paragraph:
 
@@ -347,13 +347,13 @@ def obstab_tleobs_overview(gnss: str,
 
                         plot.add_caption(NoEscape(r'\label{fig:tle_navsig_' + '{gnss:s}'.format(gnss=gnss) + '{navsobst:s}'.format(navsobst=navsig_obst) + '}} Navigation signal {navsobst:s} evolution'.format(navsobst=navsig_obst)))
 
-                    # add evolution of the PNT
-                    print('dEvents_df[navsig] = {}'.format(dEvents_df[navsig]))
-                    print('dEvents_df[navsig].columns = {}'.format(dEvents_df[navsig].columns))
-                    df_PNT = dEvents_df[navsig][(dEvents_df[navsig]['type'] == 'PNT') & (dEvents_df[navsig]['event'] == 'Loss')]
-                    df_PNT['reacq'] = dEvents_df[navsig][(dEvents_df[navsig]['type'] == 'PNT') & (dEvents_df[navsig]['event'] == 'Reacquisition')]['DATE_TIME'].tolist()
-                    print('df_PNT = \n{}'.format(df_PNT))
-                    print('df_PNT.columns = \n{}'.format(df_PNT.columns))
+                    # create the dataframe with events for this PRN
+                    # print('df_events_navsig = {}'.format(df_events_navsig))
+                    # print('df_events_navsig.columns = {}'.format(df_events_navsig.columns))
+                    df_PNT = df_events_navsig[(df_events_navsig['type'] == 'PNT') & (df_events_navsig['event'] == 'Loss')]
+                    df_PNT['reacq'] = df_events_navsig[(df_events_navsig['type'] == 'PNT') & (df_events_navsig['event'] == 'Reacquisition')]['DATE_TIME'].tolist()
+                    # print('df_PNT = \n{}'.format(df_PNT))
+                    # print('df_PNT.columns = \n{}'.format(df_PNT.columns))
 
                     if df_PNT.shape[0] > 0:
                         enum.append('The table below reports the loss and reacquisition of PNT for observable {obst:s}.'.format(obst=navsig_obst))
@@ -380,35 +380,8 @@ def obstab_tleobs_overview(gnss: str,
                             longtabu.end_table_last_footer()
 
                             for row in df_PNT.index:
-                                print('row= {}'.format(row))
-                                print('list(df_PNT.loc[row, :] ={}'.format(list(df_PNT.loc[row, :])))
                                 longtabu.add_row(list(df_PNT.loc[row, :]))
                             longtabu.add_hline()
-
-
-                        with enum.create(LongTabu('r|r|r', pos='c', col_space='4pt')) as longtabu:
-                            longtabu.add_row((MultiColumn(3, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
-                            longtabu.add_row(['Loss of PNT', 'PNT Reacquisition', 'Duration [s]'], mapper=[bold])  # header row
-                            longtabu.add_hline()
-                            longtabu.end_table_header()
-                            # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-                            # longtabu.add_hline()
-                            # longtabu.end_header()
-
-                            longtabu.add_hline()
-                            longtabu.add_row((MultiColumn(3, align='r',
-                                                          data='Continued on Next Page'),))
-                            longtabu.add_hline()
-                            longtabu.end_table_footer()
-
-                            longtabu.add_hline()
-                            longtabu.end_table_last_footer()
-
-                            # print('len loss / reacq = {} {}'.format(len(dPNT[navsig]['loss']), len(dPNT[navsig]['reacq'])))
-                            for loss, reacq, PNTgap in zip(dPNT[navsig]['loss'], dPNT[navsig]['reacq'], dPNT[navsig]['PNTgap']):
-                                # print('{} -> {}: {}'.format(loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap))
-                                longtabu.add_row([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap])
-                                print([loss.strftime('%H:%M:%S'), reacq.strftime('%H:%M:%S'), PNTgap])
 
                     # start reporting for each PRN
                     enum.add_item('Analysis of navigation signal {gnss:s}{navs:s} for each observed satellite.\\newline The following plots display the same information as described above per satellite. Each plot is accompanied by a table displaying the time of loss of lock and reacquisition of the satellite when such events are detected.'.format(gnss=gnss, navs=navsig))
@@ -417,28 +390,67 @@ def obstab_tleobs_overview(gnss: str,
                             plot.add_image(navsig_plts[navsig][prn][navsig_obst],
                                            width=NoEscape(r'0.95\linewidth'),
                                            placement=NoEscape(r'\centering'))
-                        print('PRN loss {} {} = {}'.format(navsig, prn, dPRNLoss[navsig][prn]))
 
-                        # add information about loss/reacq of signal for the PRN on this navigation signal
-                        prn_loss_reacq = dPRNLoss[navsig][prn]
-                        if (len(prn_loss_reacq['loss']) > 0) & (len(prn_loss_reacq['reacq']) > 0):
-                            with enum.create(LongTabu('r|r|r', pos='c', col_space='4pt')) as longtabu:
-                                longtabu.add_row((MultiColumn(3, align='c', data=TextColor('blue', 'Navigation signal {navs:s} for PRN {prn:s}'.format(navs=navsig, prn=prn))),))
-                                longtabu.add_row(['PRN Loss of lock', 'PRN Reacquisition', 'Duration [s]'], mapper=[bold])  # header row
-                                longtabu.add_hline()
-                                longtabu.end_table_header()
+                        # create the dataframe with events for this PRN
+                        df_PRN = df_events_navsig[(df_events_navsig['type'] == prn) & (df_events_navsig['event'] == 'Loss')]
+                        df_PRN['reacq'] = df_events_navsig[(df_events_navsig['type'] == prn) & (df_events_navsig['event'] == 'Reacquisition')]['DATE_TIME'].tolist()
+                        # print('df_PRN = \n{}'.format(df_PRN))
+                        # print('df_PRN.columns = \n{}'.format(df_PRN.columns))
 
-                                longtabu.add_hline()
-                                longtabu.add_row((MultiColumn(3, align='r',
-                                                              data='Continued on Next Page'),))
-                                longtabu.add_hline()
-                                longtabu.end_table_footer()
+                        nr_cols = len(df_PRN.columns)
+                        with enum.create(LongTabu('c' * nr_cols)) as longtabu:
+                            longtabu.add_hline()
+                            longtabu.add_row((MultiColumn(nr_cols, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
+                            longtabu.add_row(df_PRN.columns, mapper=[bold])  # header row
+                            longtabu.add_hline()
+                            longtabu.end_table_header()
+                            # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+                            # longtabu.add_hline()
+                            # longtabu.end_header()
 
-                                longtabu.add_hline()
-                                longtabu.end_table_last_footer()
+                            longtabu.add_hline()
+                            longtabu.add_row((MultiColumn(nr_cols, align='r',
+                                                          data='Continued on Next Page'),))
+                            longtabu.add_hline()
+                            longtabu.end_table_footer()
 
-                                for prn_loss, prn_reacq in zip(prn_loss_reacq['loss'], prn_loss_reacq['reacq']):
-                                    prn_gap = (prn_reacq - prn_loss).total_seconds()
-                                    longtabu.add_row([prn_loss.strftime('%H:%M:%S'), prn_reacq.strftime('%H:%M:%S'), prn_gap])
+                            longtabu.add_hline()
+                            longtabu.end_table_last_footer()
+
+                            for row in df_PRN.index:
+                                longtabu.add_row(list(df_PRN.loc[row, :]))
+                            longtabu.add_hline()
+
+                    # add overview for aal events
+                    sssec.append(NewPage())
+                    enum.add_item('Chronological overview of detected events for navigation signal {gnss:s}{navs:s}'.format(gnss=gnss, navs=navsig))
+
+                    # sort the events for this signal according to time
+                    df_events_navsig.sort_values(by='DATE_TIME', inplace=True)
+                    nr_cols = len(df_events_navsig.columns)
+                    with enum.create(LongTabu('c' * nr_cols)) as longtabu:
+                        longtabu.add_hline()
+                        longtabu.add_row((MultiColumn(nr_cols, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
+                        longtabu.add_row(df_events_navsig.columns, mapper=[bold])  # header row
+                        longtabu.add_hline()
+                        longtabu.end_table_header()
+                        # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+                        # longtabu.add_hline()
+                        # longtabu.end_header()
+
+                        longtabu.add_hline()
+                        longtabu.add_row((MultiColumn(nr_cols, align='r',
+                                                      data='Continued on Next Page'),))
+                        longtabu.add_hline()
+                        longtabu.end_table_footer()
+
+                        longtabu.add_hline()
+                        longtabu.end_table_last_footer()
+
+                        for row in df_events_navsig.index:
+                            longtabu.add_row(list(df_events_navsig.loc[row, :]))
+                        longtabu.add_hline()
+
+
 
     return sssec
