@@ -9,6 +9,7 @@ import datetime as dt
 from matplotlib import dates
 from typing import Tuple
 from matplotlib.ticker import MultipleLocator, MaxNLocator
+from math import ceil
 
 from ampyutils import amutils
 from plot import plot_utils
@@ -523,12 +524,12 @@ def plot_prn_navsig_obs(marker: str,
 
     if obst[0] == 'S':  # more detailed plot for SNR analysis
         fig = plt.figure(figsize=(12, 7))
-        gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[4, 2, 1])
+        gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[8, 3, 1])
         axObst, axSNR, axTLE = gs.subplots(sharex=True)
         # fig, (axObst, axSNR) = plt.subplots(2, sharex=True, figsize=(8, 6), )
     else:
         fig = plt.figure(figsize=(9, 7))
-        gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[5, 1])
+        gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[11, 1])
         axObst, axTLE = gs.subplots(sharex=True)
 
     print('posidx_gaps = {}'.format(posidx_gaps))
@@ -571,16 +572,26 @@ def plot_prn_navsig_obs(marker: str,
     axObst.yaxis.grid(b=True, which='both')
     axObst.set_ylabel(obst)
 
+    if obst.startswith('S'):  # SNR displayed
+        axObst.set_ylim([15, 55])
+
+        axSNR.xaxis.grid(b=True, which='both')
+        axSNR.yaxis.grid(b=True, which='both')
+        axSNR.set_ylabel('d({snr:s})'.format(snr=obst))
+
+        print(dfPrnObst)
+        print(dfPrnObst['d{obst:s}'.format(obst=obst)])
+        print(type(dfPrnObst['d{obst:s}'.format(obst=obst)]))
+        print(dfPrnObst['d{obst:s}'.format(obst=obst)].abs())
+        print('max = {}'.format(dfPrnObst['d{obst:s}'.format(obst=obst)].abs().max()))
+        ylim = max(3 * snrth, ceil(dfPrnObst['d{obst:s}'.format(obst=obst)].abs().max()))
+        axSNR.set_ylim([-ylim, +ylim])
+
     axTLE.xaxis.grid(b=True)
     axTLE.yaxis.grid(b=False)
     axTLE.tick_params(left=False)
     axTLE.get_yaxis().set_ticklabels([])
     axTLE.set_ylabel('TLE span')
-
-    if obst[0] == 'S':
-        axSNR.xaxis.grid(b=True, which='both')
-        axSNR.yaxis.grid(b=True, which='both')
-        axSNR.set_ylabel('d({snr:s})'.format(snr=obst))
 
     # create the ticks for the time ax
     axTLE.set_xlim([dTime['start'], dTime['end']])
@@ -651,7 +662,7 @@ def obstle_plot_gnss_obst(marker: str,
     # plot per obst all PRN  for this navigation signal
     for obst in navsig_obst_lst:
         fig = plt.figure(figsize=(10, 7))
-        gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[5, 2, 2])
+        gs = fig.add_gridspec(nrows=3, hspace=0.1, height_ratios=[9, 3, 3])
         axObst, axPRNcnt, axTLE = gs.subplots(sharex=True)
 
         # retain only the current obst in dataframe
@@ -713,6 +724,9 @@ def obstle_plot_gnss_obst(marker: str,
         axObst.xaxis.grid(b=True, which='both')
         axObst.yaxis.grid(b=True, which='both')
         axObst.set_ylabel(obst)
+
+        if obst.startswith('S'):  # SNR displayed
+            axObst.set_ylim([15, 55])
 
         axTLE.xaxis.grid(b=True)
         axTLE.yaxis.grid(b=False)
