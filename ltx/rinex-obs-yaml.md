@@ -1,5 +1,5 @@
 ---
-author: "Alain MULS, Olivier DESENFANS"
+author: "A. MULS, O. DESENFANS, P. DE KIMPE, A. TSATURYAN"
 title: "RINEX Observation Analysis"
 date: "\\textbf{\\today}"
 subtitle: "3PfD"
