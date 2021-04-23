@@ -402,7 +402,7 @@ def obstle_plot_arcs_prns(marker: str,
 
     # subplots
     fig, ax = plt.subplots(figsize=(12.0, 8.0))
-    print('dTime = {}'.format(dTime))
+    # print('dTime = {}'.format(dTime))
     fig.suptitle('{marker:s} - {navs:s} - {date:s} ({yy:04d}/{doy:03d} - Obs vs TLE)'.format(
                  marker=marker,
                  date='{date:s}'.format(date=dTime['date'].strftime('%d/%m/%Y')),
@@ -477,7 +477,7 @@ def obstle_plot_arcs_prns(marker: str,
     for color, tick in zip(prn_colors, ax.yaxis.get_major_ticks()):
         tick.label1.set_color(color)  # set the color property
         tick.label1.set_fontweight('bold')
-    print('prn_ticks = {}'.format(prn_ticks))
+    # print('prn_ticks = {}'.format(prn_ticks))
     ax.set_yticks(np.arange(0, max_prn))
     ax.set_yticklabels(prn_ticks)
 
@@ -532,7 +532,7 @@ def plot_prn_navsig_obs(marker: str,
         gs = fig.add_gridspec(nrows=2, hspace=0.1, height_ratios=[11, 1])
         axObst, axTLE = gs.subplots(sharex=True)
 
-    print('posidx_gaps = {}'.format(posidx_gaps))
+    # print('posidx_gaps = {}'.format(posidx_gaps))
     # plot on axObst the curves, on axSNR difference with previous value (only for SNR) and TLE on axTLE
     for plot_marker, color in zip(lst_markers[:1], lst_colors):
         # go over the time intervals
@@ -579,11 +579,11 @@ def plot_prn_navsig_obs(marker: str,
         axSNR.yaxis.grid(b=True, which='both')
         axSNR.set_ylabel('d({snr:s})'.format(snr=obst))
 
-        print(dfPrnObst)
-        print(dfPrnObst['d{obst:s}'.format(obst=obst)])
-        print(type(dfPrnObst['d{obst:s}'.format(obst=obst)]))
-        print(dfPrnObst['d{obst:s}'.format(obst=obst)].abs())
-        print('max = {}'.format(dfPrnObst['d{obst:s}'.format(obst=obst)].abs().max()))
+        # print(dfPrnObst)
+        # print(dfPrnObst['d{obst:s}'.format(obst=obst)])
+        # print(type(dfPrnObst['d{obst:s}'.format(obst=obst)]))
+        # print(dfPrnObst['d{obst:s}'.format(obst=obst)].abs())
+        # print('max = {}'.format(dfPrnObst['d{obst:s}'.format(obst=obst)].abs().max()))
         ylim = max(3 * snrth, ceil(dfPrnObst['d{obst:s}'.format(obst=obst)].abs().max()))
         axSNR.set_ylim([-ylim, +ylim])
 
@@ -618,7 +618,7 @@ def plot_prn_navsig_obs(marker: str,
     for ext in ['png']:
         tmp_name = '{basen:s}-{obst:s}-{prn:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, prn=prn)
         plt_name = os.path.join('png', tmp_name)
-        print('plt_name = {}'.format(plt_name))
+        # print('plt_name = {}'.format(plt_name))
         fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
         logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
@@ -760,7 +760,7 @@ def obstle_plot_gnss_obst(marker: str,
             tmp_name = '{basen:s}-{navsig:s}-{obst:s}.{ext:s}'.format(basen=os.path.basename(obsf).split('.')[0], ext=ext, obst=obst, navsig=navsig_name)
 
             plt_name = os.path.join('png', tmp_name)
-            print('plt_name = {}'.format(plt_name))
+            # print('plt_name = {}'.format(plt_name))
             fig.savefig(plt_name, dpi=150, bbox_inches='tight', format=ext)
             logger.info('{func:s}: created plot {plot:s}'.format(func=cFuncName, plot=colored(plt_name, 'green')))
 
