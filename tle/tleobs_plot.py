@@ -595,17 +595,18 @@ def plot_prn_navsig_obs(marker: str,
                            linestyle='--', dashes=(1, 2), marker=plot_marker, markersize=2, color='blue')
 
     # plot the SINR against time on second y-axis for the axPRNcnt plot
-    jam_min = 5 * floor(dfJam['SINR [dB]'].min() / 5)
-    jam_max = 5 * ceil(dfJam['SINR [dB]'].max() / 5)
+    if len(dfJam.index) > 0:
+        jam_min = 5 * floor(dfJam['SINR [dB]'].min() / 5)
+        jam_max = 5 * ceil(dfJam['SINR [dB]'].max() / 5)
 
-    axJam = axObst.twinx()
-    axJam.fill_between(dfJam['DATE_TIME'],
-                       y1=dfJam['SINR [dB]'], y2=0,
-                       step='post',
-                       color='red', alpha=0.2,
-                       linewidth=2, linestyle='-')
-    axJam.set_ylim([jam_min, jam_max])
-    axJam.set_ylabel('SINR [dB]')
+        axJam = axObst.twinx()
+        axJam.fill_between(dfJam['DATE_TIME'],
+                           y1=dfJam['SINR [dB]'], y2=0,
+                           step='post',
+                           color='red', alpha=0.2,
+                           linewidth=2, linestyle='-')
+        axJam.set_ylim([jam_min, jam_max])
+        axJam.set_ylabel('SINR [dB]')
 
     # read in the timings for the TLE of this PRN
     for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
@@ -772,17 +773,18 @@ def obstle_plot_gnss_obst(marker: str,
         axPRNcnt.set_ylabel('PRN count [-]')
 
         # plot the SINR against time on second y-axis for the axPRNcnt plot
-        jam_min = 5 * floor(dfJam['SINR [dB]'].min() / 5)
-        jam_max = 5 * ceil(dfJam['SINR [dB]'].max() / 5)
+        if len(dfJam.index) > 0:
+            jam_min = 5 * floor(dfJam['SINR [dB]'].min() / 5)
+            jam_max = 5 * ceil(dfJam['SINR [dB]'].max() / 5)
 
-        axJam = axObst.twinx()
-        axJam.fill_between(dfJam['DATE_TIME'],
-                           y1=dfJam['SINR [dB]'], y2=0,
-                           step='post',
-                           color='red', alpha=0.2,
-                           linewidth=2, linestyle='-')
-        axJam.set_ylim([jam_min, jam_max])
-        axJam.set_ylabel('SINR [dB]')
+            axJam = axObst.twinx()
+            axJam.fill_between(dfJam['DATE_TIME'],
+                               y1=dfJam['SINR [dB]'], y2=0,
+                               step='post',
+                               color='red', alpha=0.2,
+                               linewidth=2, linestyle='-')
+            axJam.set_ylim([jam_min, jam_max])
+            axJam.set_ylabel('SINR [dB]')
 
         # create title
         fig.suptitle('{marker:s}: {obst:s} for {navsig:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, navsig=navsig_name, dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))

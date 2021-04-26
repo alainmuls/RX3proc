@@ -515,9 +515,12 @@ def main_obstab_analyse(argv):
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
 
     # read the jamming scenario into a dataframe
-    df_JamSc = read_RFIscenario(jamscf=dTab['cli']['jamsc'],
-                                cur_date = dTab['time']['date'],
-                                logger=logger)
+    if dTab['cli']['jamsc'] is not None:
+        df_JamSc = read_RFIscenario(jamscf=dTab['cli']['jamsc'],
+                                    cur_date = dTab['time']['date'],
+                                    logger=logger)
+    else:
+        df_JamSc = pd.DataFrame(columns=['DATE_TIME', 'Signal [dBm]', 'Jammer [dBm]', 'SINR [dB]'])
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
