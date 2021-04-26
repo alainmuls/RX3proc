@@ -53,6 +53,8 @@ def treatCmdOpts(argv):
 
     parser.add_argument('--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
 
+    parser.add_argument('--jamsc', help='CSV file containing jamming scenario', type=str, required=False, default=None)
+
     parser.add_argument('--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
 
     parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
@@ -61,7 +63,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obstab, args.freqs, args.prns, args.obstypes, args.snr_th, args.cutoff, args.plot, args.logging
+    return args.obstab, args.freqs, args.prns, args.obstypes, args.snr_th, args.cutoff, args.jamsc, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -115,6 +117,13 @@ def check_arguments(logger: logging.Logger = None):
 
     if not use_all_prns:
         dTab['lst_prns'] = dTab['cli']['lst_prns']
+
+    # check presence of possible jamming scenario
+    if dTab['cli']['jamsc'] is not None:
+        if not amutils.file_exists(fname=dTab['cli']['jamsc'], logger=logger):
+            if logger is not None:
+                logger.error('{func:s}: jamming scenario {file:s} not accessible'.format(file=dTab['cli']['jamsc'], func=cFuncName))
+            sys.exit(amc.E_FILE_NOT_EXIST)
 
 
 def read_obstab(obstabf: str,
@@ -194,12 +203,33 @@ def read_obstab(obstabf: str,
     return lst_CommonPRNS, nav_signals, obsfreqs, dfTmp
 
 
+def read_RFIscenario(jamscf: str,
+                     cur_date: datetime,
+                     logger: logging.Logger = None) -> pd.DataFrame:
+    """
+    read_RFIscenario reads the jamming scenario into a dataframe
+    """
+    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
+
+    df_jam = pd.read_csv(jamscf, delimiter=',', parse_dates=[['DATE', 'TIME']])
+    jam_cols = df_jam.columns.tolist()
+
+    # add column for SINR (Signal to Interferer and Noise ratio expressed in dB)
+    df_jam['SINR [dB]'] = df_jam[jam_cols[1]] - df_jam[jam_cols[2]]
+
+    if logger is not None:
+        amutils.logHeadTailDataFrame(df=df_jam, dfName='df_jam', callerName=cFuncName, logger=logger)
+
+    return df_jam
+
+
 def analyse_obsprn(marker: str,
                    obstabf: str,
                    navsig_name: str,
                    dTime: dict,
                    dfPrnNavSig: pd.DataFrame,
                    dfPrnTle: pd.DataFrame,
+                   dfJamSc: pd.DataFrame,
                    prn: str,
                    navsig_obst_lst: dict,
                    snrth: float,
@@ -298,6 +328,7 @@ def analyse_obsprn(marker: str,
                                                             prn=prn,
                                                             dfPrnObst=dfPrnNSObs,
                                                             dfTlePrn=dfPrnTle,
+                                                            dfJam=dfJamSc,
                                                             obst=navsig_obs,
                                                             posidx_gaps=posidx_time_gaps,
                                                             snrth=snrth,
@@ -435,7 +466,7 @@ def main_obstab_analyse(argv):
     dTab['info'] = {}
     dTab['PNT'] = {}
 
-    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], show_plot, logLevels = treatCmdOpts(argv)
+    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], dTab['cli']['jamsc'], show_plot, logLevels = treatCmdOpts(argv)
 
     # detect used GNSS from the obstabf filename
     dTab['info']['gnss'] = os.path.splitext(os.path.basename(dTab['cli']['obstabf']))[0][-1]
@@ -443,7 +474,6 @@ def main_obstab_analyse(argv):
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(baseName=os.path.basename(__file__), logLevels=logLevels)
-
     # read the observation header info from the Pickle file
     dTab['obshdr'] = '{obsf:s}.obshdr'.format(obsf=os.path.splitext(dTab['cli']['obstabf'])[0][:-2])
     try:
@@ -456,10 +486,10 @@ def main_obstab_analyse(argv):
         logger.error('{func:s}: error {err!s} reading header file {hdrf:s}'.format(hdrf=colored(dTab['obshdr'], 'red'), err=e, func=cFuncName))
         sys.exit(amc.E_FILE_NOT_EXIST)
 
+    logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dTab['obshdr'], 'blue')))
+
     # verify input
     check_arguments(logger=logger)
-
-    logger.info('{func:s}: Imported header information from {hdrf:s}\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab['hdr'], sort_keys=False, indent=4, default=amutils.json_convertor), hdrf=colored(dTab['obshdr'], 'blue')))
 
     # determine start and end times of observation
     dTab['time']['start'] = datetime.strptime(dTab['hdr']['data']['epoch']['first'].split('.')[0], '%Y %m %d %H %M %S')
@@ -483,6 +513,11 @@ def main_obstab_analyse(argv):
 
     amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
+
+    # read the jamming scenario into a dataframe
+    df_JamSc = read_RFIscenario(jamscf=dTab['cli']['jamsc'],
+                                cur_date = dTab['time']['date'],
+                                logger=logger)
 
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
@@ -561,6 +596,7 @@ def main_obstab_analyse(argv):
                                                                           dfNavSig=dfNavSig,
                                                                           dfNavSigPRNcnt=dfNavSigPRNCount,
                                                                           navsig_obst_lst=lst_navsig_obst[navsig],
+                                                                          dfJam=df_JamSc,
                                                                           dfTle=dfTLE,
                                                                           logger=logger,
                                                                           show_plot=show_plot)
@@ -583,6 +619,7 @@ def main_obstab_analyse(argv):
                                                             prn=prn,
                                                             dfPrnTle=dfTLEPrn,
                                                             dfPrnNavSig=dfNavSigPRN,
+                                                            dfJamSc=df_JamSc,
                                                             navsig_obst_lst=lst_navsig_obst[navsig],
                                                             snrth=dTab['cli']['snrth'],
                                                             interval=dTab['time']['interval'],

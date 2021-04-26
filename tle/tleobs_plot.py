@@ -9,7 +9,7 @@ import datetime as dt
 from matplotlib import dates
 from typing import Tuple
 from matplotlib.ticker import MultipleLocator, MaxNLocator
-from math import ceil
+from math import ceil, floor
 
 from ampyutils import amutils
 from plot import plot_utils
@@ -210,7 +210,7 @@ def obstle_plot_obscount(marker: str,
     ylim_left, ylim_right = ax.get_ylim()
     for i in np.arange(int(ylim_left), int(ylim_right)):
         if i % 2 == 0:
-            ax.barh(y=i, height=0.95, width=xlim_right, color='black', alpha=0.1)
+            ax.barh(y=i, height=1, width=xlim_right, color='black', alpha=0.1)
 
     ax.yaxis.set_ticks(np.arange(1, y_prns[-1] + 1))
     tick_labels = []
@@ -248,18 +248,23 @@ def bars_info(nr_arcs: int,
     logger.info('{func:s}: determining the information for the bars'.format(func=cFuncName))
 
     # the bars for all arcs for 1 PRN may span over 0.8 units (from [-0.4 => 0.4]), including the spaces between the different arcs
-    width_prn_arcs = 0.8
+    width_all_arcs = 0.8
     dx_start = -0.4  # start of the bars relative to integer of PRN
     width_space = 0.02  # space between the different arcs for 1 PRN
 
     # substract width-spaces needed for nr_arcs
-    width_arcs = width_prn_arcs - (nr_arcs - 1) * width_space
+    width_arcs = width_all_arcs - (nr_arcs - 1) * width_space
+    # print('width_arcs = {}'.format(width_arcs))
 
     # the width taken by 1 arc for 1 prn is
+    # print('nr_arcs = {}'.format(nr_arcs))
     width_arc = width_arcs / nr_arcs
+    # print('width_arc = {}'.format(width_arc))
 
     # get the delta-x to apply to the integer value that corresponds to a PRN
+    # print('np.arange(nr_arcs) = {}'.format(np.arange(nr_arcs)))
     dx_obs = [dx_start + i * (width_space + width_arc) for i in np.arange(nr_arcs)]
+    # print('dx_obs = {}'.format(dx_obs))
 
     return dx_obs, width_arc
 
@@ -293,11 +298,19 @@ def obstle_plot_relative(marker: str,
     lst_markers = ['o', 'v', '^', '<', '>', 'x', '+', 's', 'd', '.', ',']
 
     # create an offset to plot the markers per PRN
+    # print('obstypes[:-1] = {}'.format(obstypes[:-1]))
+    # print('len(obstypes[:-1]) = {}'.format(len(obstypes[:-1])))
     dx_obs, dx_skip = bars_info(nr_arcs=len(obstypes[:-1]), logger=logger)
+    # print('dx_obs = {}'.format(dx_obs))
+    # print('dx_skip = {}'.format(dx_skip))
+    # print('x_prns = {}'.format(x_prns))
 
     # store the percantages in a dict
     for j, (obst, color, plotmarker) in enumerate(zip(list(reversed(obstypes[:-1])), list(reversed(colors)), lst_markers)):
         obs_percentages = [np.NaN] * 37
+
+        # print('j = {}'.format(j))
+        # print('dx_skip = {}'.format(dx_skip))
 
         for i, (x_prn, prn) in enumerate(zip(x_prns, dfObsTle.PRN)):
             tle_maxobs = dfObsTle.iloc[i][obstypes[-1]] / 100
@@ -307,16 +320,22 @@ def obstle_plot_relative(marker: str,
             else:
                 obs_percentages[x_prn] = np.NaN
 
+            # print('\nx_prn = {}'.format(x_prn))
+            # print('dx_skip = {}'.format(dx_skip))
+            # print('dx_obs[j] = {}'.format(dx_obs[j]))
+            # print('x_prn + dx_obs[j] = {}'.format(x_prn + dx_obs[j]))
+            # print('x_prn + dx_obs[j]  + j * dx_skip / len(dx_obs) = {}'.format(x_prn + dx_obs[j]  + j * dx_skip / len(dx_obs)))
+
             # plot the current percentages per PRN and per OBST
             if i == 0:
-                ax.bar(x=x_prn + dx_obs[j] + dx_skip / len(dx_obs),
+                ax.bar(x=x_prn + dx_obs[j] * j + j * dx_skip / len(dx_obs),
                        height=obs_perc,
                        width=dx_skip,
                        color=color,
                        label=obst,
                        align='center')
             else:
-                ax.bar(x=x_prn + dx_obs[j] + dx_skip / len(dx_obs),
+                ax.bar(x=x_prn + dx_obs[j] * j + j * dx_skip / len(dx_obs),
                        height=obs_perc,
                        width=dx_skip,
                        color=color,
@@ -344,14 +363,17 @@ def obstle_plot_relative(marker: str,
                                                                                                   date=dTime['date'].strftime('%d/%m/%Y')))
 
     # setticks on X axis to represent the PRNs
+    # print('\nx_crds[-1] = {}'.format(x_crds[-1]))
     ax.xaxis.set_ticks(np.arange(0, x_crds[-1]))
     tick_labels = []
     for i in np.arange(0, x_crds[-1]):
         # create a grey bar for separating between PRNs
         if i % 2 == 0:
-            ax.bar(i, 100, width=0.95, color='black', alpha=0.05)
+            ax.bar(i, 100, width=1, color='black', alpha=0.05)
 
         tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
+        # print('tick_prn[{}] = {}'.format(i, tick_prn))
+
         if tick_prn in dfObsTle.PRN.to_list():
             tick_labels.append(tick_prn)
         else:
@@ -429,36 +451,56 @@ def obstle_plot_arcs_prns(marker: str,
                          [y_prn, y_prn],
                          linestyle='-',
                          color=prn_colors[y_prn],
-                         linewidth=9,
+                         linewidth=11,
                          marker='|',
                          markersize=16,
-                         alpha=0.4)
+                         alpha=0.3)
 
             # add a indicator for the culmination time of PRN
             if isinstance(tle_cul, dt.time):
                 ax.plot(dt.datetime.combine(dfNavSig.DATE_TIME.iloc[0], tle_cul),
                         y_prn,
                         marker='^',
-                        markersize=10,
-                        alpha=0.4,
+                        markersize=13,
+                        alpha=0.3,
                         color=prn_colors[y_prn])
 
-            # get the data for this particular PRN out of dfNavSig
-            dfPrnObs = dfNavSig[dfNavSig['PRN'] == prn]
-            ax.plot(dfPrnObs['DATE_TIME'],
-                    [y_prn] * dfPrnObs.shape[0],
-                    linestyle='',
-                    marker='.',
-                    markersize=6,
-                    color=prn_colors[y_prn])
+        # get the data for this particular PRN out of dfNavSig
+        dfPrnObs = dfNavSig[dfNavSig['PRN'] == prn]
+        ax.plot(dfPrnObs['DATE_TIME'],
+                [y_prn] * dfPrnObs.shape[0],
+                linestyle='',
+                marker='.',
+                markersize=6,
+                color=prn_colors[y_prn])
 
-    # format the date time ticks
-    ax.xaxis.set_major_locator(dates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+    # # format the date time ticks
+    # ax.xaxis.set_major_locator(dates.DayLocator(interval=1))
+    # ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
 
-    ax.xaxis.set_minor_locator(dates.HourLocator(interval=1))
-    ax.xaxis.set_minor_formatter(dates.DateFormatter('%H:%M:%S'))
-    plt.xticks()
+    # ax.xaxis.set_minor_locator(dates.HourLocator(interval=1))
+    # ax.xaxis.set_minor_formatter(dates.DateFormatter('%H:%M:%S'))
+    # plt.xticks()
+
+    # create the ticks for the time ax
+    ax.set_xlim([dTime['start'], dTime['end']])
+    dtFormat = plot_utils.determine_datetime_ticks(startDT=dTime['start'], endDT=dTime['end'])
+
+    if dtFormat['minutes']:
+        # ax.set_major_locator(dates.MinuteLocator(byminute=range(10, 60, 10), interval=1))
+        pass
+    else:
+        ax.xaxis.set_major_locator(dates.HourLocator(interval=dtFormat['hourInterval']))   # every 4 hours
+    ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))  # hours and minutes
+
+    ax.xaxis.set_minor_locator(dates.DayLocator(interval=1))    # every day
+    ax.xaxis.set_minor_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+
+    ax.xaxis.set_tick_params(rotation=0)
+    for tick in ax.xaxis.get_major_ticks():
+        # tick.tick1line.set_markersize(0)
+        # tick.tick2line.set_markersize(0)
+        tick.label1.set_horizontalalignment('center')
 
     # format the y-ticks to represent the PRN number
     plt.yticks(np.arange(0, max_prn))
@@ -506,6 +548,7 @@ def plot_prn_navsig_obs(marker: str,
                         prn: str,
                         dfPrnObst: pd.DataFrame,
                         dfTlePrn: pd.DataFrame,
+                        dfJam: pd.DataFrame,
                         obst: str,
                         posidx_gaps: list,
                         snrth: float,
@@ -550,6 +593,19 @@ def plot_prn_navsig_obs(marker: str,
                 axSNR.plot(dfTimeSegment['DATE_TIME'],
                            dfTimeSegment['d{obst:s}'.format(obst=obst)],
                            linestyle='--', dashes=(1, 2), marker=plot_marker, markersize=2, color='blue')
+
+    # plot the SINR against time on second y-axis for the axPRNcnt plot
+    jam_min = 5 * floor(dfJam['SINR [dB]'].min() / 5)
+    jam_max = 5 * ceil(dfJam['SINR [dB]'].max() / 5)
+
+    axJam = axObst.twinx()
+    axJam.fill_between(dfJam['DATE_TIME'],
+                       y1=dfJam['SINR [dB]'], y2=0,
+                       step='post',
+                       color='red', alpha=0.2,
+                       linewidth=2, linestyle='-')
+    axJam.set_ylim([jam_min, jam_max])
+    axJam.set_ylabel('SINR [dB]')
 
     # read in the timings for the TLE of this PRN
     for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
@@ -638,6 +694,7 @@ def obstle_plot_gnss_obst(marker: str,
                           dfNavSig: pd.DataFrame,
                           dfNavSigPRNcnt: pd.DataFrame,
                           navsig_obst_lst: list,
+                          dfJam: pd.DataFrame,
                           dfTle: pd.DataFrame,
                           show_plot: bool = False,
                           logger: logging.Logger = None) -> dict:
@@ -714,11 +771,24 @@ def obstle_plot_gnss_obst(marker: str,
         axPRNcnt.set_yticks(y_ticks)
         axPRNcnt.set_ylabel('PRN count [-]')
 
+        # plot the SINR against time on second y-axis for the axPRNcnt plot
+        jam_min = 5 * floor(dfJam['SINR [dB]'].min() / 5)
+        jam_max = 5 * ceil(dfJam['SINR [dB]'].max() / 5)
+
+        axJam = axObst.twinx()
+        axJam.fill_between(dfJam['DATE_TIME'],
+                           y1=dfJam['SINR [dB]'], y2=0,
+                           step='post',
+                           color='red', alpha=0.2,
+                           linewidth=2, linestyle='-')
+        axJam.set_ylim([jam_min, jam_max])
+        axJam.set_ylabel('SINR [dB]')
+
         # create title
         fig.suptitle('{marker:s}: {obst:s} for {navsig:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, navsig=navsig_name, dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))
 
         # axObst.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, markerscale=4)
-        axObst.legend(bbox_to_anchor=(1.01, 1), loc='upper left', markerscale=4, fancybox=True, shadow=True, fontsize='x-small')
+        axObst.legend(bbox_to_anchor=(1.03, 0), loc='upper left', markerscale=4, fancybox=True, shadow=True, fontsize='x-small')
 
         # beautify plot
         axObst.xaxis.grid(b=True, which='both')

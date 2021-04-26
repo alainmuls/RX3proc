@@ -125,9 +125,7 @@ def ltx_obsstat_analyse(obsstatf: str,
 
         # determine align formats for langtabu
         fmt_tabu = 'l|' + 'rr|' * len(navsigs) + 'r'
-        print('fmt_tabu = {}'.format(fmt_tabu))
-        print('len(fmt_tabu) = {}'.format(len(fmt_tabu)))
-
+        len_fmt = len(''.join([i for i in fmt_tabu if i.isalpha()]))
 
         # with sssec.create(Table(position='H')) as table:
         with sssec.create(LongTabu(fmt_tabu, pos='c', col_space='4pt')) as longtabu:
@@ -145,7 +143,7 @@ def ltx_obsstat_analyse(obsstatf: str,
             longtabu.end_table_header()
 
             longtabu.add_hline()
-            longtabu.add_row((MultiColumn(6,  # len(fmt_tabu),
+            longtabu.add_row((MultiColumn(len_fmt,
                                           align='r',
                                           data='Continued on Next Page'),))
             longtabu.add_hline()
