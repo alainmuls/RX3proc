@@ -403,9 +403,9 @@ def pnt_available(dfPrnEvol: pd.DataFrame,
             dPNT['PNTgap'].append((dPNT['reacq'][-1] - dPNT['loss'][-1]).total_seconds())
             if logger is not None:
                 logger.info('{func:s}: PNT loss @ {loss:s} => {reacq:s} for {gap:.1f} s'.format(loss=dPNT['loss'][-1].strftime('%H:%M:%S'),
-                                                                                                reacq=dPNT['reacq'][-1].strftime('%H:%M:%S'),
-                                                                                                gap=dPNT['PNTgap'][-1],
-                                                                                                func=cFuncName))
+                    reacq=dPNT['reacq'][-1].strftime('%H:%M:%S'),
+                    gap=dPNT['PNTgap'][-1],
+                    func=cFuncName))
 
         except IndexError:
             break
