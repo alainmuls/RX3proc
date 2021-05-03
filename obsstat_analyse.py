@@ -89,7 +89,7 @@ def check_arguments(logger: logging.Logger = None):
 
     # check for accessibility of CVS database
     if not amutils.path_writable(os.path.dirname(dStat['cli']['cvsdb'])):
-        if logger is not None:
+            if logger is not None:
             logger.error('{func:s}: cannot write to directory {dir:s} failed'.format(dir=colored(os.path.dirname(dStat['cli']['cvsdb']), 'red'), func=cFuncName))
         sys.exit(amc.E_PATH_NOT_WRITABLE)
 
