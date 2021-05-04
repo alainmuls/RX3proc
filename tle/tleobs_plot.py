@@ -199,11 +199,12 @@ def obstle_plot_obscount(marker: str,
     ax.set_xlabel('Observations Count [-]', fontdict=title_font)
 
     # plot title
-    plt.title('Observations vs TLE: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker,
-                                                                                                gnss=gco.dict_GNSSs[gnss_id],
-                                                                                                yy=dTime['YYYY'],
-                                                                                                doy=dTime['DOY'],
-                                                                                                date=dTime['date'].strftime('%d/%m/%Y')))
+    plt.title('Observations vs TLE: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'
+              .format(marker=marker,
+                      gnss=gco.dict_GNSSs[gnss_id],
+                      yy=dTime['YYYY'],
+                      doy=dTime['DOY'],
+                      date=dTime['date'].strftime('%d/%m/%Y')))
 
     # setticks on Y axis to represent the PRNs
     _, xlim_right = ax.get_xlim()
@@ -254,17 +255,18 @@ def bars_info(nr_arcs: int,
 
     # substract width-spaces needed for nr_arcs
     width_arcs = width_all_arcs - (nr_arcs - 1) * width_space
-    # print('width_arcs = {}'.format(width_arcs))
 
     # the width taken by 1 arc for 1 prn is
-    # print('nr_arcs = {}'.format(nr_arcs))
     width_arc = width_arcs / nr_arcs
-    # print('width_arc = {}'.format(width_arc))
 
     # get the delta-x to apply to the integer value that corresponds to a PRN
     # print('np.arange(nr_arcs) = {}'.format(np.arange(nr_arcs)))
     dx_obs = [dx_start + i * (width_space + width_arc) for i in np.arange(nr_arcs)]
-    # print('dx_obs = {}'.format(dx_obs))
+    print('\nnr_arcs = {}'.format(nr_arcs))
+    print('width_arcs = {}'.format(width_arcs))
+    print('dx_obs = {}'.format(dx_obs))
+    print('width_arc = {}'.format(width_arc))
+
 
     return dx_obs, width_arc
 
@@ -298,11 +300,11 @@ def obstle_plot_relative(marker: str,
     lst_markers = ['o', 'v', '^', '<', '>', 'x', '+', 's', 'd', '.', ',']
 
     # create an offset to plot the markers per PRN
-    # print('obstypes[:-1] = {}'.format(obstypes[:-1]))
-    # print('len(obstypes[:-1]) = {}'.format(len(obstypes[:-1])))
-    dx_obs, dx_skip = bars_info(nr_arcs=len(obstypes[:-1]), logger=logger)
+    print('obstypes[:-1] = {}'.format(obstypes[:-1]))
+    print('len(obstypes[:-1]) = {}'.format(len(obstypes[:-1])))
+    dx_obs, dx_width = bars_info(nr_arcs=len(obstypes[:-1]), logger=logger)
     # print('dx_obs = {}'.format(dx_obs))
-    # print('dx_skip = {}'.format(dx_skip))
+    # print('dx_width = {}'.format(dx_width))
     # print('x_prns = {}'.format(x_prns))
 
     # store the percantages in a dict
@@ -310,7 +312,7 @@ def obstle_plot_relative(marker: str,
         obs_percentages = [np.NaN] * 37
 
         # print('j = {}'.format(j))
-        # print('dx_skip = {}'.format(dx_skip))
+        # print('dx_width = {}'.format(dx_width))
 
         for i, (x_prn, prn) in enumerate(zip(x_prns, dfObsTle.PRN)):
             tle_maxobs = dfObsTle.iloc[i][obstypes[-1]] / 100
@@ -320,24 +322,29 @@ def obstle_plot_relative(marker: str,
             else:
                 obs_percentages[x_prn] = np.NaN
 
-            # print('\nx_prn = {}'.format(x_prn))
-            # print('dx_skip = {}'.format(dx_skip))
+            # print('\nj = {}'.format(j))
+            # print('prn = {}'.format(prn))
+            # print('x_prn = {}'.format(x_prn))
+            # print('dx_width = {}'.format(dx_width))
             # print('dx_obs[j] = {}'.format(dx_obs[j]))
             # print('x_prn + dx_obs[j] = {}'.format(x_prn + dx_obs[j]))
-            # print('x_prn + dx_obs[j]  + j * dx_skip / len(dx_obs) = {}'.format(x_prn + dx_obs[j]  + j * dx_skip / len(dx_obs)))
+            # print('x_prn + dx_obs[j]  + j * dx_width / len(dx_obs) = {}'.format(x_prn + dx_obs[j] + j * dx_width / len(dx_obs)))
+            # print('x_prn + dx_obs[j] * j + j * dx_width / len(dx_obs) = {}'.format(x_prn + dx_obs[j] * j + j * dx_width / len(dx_obs)))
+            # print('x_prn + dx_obs[j] + j * dx_width = {}'.format(x_prn + dx_obs[j] + j * dx_width))
+            # print('x_prn + dx_obs[j] = {}'.format(x_prn + dx_obs[j]))
 
             # plot the current percentages per PRN and per OBST
             if i == 0:
-                ax.bar(x=x_prn + dx_obs[j] * j + j * dx_skip / len(dx_obs),
+                ax.bar(x=x_prn + dx_obs[j],
                        height=obs_perc,
-                       width=dx_skip,
+                       width=dx_width,
                        color=color,
                        label=obst,
                        align='center')
             else:
-                ax.bar(x=x_prn + dx_obs[j] * j + j * dx_skip / len(dx_obs),
+                ax.bar(x=x_prn + dx_obs[j],
                        height=obs_perc,
-                       width=dx_skip,
+                       width=dx_width,
                        color=color,
                        align='center')
 
@@ -356,11 +363,12 @@ def obstle_plot_relative(marker: str,
     ax.set_ylabel('Observations relative to TLE [-]', fontdict=title_font)
 
     # plot title
-    plt.title('Relative Observations: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker,
-                                                                                                  gnss=gco.dict_GNSSs[gnss_id],
-                                                                                                  yy=dTime['YYYY'],
-                                                                                                  doy=dTime['DOY'],
-                                                                                                  date=dTime['date'].strftime('%d/%m/%Y')))
+    plt.title('Relative Observations: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'
+              .format(marker=marker,
+                      gnss=gco.dict_GNSSs[gnss_id],
+                      yy=dTime['YYYY'],
+                      doy=dTime['DOY'],
+                      date=dTime['date'].strftime('%d/%m/%Y')))
 
     # setticks on X axis to represent the PRNs
     # print('\nx_crds[-1] = {}'.format(x_crds[-1]))
@@ -627,7 +635,7 @@ def plot_prn_navsig_obs(marker: str,
     # beautify plot
     axObst.xaxis.grid(b=True, which='both')
     axObst.yaxis.grid(b=True, which='both')
-    axObst.set_ylabel(obst)
+    axObst.set_ylabel('{obst:s} [dBHz]'.format(obst=obst))
 
     if obst.startswith('S'):  # SNR displayed
         axObst.set_ylim([15, 55])
@@ -795,7 +803,7 @@ def obstle_plot_gnss_obst(marker: str,
         # beautify plot
         axObst.xaxis.grid(b=True, which='both')
         axObst.yaxis.grid(b=True, which='both')
-        axObst.set_ylabel(obst)
+        axObst.set_ylabel('{obst:s} [dBHz]'.format(obst=obst))
 
         if obst.startswith('S'):  # SNR displayed
             axObst.set_ylim([15, 55])

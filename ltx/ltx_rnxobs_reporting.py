@@ -95,18 +95,19 @@ def rnxobs_script_information(dCli: dict,
     return ssec
 
 
-def ltx_obsstat_analyse(obsstatf: str,
+def ltx_obsstat_analyse(dInfo: dict,
+                        obsstatf: str,
                         dfObsTle: pd.DataFrame,
                         plots: dict,
                         script_name: str) -> Subsection:
     """
     ltx_obsstat_analyse summarises the observations compared to TLE information obtained from file obsstatf
     """
-    ssec = Subsection('Analysis of observation statistics')
+    GNSS = dInfo['gnss']  # col_names[col_names.index('PRN') - 1]
+    ssec = Subsection('Analysis of observation statistics for {gnss:s}'.format(gnss=dInfo['gnss_name']))
 
     # select the columns used for plotting
     col_names = dfObsTle.columns.tolist()
-    GNSS = col_names[col_names.index('PRN') - 1]
     obstypes = [x for x in col_names[col_names.index('PRN') + 1:]]
     # print('obstypes = {}'.format(obstypes))
     # we only look at the SNR values since the same value for C/L/D, thus remove starting S
@@ -114,7 +115,7 @@ def ltx_obsstat_analyse(obsstatf: str,
 
     with ssec.create(LongTabu('rcl', pos='c', col_space='4pt')) as longtabu:
         longtabu.add_row(['statistics observation file', ':', '{statf:s}'.format(statf=obsstatf)])
-        longtabu.add_row(['navigation services for {gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS]), ':', '{obst:s}'.format(obst=', '.join(navsigs))])
+        longtabu.add_row(['navigation signals', ':', '{obst:s}'.format(obst=', '.join(navsigs))])
 
     # add TLE_count to navsigs
     # navsigs.append(obstypes[-1])
@@ -182,26 +183,27 @@ def ltx_obsstat_analyse(obsstatf: str,
                            width=NoEscape(r'0.95\textwidth'),
                            placement=NoEscape(r'\centering'))
             # plot.add_caption('Observation count per navigation signal')
-            plot.add_caption(NoEscape(r'\label{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Observables overview for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
+            plot.add_caption(NoEscape(r'\label{fig:obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Observables overview for GNSS ' + '{gnss:s}'.format(gnss=dInfo['gnss_name'])))
 
         # with sssec.create(Figure(position='H')) as plot:
         #     plot.add_image(plots['obs_perc'],
         #                    width=NoEscape(r'0.95\textwidth'),
         #                    placement=NoEscape(r'\centering'))
-        #     plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
+        #     plot.add_caption(NoEscape(r'\label{fig:rel_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=dInfo['gnss_name'])))
 
         with sssec.create(Figure(position='H')) as plot:
             plot.add_image(plots['relative'],
                            width=NoEscape(r'0.95\textwidth'),
                            placement=NoEscape(r'\centering'))
-            plot.add_caption(NoEscape(r'\label{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=gfzc.dict_GNSSs[GNSS])))
+            plot.add_caption(NoEscape(r'\label{fig:prec_obst_gnss_' + '{gnss:s}'.format(gnss=GNSS) + '} Relative observation count per navigation signal for GNSS ' + '{gnss:s}'.format(gnss=dInfo['gnss_name'])))
 
         ssec.append(NoEscape(r'\clearpage'))
 
     return ssec
 
 
-def obstab_tleobs_ssec(obstabf: str,
+def obstab_tleobs_ssec(dInfo: dict,
+                       obstabf: str,
                        lst_PRNs: list,
                        lst_NavSignals: list,
                        lst_ObsFreqs: list,
@@ -211,7 +213,7 @@ def obstab_tleobs_ssec(obstabf: str,
     """
     n = 10  # max elements per line in longtabu
 
-    ssec = Subsection('Detailed analysis of observation types per navigation signal')
+    ssec = Subsection('Detailed analysis of observation types per navigation signal for {gnssn:s}'.format(gnssn=dInfo['gnss_name']))
 
     with ssec.create(LongTabu('rcl', pos='c', col_space='4pt')) as longtabu:
         longtabu.add_row(['Observation tabular file', ':', '{tabf:s}'.format(tabf=obstabf)])
@@ -297,7 +299,7 @@ def tle_conversion(tle_value):
             return str(tle_value)
 
 
-def obstab_tleobs_overview(gnss: str,
+def obstab_tleobs_overview(dInfo: dict,
                            navsigs: list,
                            navsig_plts: dict,
                            navsig_obst_lst: dict,
@@ -306,7 +308,9 @@ def obstab_tleobs_overview(gnss: str,
     """
     obstab_tleobs_overview adds the info about the TLE rise/set/cul times and the general overview plot
     """
-    sssec = Subsubsection(r'Navigation signals analysis')
+    sssec = Subsubsection(r'Navigation signals analysis for {gnssn:s}'.format(gnssn=dInfo['gnss_name']))
+
+    gnss = dInfo['gnss']
 
     # go over the available navigation signals
     # print('navsigs = {}'.format(navsigs))
@@ -385,7 +389,8 @@ def obstab_tleobs_overview(gnss: str,
                             longtabu.add_hline()
 
                     # start reporting for each PRN
-                    enum.add_item('Analysis of navigation signal {gnss:s}{navs:s} for each observed satellite.\\newline The following plots display the same information as described above per satellite. Each plot is accompanied by a table displaying the time of loss of lock and reacquisition of the satellite when such events are detected.'.format(gnss=gnss, navs=navsig))
+                    enum.add_item('Analysis of navigation signal {gnss:s}{navs:s} for each observed satellite.\newline The following plots display the same information as described above per satellite. Each plot is accompanied by a table displaying the time of loss of lock and reacquisition of the satellite when such events are detected.'.format(gnss=gnss, navs=navsig))
+
                     for prn in lst_PRNs:
                         with enum.create(Figure(position='H')) as plot:
                             plot.add_image(navsig_plts[navsig][prn][navsig_obst],
@@ -395,14 +400,50 @@ def obstab_tleobs_overview(gnss: str,
                         # create the dataframe with events for this PRN
                         df_PRN = df_events_navsig[(df_events_navsig['type'] == prn) & (df_events_navsig['event'] == 'Loss')]
                         df_PRN['reacq'] = df_events_navsig[(df_events_navsig['type'] == prn) & (df_events_navsig['event'] == 'Reacquisition')]['DATE_TIME'].tolist()
-                        # print('df_PRN = \n{}'.format(df_PRN))
-                        # print('df_PRN.columns = \n{}'.format(df_PRN.columns))
+                        print('df_PRN = \n{}'.format(df_PRN))
+                        print('df_PRN.shape = \n{}'.format(df_PRN.shape))
+                        print('df_PRN.columns = \n{}'.format(df_PRN.columns))
 
-                        nr_cols = len(df_PRN.columns)
+                        # only produce this when we have detected a loss / reacq for this PRN
+                        if df_PRN.shape[0] > 0:
+                            nr_cols = len(df_PRN.columns)
+                            with enum.create(LongTabu('c' * nr_cols)) as longtabu:
+                                longtabu.add_hline()
+                                longtabu.add_row((MultiColumn(nr_cols, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
+                                longtabu.add_row(df_PRN.columns, mapper=[bold])  # header row
+                                longtabu.add_hline()
+                                longtabu.end_table_header()
+                                # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
+                                # longtabu.add_hline()
+                                # longtabu.end_header()
+
+                                longtabu.add_hline()
+                                longtabu.add_row((MultiColumn(nr_cols, align='r',
+                                                              data='Continued on Next Page'),))
+                                longtabu.add_hline()
+                                longtabu.end_table_footer()
+
+                                longtabu.add_hline()
+                                longtabu.end_table_last_footer()
+
+                                for row in df_PRN.index:
+                                    longtabu.add_row(list(df_PRN.loc[row, :]))
+                                longtabu.add_hline()
+
+                    # add overview for aal events
+                    # sort the events for this signal according to time
+                    df_events_navsig.sort_values(by='DATE_TIME', inplace=True)
+
+                    if df_events_navsig.shape[0] > 0:
+                        sssec.append(NewPage())
+                        enum.add_item('Chronological overview of detected events for navigation signal {gnss:s}{navs:s}'.format(gnss=gnss, navs=navsig))
+
+                        nr_cols = len(df_events_navsig.columns)
+
                         with enum.create(LongTabu('c' * nr_cols)) as longtabu:
                             longtabu.add_hline()
                             longtabu.add_row((MultiColumn(nr_cols, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
-                            longtabu.add_row(df_PRN.columns, mapper=[bold])  # header row
+                            longtabu.add_row(df_events_navsig.columns, mapper=[bold])  # header row
                             longtabu.add_hline()
                             longtabu.end_table_header()
                             # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
@@ -418,40 +459,8 @@ def obstab_tleobs_overview(gnss: str,
                             longtabu.add_hline()
                             longtabu.end_table_last_footer()
 
-                            for row in df_PRN.index:
-                                longtabu.add_row(list(df_PRN.loc[row, :]))
+                            for row in df_events_navsig.index:
+                                longtabu.add_row(list(df_events_navsig.loc[row, :]))
                             longtabu.add_hline()
-
-                    # add overview for aal events
-                    sssec.append(NewPage())
-                    enum.add_item('Chronological overview of detected events for navigation signal {gnss:s}{navs:s}'.format(gnss=gnss, navs=navsig))
-
-                    # sort the events for this signal according to time
-                    df_events_navsig.sort_values(by='DATE_TIME', inplace=True)
-                    nr_cols = len(df_events_navsig.columns)
-                    with enum.create(LongTabu('c' * nr_cols)) as longtabu:
-                        longtabu.add_hline()
-                        longtabu.add_row((MultiColumn(nr_cols, align='c', data=TextColor('blue', 'Navigation signal {navs:s}'.format(navs=navsig))),))
-                        longtabu.add_row(df_events_navsig.columns, mapper=[bold])  # header row
-                        longtabu.add_hline()
-                        longtabu.end_table_header()
-                        # longtabu.add_row(['PRN'] + dfTle.columns.tolist(), mapper=[bold])  # header row
-                        # longtabu.add_hline()
-                        # longtabu.end_header()
-
-                        longtabu.add_hline()
-                        longtabu.add_row((MultiColumn(nr_cols, align='r',
-                                                      data='Continued on Next Page'),))
-                        longtabu.add_hline()
-                        longtabu.end_table_footer()
-
-                        longtabu.add_hline()
-                        longtabu.end_table_last_footer()
-
-                        for row in df_events_navsig.index:
-                            longtabu.add_row(list(df_events_navsig.loc[row, :]))
-                        longtabu.add_hline()
-
-
 
     return sssec
