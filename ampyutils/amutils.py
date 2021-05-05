@@ -429,7 +429,11 @@ def run_subprocess_output(sub_proc: list, logger: logging.Logger = None) -> Tupl
         if logger is not None:
             logger.info('{func:s}: running\n{proc:s}'.format(proc=colored(' '.join(strargs), 'blue'), func=cFuncName))
         byte_output = subprocess.check_output(strargs, stderr=subprocess.STDOUT)
-        proc_output = byte_output.decode('UTF-8').strip()
+        try:
+            proc_output = byte_output.decode('UTF-8').strip()
+        except UnicodeDecodeError:
+            proc_output = byte_output.decode('latin1').strip()
+
         return amc.E_SUCCESS, proc_output
     except subprocess.CalledProcessError as e:
         # handle errors in the called executable

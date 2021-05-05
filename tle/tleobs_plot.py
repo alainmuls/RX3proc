@@ -89,11 +89,12 @@ def tle_plot_arcs(marker: str,
     ax.set_xlabel('TLE arcs', fontdict=title_font)
 
     # plot title
-    plt.title('TLE arcs: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'.format(marker=marker,
-                                                                                     gnss=gco.dict_GNSSs[gnss_id],
-                                                                                     yy=dTime['YYYY'],
-                                                                                     doy=dTime['DOY'],
-                                                                                     date=dTime['date'].strftime('%d/%m/%Y')))
+    plt.title('TLE arcs: {marker:s}, {gnss:s}, {date!s} ({yy:04d}/{doy:03d})'
+              .format(marker=marker,
+                      gnss=gco.dict_GNSSs[gnss_id],
+                      yy=dTime['YYYY'],
+                      doy=dTime['DOY'],
+                      date=dTime['date'].strftime('%d/%m/%Y')))
 
     # create the ticks for the time ax
     ax.set_xlim([dt.datetime.combine(cur_date, dt_min),

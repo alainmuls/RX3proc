@@ -86,9 +86,9 @@ def checkValidityArgs(logger: logging.Logger) -> bool:
     return amc.E_SUCCESS
 
 
-def sbf2rinex(logger: logging.Logger) -> list:
+def ubx2rinex(logger: logging.Logger) -> list:
     """
-    sbf2rinex converts a SBF file to rinex according to the GNSS systems selected
+    ubx2rinex converts a SBF file to rinex according to the GNSS systems selected
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -99,8 +99,41 @@ def sbf2rinex(logger: logging.Logger) -> list:
     logger.info('{func:s}: RINEX conversion from UBX binary'.format(func=cFuncName))
 
     # we'll convert always by for only GPS & Galileo, excluding other GNSSs (G:GPS,R:GLONASS,E:Galileo,J:QZSS,S:SBAS,C:BeiDou)
-    excludeGNSSs = 'RSCJ'
+    excludeGNSSs = 'C'
 
+    # convert to RINEX v3.x format
+    # '-y', excludeGNSSs,
+    argsCONVBIN = [dRnx['bin']['CONVBIN'], os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
+                   '-r', 'ubx',
+                   '-f', '2',
+                   '-hm', dRnx['marker'],
+                   '-hn', '05',
+                   '-ho', 'amuls/RMA-CISS',
+                   '-hr', 'rcvrnr/rcvrtype/rcvrver',
+                   '-ha', 'antnr/anttype',
+                   '-od', '-os',
+                   '-o', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}.rnx'.format(ubxf=dRnx['ubxf']))]
+
+    if dRnx['time']['startepoch'] != '00:00:00':
+        argsCONVBIN += ['-ts', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
+                                                          time=dRnx['time']['startepoch'])]
+    if dRnx['time']['endepoch'] != '23:59:59':
+        argsCONVBIN += ['-ts', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
+                                                          time=dRnx['time']['endepoch'])]
+    print(argsCONVBIN)
+
+    # run the sbf2rin program
+    logger.info('{func:s}: creating RINEX observation file'.format(func=cFuncName))
+    err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsCONVBIN, logger=logger)
+    if err_code != amc.E_SUCCESS:
+        print(proc_out)
+        logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation ::RX3::'.format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
+        sys.exit(err_code)
+    else:
+        if len(proc_out.strip()) > 0:
+            print('   process output = {!s}'.format(proc_out))
+
+    sys.exit(6)
 
 def main_ubx2rnx3(argv):
     """
@@ -135,6 +168,7 @@ def main_ubx2rnx3(argv):
     dRnx['time']['startepoch'] = startepoch
     dRnx['time']['endepoch'] = endepoch
 
+
     logger.info('{func:s}: arguments processed: dRnx = {drtk!s}'.format(func=cFuncName, drtk=dRnx))
 
     # check validity of passed arguments
@@ -150,7 +184,7 @@ def main_ubx2rnx3(argv):
 
     # convert binary file to rinex
     logger.info('{func:s}: convert binary file to rinex'.format(func=cFuncName))
-    lst_rnx_files = ubf2rinex(logger=logger)
+    lst_rnx_files = ubx2rinex(logger=logger)
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
