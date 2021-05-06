@@ -13,6 +13,8 @@ P3RS2PVTLSDIR = os.path.expanduser('~/RxTURP/BEGPIOS/P3RS2/LOG/pvt_ls/')
 lst_logging_choices = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 lst_intervals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 2., 5., 10., 30., 60.]
 
+lst_MARKER_TYPES = ['STATIC', 'MOVING']
+
 CVSDB_OBSTLE = os.path.join(ROOTDIR, 'obsstat_tle.cvs')
 
 
@@ -131,3 +133,11 @@ class epoch_action(argparse.Action):
         if not checkTime(epoch, ('00:00:00', '23:59:59')):
             raise argparse.ArgumentError(self, "Specified epoch {epoch:s} not in range 00:00:00 => 23:59:59".format(epoch=epoch))
         setattr(namespace, self.dest, epoch)
+
+
+class markertype_action(argparse.Action):
+    def __call__(self, parser, namespace, markertypes, option_string=None):
+        for markertype in markertypes:
+            if markertype not in lst_MARKER_TYPES:
+                raise argparse.ArgumentError(self, 'select marker type out of {mtype:s}'.format(mtype='|'.join(lst_MARKER_TYPES)))
+        setattr(namespace, self.dest, markertypes)

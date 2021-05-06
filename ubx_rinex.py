@@ -46,13 +46,19 @@ def treatCmdOpts(argv: list):
     parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'.format(start=colored('00:00:00', 'green')), required=False, type=str, default='00:00:00', action=gco.epoch_action)
     parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'.format(end=colored('23:59:59', 'green')), required=False, type=str, default='23:59:59', action=gco.epoch_action)
 
+    parser.add_argument('--observer', help='observer info (default={})'.format(colored('AMULS RMA-CISS)', 'green')), nargs=2, type=str, default=['AMULS', 'RMA-CISS'], required=False)
+    parser.add_argument('--receiver', help='receiver info (default={})'.format(colored('RX_NR RX_TYPE RX_VER)', 'green')), nargs=3, type=str, default=['RX_NR', 'RX_TYPE', 'RX_VER'], required=False)
+    parser.add_argument('--antenna', help='antenna information (default={})'.format(colored('ANT_NR ANT_TYPE)', 'green')), nargs=2, type=str, default=['ANT_NR', 'ANT_TYPE'], required=False)
+    parser.add_argument('--markertype', help='select one of {mtypes:s} (default to {choice:s})'.format(mtypes='|'.join(gco.lst_MARKER_TYPES), choice=colored(gco.lst_MARKER_TYPES[0], 'green')), required=False, type=str, default=gco.lst_MARKER_TYPES[0])
+
     parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv)
 
     # return arguments
-    return args.ubxfile, args.rnxdir, args.marker, args.year, args.doy, args.startepoch, args.endepoch, args.logging
+    print('args.observer = {}'.format(args.observer))
+    return args.ubxfile, args.rnxdir, args.marker, args.year, args.doy, args.startepoch, args.endepoch, args.observer, args.logging
 
 
 def checkValidityArgs(logger: logging.Logger) -> bool:
@@ -99,28 +105,32 @@ def ubx2rinex(logger: logging.Logger) -> list:
     logger.info('{func:s}: RINEX conversion from UBX binary'.format(func=cFuncName))
 
     # we'll convert always by for only GPS & Galileo, excluding other GNSSs (G:GPS,R:GLONASS,E:Galileo,J:QZSS,S:SBAS,C:BeiDou)
-    excludeGNSSs = 'C'
+    # excludeGNSSs = 'RJSC'
 
     # convert to RINEX v3.x format
-    # '-y', excludeGNSSs,
-    argsCONVBIN = [dRnx['bin']['CONVBIN'], os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
+    # argsCONVBIN = [dRnx['bin']['CONVBIN'], os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
+    argsCONVBIN = ['/usr/bin/convbin', os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
                    '-r', 'ubx',
-                   '-f', '2',
-                   '-hm', dRnx['marker'],
+                   # '-f', '2',
+                   # '-y', excludeGNSSs,
+                   '-hm', dRnx['crux']['marker'],
                    '-hn', '05',
                    '-ho', 'amuls/RMA-CISS',
                    '-hr', 'rcvrnr/rcvrtype/rcvrver',
                    '-ha', 'antnr/anttype',
                    '-od', '-os',
-                   '-o', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}.rnx'.format(ubxf=dRnx['ubxf']))]
+                   '-v', '3.03',
+                   '-y', 'C',
+                   '-y', 'R',
+                   '-o', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}-MO.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0]))]
 
     if dRnx['time']['startepoch'] != '00:00:00':
         argsCONVBIN += ['-ts', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
                                                           time=dRnx['time']['startepoch'])]
     if dRnx['time']['endepoch'] != '23:59:59':
-        argsCONVBIN += ['-ts', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
+        argsCONVBIN += ['-te', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
                                                           time=dRnx['time']['endepoch'])]
-    print(argsCONVBIN)
+    print('argsCONVBIN = {}'.format(argsCONVBIN))
 
     # run the sbf2rin program
     logger.info('{func:s}: creating RINEX observation file'.format(func=cFuncName))
@@ -135,6 +145,7 @@ def ubx2rinex(logger: logging.Logger) -> list:
 
     sys.exit(6)
 
+
 def main_ubx2rnx3(argv):
     """
     main_ubx2rnx3 converts raw data from UBX/UBlox to RINEX
@@ -143,7 +154,7 @@ def main_ubx2rnx3(argv):
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # treat command line options
-    ubxfile, rnxdir, marker, yyyy, doy, startepoch, endepoch, logLevels, = treatCmdOpts(argv)
+    ubxfile, rnxdir, marker, yyyy, doy, startepoch, endepoch, observer, logLevels, = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
@@ -154,7 +165,11 @@ def main_ubx2rnx3(argv):
     dRnx['dirs']['rnx'] = Path(rnxdir).resolve()
 
     dRnx['ubxf'] = os.path.basename(ubxfile)
-    dRnx['marker'] = marker
+    dRnx['crux'] = {}
+    dRnx['crux']['marker'] = marker
+    dRnx['crux']['observer'] = '/'.join([obsinfo for obsinfo in observer])
+    print(dRnx['crux']['observer'])
+    sys.exit(8)
 
     dRnx['time'] = {}
     if endepoch < startepoch:
