@@ -43,21 +43,60 @@ def treatCmdOpts(argv):
 
     parser.add_argument('--obstab', help='observation tabular file', type=str, required=True)
 
-    parser.add_argument('--prns', help='list of PRNs to examine (default {:s} (if PRN is 00 than all PRNs for GNSS used)'.format(colored('E00', 'green')), type=str, required=False, default=['E00', 'G00'], action=gco.prn_list_action, nargs='+')
+    parser.add_argument('--prns', help='list of PRNs to examine (default {:s} (if PRN is 00 than all PRNs for GNSS used)'
+                                       .format(colored('E00', 'green')),
+                        type=str,
+                        required=False,
+                        default=['E00', 'G00'],
+                        action=gco.prn_list_action,
+                        nargs='+')
 
-    parser.add_argument('--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'.format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')), default=gfzc.lst_freqs[0], type=str, required=False, action=gco.freqtype_action, nargs='+')
+    parser.add_argument('--freqs', help='select frequencies to use (out of {freqs:s}, default {freq:s})'
+                                        .format(freqs='|'.join(gfzc.lst_freqs), freq=colored(gfzc.lst_freqs[0], 'green')),
+                        default=gfzc.lst_freqs[0],
+                        type=str,
+                        required=False,
+                        action=gco.freqtype_action,
+                        nargs='+')
 
-    parser.add_argument('--obstypes', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'.format(osbtypes='|'.join(gfzc.lst_obstypes), osbtype=colored(gfzc.lst_obstypes[0], 'green')), default=gfzc.lst_obstypes[0], type=str, required=False, action=gco.obstype_action, nargs='+')
+    parser.add_argument('--obstypes', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'
+                                           .format(osbtypes='|'.join(gfzc.lst_obstypes),
+                        osbtype=colored(gfzc.lst_obstypes[0], 'green')),
+                                           default=gfzc.lst_obstypes[0],
+                        type=str,
+                        required=False,
+                        action=gco.obstype_action,
+                        nargs='+')
 
-    parser.add_argument('--snr_th', help='threshold for detecting variation in SNR levels (default {snrtr:s})'.format(snrtr=colored('2', 'green')), type=float, required=False, default=2, action=gco.snrth_action)
+    parser.add_argument('--snr_th', help='threshold for detecting variation in SNR levels (default {snrtr:s})'
+                                         .format(snrtr=colored('2', 'green')),
+                        type=float,
+                        required=False,
+                        default=2,
+                        action=gco.snrth_action)
 
-    parser.add_argument('--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')), default=0, type=int, required=False, action=gco.cutoff_action)
+    parser.add_argument('--cutoff', help='cutoff angle in degrees (default {mask:s})'.format(mask=colored('0', 'green')),
+                        default=0,
+                        type=int,
+                        required=False,
+                        action=gco.cutoff_action)
 
-    parser.add_argument('--jamsc', help='CSV file containing jamming scenario', type=str, required=False, default=None)
+    parser.add_argument('--jamsc', help='CSV file containing jamming scenario',
+                        type=str,
+                        required=False,
+                        default=None)
 
-    parser.add_argument('--plot', help='displays interactive plots (default False)', action='store_true', required=False, default=False)
+    parser.add_argument('--plot', help='displays interactive plots (default False)',
+                        action='store_true',
+                        required=False,
+                        default=False)
 
-    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
+    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'
+                                          .format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')),
+                        nargs=2,
+                        required=False,
+                        default=gco.lst_logging_choices[3:5],
+                        action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv[1:])

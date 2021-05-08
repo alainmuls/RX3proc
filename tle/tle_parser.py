@@ -43,7 +43,9 @@ def read_norad2prn(logger: logging.Logger) -> pd.DataFrame:
         sys.exit(amc.E_FAILURE)
 
 
-def get_norad_numbers(prns: list, dfNorad: pd.DataFrame, logger: logging.Logger) -> dict:
+def get_norad_numbers(prns: list,
+                      dfNorad: pd.DataFrame,
+                      logger: logging.Logger) -> dict:
     """
     get_norad_number returns the NORAD number for a fiven PRN
     """
@@ -63,7 +65,9 @@ def get_norad_numbers(prns: list, dfNorad: pd.DataFrame, logger: logging.Logger)
     return dNorads
 
 
-def find_norad_tle_yydoy(dNorads: dict, yydoy: str, logger: logging.Logger) -> pd.DataFrame:
+def find_norad_tle_yydoy(dNorads: dict,
+                         yydoy: str,
+                         logger: logging.Logger) -> pd.DataFrame:
     """
     find_norad_tle_yydoy finds the corresponding YYDOY entry in the NORAD combined TLEs
     """
@@ -76,16 +80,17 @@ def find_norad_tle_yydoy(dNorads: dict, yydoy: str, logger: logging.Logger) -> p
     for prn, norad in dNorads.items():
         if norad != '':  # no TLE file available for this PRN
             norad_tle_file = os.path.join(os.environ['HOME'], 'RxTURP/BEGPIOS/tle', 'sat{norad:s}.txt'.format(norad=norad[:-1]))
-            logger.info('{func:s}: reading TLE file {name:s} for NORAD ID {norad:s} (PRN={prn:s})'.format(norad=colored(norad, 'green'), prn=colored(prn, 'green'), name=norad_tle_file, func=cFuncName))
+            # logger.info('{func:s}: reading TLE file {name:s} for NORAD ID {norad:s} (PRN={prn:s})'.format(norad=colored(norad, 'green'), prn=colored(prn, 'green'), name=norad_tle_file, func=cFuncName))
 
             try:
                 df_tle_prn = pd.read_csv(norad_tle_file, header=None, delim_whitespace=True)
-                amutils.logHeadTailDataFrame(logger=logger, callerName=cFuncName, df=df_tle_prn, dfName='df_tle_prn')
+                # amutils.logHeadTailDataFrame(logger=logger, callerName=cFuncName, df=df_tle_prn, dfName='df_tle_prn')
 
                 # # look into rows with first column 1 (TLE Line 1) for date closest to YYDOY
 
                 tle_line1, tle_line2 = get_closests_tle(df=df_tle_prn[df_tle_prn[0] == 1], col=3, val=int(yydoy), norad_file=norad_tle_file, logger=logger)
 
+                logger.info('{func:s}: using TLE for NORAD {norad:s} - PRN {prn:s}'.format(norad=norad, prn=prn, func=cFuncName))
                 logger.info('{func:s}:   TLE line 1: {tle1:s}'.format(tle1=colored(tle_line1, 'green'), func=cFuncName))
                 logger.info('{func:s}:   TLE line 2: {tle2:s}'.format(tle2=colored(tle_line2, 'green'), func=cFuncName))
 
@@ -106,7 +111,10 @@ def find_norad_tle_yydoy(dNorads: dict, yydoy: str, logger: logging.Logger) -> p
     return df_tle
 
 
-def rise_set_yydoy(df_tle: pd.DataFrame, yydoy: str, dir_tle: str, logger: logging.Logger) -> pd.DataFrame:
+def rise_set_yydoy(df_tle: pd.DataFrame,
+                   yydoy: str,
+                   dir_tle: str,
+                   logger: logging.Logger) -> pd.DataFrame:
     """
     rise_set_yydoy calculates the rise/set times for GNSS PRNs
     """
@@ -140,7 +148,12 @@ def rise_set_yydoy(df_tle: pd.DataFrame, yydoy: str, dir_tle: str, logger: loggi
             logger.info('{func:s}:         {jpl!s} -- {name!s}'.format(jpl=ti.utc_jpl(), name=name, func=cFuncName))
 
 
-def get_closests(df: pd.DataFrame, col: int, val: int) -> Tuple[int, int]:
+def get_closests(df: pd.DataFrame,
+                 col: int,
+                 val: int) -> Tuple[int, int]:
+    """
+    find the closet value in th edataframe
+    """
     lower_idx = bisect_left(df[col].values, val)
     higher_idx = bisect_right(df[col].values, val)
     if higher_idx == lower_idx:      # val is not in the list
@@ -149,7 +162,12 @@ def get_closests(df: pd.DataFrame, col: int, val: int) -> Tuple[int, int]:
         return lower_idx, lower_idx
 
 
-def get_closests_tle(df: pd.DataFrame, col: int, val: int, norad_file: str, logger: logging.Logger) -> Tuple[str, str, int]:
+def get_closests_tle(df: pd.DataFrame,
+                     col: int,
+                     val: int,
+                     norad_file: str,
+                     logger: logging.Logger) -> Tuple[str,
+str, int]:
     """
     get_closests_tle scans the TLE files and returns those closest to epoch
     """
@@ -178,7 +196,14 @@ def take_closest(num: float, collection: list):
     return min(collection, key=lambda x: abs(x - num))
 
 
-def tle_rise_set_times(prn: int, df_tle: pd.DataFrame, marker: sf.Topos, t0: sf.Time, t1: sf.Time, elev_min: int, obs_int: float, logger: logging.Logger) -> Tuple[list, list, list, list]:
+def tle_rise_set_times(prn: int,
+                       df_tle: pd.DataFrame,
+                       marker: sf.Topos,
+                       t0: sf.Time,
+                       t1: sf.Time,
+                       elev_min: int,
+                       obs_int: float,
+                       logger: logging.Logger) -> Tuple[list, list, list, list]:
     """
     tle_rise_set_info calculates for a PRN based on TLEs the rise and set times and theoreticlal number of observations.
     """
@@ -194,7 +219,9 @@ def tle_rise_set_times(prn: int, df_tle: pd.DataFrame, marker: sf.Topos, t0: sf.
     try:
         row = df_tle.index[df_tle['PRN'] == prn].tolist()[0]
 
-        logger.info('{func:s}:    for NORAD {norad:s} ({prn:s})'.format(norad=colored(df_tle['NORAD'][row], 'green'), prn=colored(prn, 'green'), func=cFuncName))
+        logger.info('{func:s}:    for NORAD {norad:s} ({prn:s})'.format(norad=colored(df_tle['NORAD'][row], 'green'),
+                                                                        prn=colored(prn, 'green'),
+                                                                        func=cFuncName))
 
         # create a EarthSatellites from the TLE lines for this PRN
         gnss_sv = EarthSatellite(df_tle['TLE1'][row], df_tle['TLE2'][row])
@@ -239,8 +266,13 @@ def tle_rise_set_times(prn: int, df_tle: pd.DataFrame, marker: sf.Topos, t0: sf.
 
         for tle_rise, tle_set in zip(dt_tle_rise, dt_tle_set):
             print('type tle_rise {!s}'.format(type(tle_rise)))
-            rise_sec = int(timedelta(hours=tle_rise.hour, minutes=tle_rise.minute, seconds=tle_rise.second).total_seconds())
-            set_sec = int(timedelta(hours=tle_set.hour, minutes=tle_set.minute, seconds=tle_set.second).total_seconds())
+            rise_sec = int(timedelta(hours=tle_rise.hour,
+                                     minutes=tle_rise.minute,
+                                     seconds=tle_rise.second).total_seconds())
+            set_sec = int(timedelta(hours=tle_set.hour,
+                                    minutes=tle_set.minute,
+                                    seconds=tle_set.second).total_seconds())
+
             tle_arc_count.append((set_sec - rise_sec) / obs_int)
 
         # inform the user
@@ -250,9 +282,22 @@ def tle_rise_set_times(prn: int, df_tle: pd.DataFrame, marker: sf.Topos, t0: sf.
                 str_culdt = 'N/A'
             else:
                 str_culdt = culdt.strftime('%H:%M:%S')
-            logger.info('{func:s}:          arc[{nr:d}]: {stdt:s} -> {culdt:s} -> {enddt:s}'.format(nr=i, stdt=colored(stdt.strftime('%H:%M:%S'), 'yellow'), culdt=colored(str_culdt, 'yellow'), enddt=colored(enddt.strftime('%H:%M:%S'), 'yellow'), func=cFuncName))
+            logger.info('{func:s}:          arc[{nr:d}]: {stdt:s} -> {culdt:s} -> {enddt:s}'
+                        .format(nr=i,
+                                stdt=colored(stdt.strftime('%H:%M:%S'), 'yellow'),
+                                culdt=colored(str_culdt, 'yellow'),
+                                enddt=colored(enddt.strftime('%H:%M:%S'), 'yellow'),
+                                func=cFuncName))
 
     except IndexError:
         logger.info('{func:s}: No NORAD TLE file present for {prn:s}'.format(prn=colored(prn, 'red'), func=cFuncName))
+
+    # bluffton = wgs84.latlon(+40.8939, -83.8917)
+    # t0 = ts.utc(2014, 1, 23)
+    # t1 = ts.utc(2014, 1, 24)
+    # t, events = satellite.find_events(bluffton, t0, t1, altitude_degrees=30.0)
+    # for ti, event in zip(t, events):
+    #     name = ('rise above 30°', 'culminate', 'set below 30°')[event]
+    #     print(ti.utc_strftime('%Y %b %d %H:%M:%S'), name)
 
     return dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count

@@ -44,7 +44,9 @@ def treatCmdOpts(argv):
                         required=True)
 
     parser.add_argument('--gnsss',
-                        help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(gfzc.lst_GNSSs), gnss=colored(gfzc.lst_GNSSs[0], 'green')),
+                        help='select (1 or more) GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'
+                             .format(gnsss='|'.join(gfzc.lst_GNSSs),
+                                     gnss=colored(gfzc.lst_GNSSs[0], 'green')),
                         default=gfzc.lst_GNSSs[0],
                         type=str,
                         required=False,
@@ -52,7 +54,9 @@ def treatCmdOpts(argv):
                         nargs='+')
 
     parser.add_argument('--logging',
-                        help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')),
+                        help='specify logging level console/file (two of {choices:s}, default {choice:s})'
+                             .format(choices='|'.join(gco.lst_logging_choices),
+                                     choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')),
                         nargs=2,
                         required=False,
                         default=gco.lst_logging_choices[3:5],
@@ -84,7 +88,8 @@ def create_tabular_observations(gfzrnx: str,
                            '-satsys', gnss]
 
     if logger is not None:
-        logger.info('{func:s} creating observation tabular file {obstab:s}'.format(obstab=colored(obs_tabf, 'blue'), func=cFuncName))
+        logger.info('{func:s} creating observation tabular file {obstab:s}'.format(obstab=colored(obs_tabf, 'blue'),
+                                                                                   func=cFuncName))
     # run program
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=args4GFZRNX, logger=logger)
     if err_code != amc.E_SUCCESS:
@@ -105,7 +110,8 @@ def create_tabular_observations(gfzrnx: str,
                            '-satsys', gnss]
 
     if logger is not None:
-        logger.info('{func:s} creating observation statistics file {obstab:s}'.format(obstab=colored(obs_statf, 'blue'), func=cFuncName))
+        logger.info('{func:s} creating observation statistics file {obstab:s}'.format(obstab=colored(obs_statf, 'blue'),
+                                                                                      func=cFuncName))
     # run program
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=args4GFZRNX, logger=logger)
     if err_code != amc.E_SUCCESS:
