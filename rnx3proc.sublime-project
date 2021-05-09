@@ -15,6 +15,9 @@
 		},
 		{
 			"path": "/home/amuls/RxTURP/RFI"
+		},
+		{
+			"path": "/home/amuls/RxTURP/BEGPIOS/tle"
 		}
 	],
 	"settings":

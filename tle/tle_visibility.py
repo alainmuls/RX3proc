@@ -81,14 +81,15 @@ def PRNs_visibility(prn_lst: list,
     # find in observations and by TLEs what the riuse/set times are and number of observations
     for prn in prn_lst:
         # find rise:set times using TLEs
-        dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count = tle_parser.tle_rise_set_times(prn=prn,
-                                                                                           df_tle=df_tles,
-                                                                                           marker=RMA,
-                                                                                           t0=t0,
-                                                                                           t1=t1,
-                                                                                           elev_min=cutoff,
-                                                                                           obs_int=1,
-                                                                                           logger=logger)
+        dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count = \
+            tle_parser.tle_rise_set_times(prn=prn,
+                                          df_tle=df_tles,
+                                          marker=RMA,
+                                          t0=t0,
+                                          t1=t1,
+                                          elev_min=cutoff,
+                                          obs_int=1,
+                                          logger=logger)
 
         # AM TEST XXX
         for elev in range(cutoff, 90, 1):
@@ -109,7 +110,9 @@ def PRNs_visibility(prn_lst: list,
         lst_obs_rise.append([dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count])
 
     # test to import in dataframe
-    df_rise_set_tmp = pd.DataFrame(lst_obs_rise, columns=['tle_rise', 'tle_set', 'tle_cul', 'tle_arc_count'], index=prn_lst)
+    df_rise_set_tmp = pd.DataFrame(lst_obs_rise,
+                                   columns=['tle_rise', 'tle_set', 'tle_cul', 'tle_arc_count'],
+                                   index=prn_lst)
 
 
     return df_rise_set_tmp

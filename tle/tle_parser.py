@@ -54,14 +54,21 @@ def get_norad_numbers(prns: list,
     # create dict of NORAD numbers corresponding to the given PRNs
     dNorads = {}
     for _, prn in enumerate(prns):
+        if prn == 'E28':
+            norad_prn = 'E33'
+        elif prn == 'E29':
+            norad_prn = 'E36'
+        else:
+            norad_prn = prn
         try:
-            dNorads[prn] = dfNorad[dfNorad['PRN'] == prn]['NORAD'].item()
+            dNorads[prn] = dfNorad[dfNorad['PRN'] == norad_prn]['NORAD'].item()
         except ValueError:
             logger.warning('{func:s}: PRN {prn:s} has no corresponding NORAD entry'.format(prn=colored(prn, 'yellow'), func=cFuncName))
             dNorads[prn] = ''
 
     logger.info('{func:s}: correponding PRN / NORAD numbers = {norad!s}'.format(norad=dNorads, func=cFuncName))
 
+    sys.exit(98)
     return dNorads
 
 
