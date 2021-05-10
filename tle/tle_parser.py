@@ -18,7 +18,7 @@ __author__ = 'amuls'
 
 def read_norad2prn(logger: logging.Logger) -> pd.DataFrame:
     """
-    read_norad2prn reads the files NORAD-PRN.t and gps-ops-NORAD-PRN.t from dir ~/RxTURP/BEGPIOS/tle connecting NORAD number to PRN (period 2018-2020)
+    read_norad2prn reads the files NORAD-PRN.t and gps-ops-NORAD-PRN.t from dir ~/RxTURP/BEGPIOS/tle/cmb connecting NORAD number to PRN (period 2018-2020)
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
@@ -26,7 +26,7 @@ def read_norad2prn(logger: logging.Logger) -> pd.DataFrame:
     column_names = ['GNSS', 'SV-ID', 'PRN', 'NORAD', 'launch']
 
     # read the NORAD2PRN file in dataframes
-    norad2prn_file = os.path.join(os.environ['HOME'], 'RxTURP/BEGPIOS/tle', 'gnss-NORAD-PRN.t')
+    norad2prn_file = os.path.join(os.environ['HOME'], 'RxTURP/BEGPIOS/tle/cmb', 'gnss-NORAD-PRN.t')
 
     try:
         dfNorad = pd.read_csv(norad2prn_file, header=None, names=column_names)
@@ -68,7 +68,6 @@ def get_norad_numbers(prns: list,
 
     logger.info('{func:s}: correponding PRN / NORAD numbers = {norad!s}'.format(norad=dNorads, func=cFuncName))
 
-    sys.exit(98)
     return dNorads
 
 
@@ -86,7 +85,7 @@ def find_norad_tle_yydoy(dNorads: dict,
     # reading the TLE per SV
     for prn, norad in dNorads.items():
         if norad != '':  # no TLE file available for this PRN
-            norad_tle_file = os.path.join(os.environ['HOME'], 'RxTURP/BEGPIOS/tle', 'sat{norad:s}.txt'.format(norad=norad[:-1]))
+            norad_tle_file = os.path.join(os.environ['HOME'], 'RxTURP/BEGPIOS/tle/cmb', 'sat{norad:s}.txt'.format(norad=norad[:-1]))
             # logger.info('{func:s}: reading TLE file {name:s} for NORAD ID {norad:s} (PRN={prn:s})'.format(norad=colored(norad, 'green'), prn=colored(prn, 'green'), name=norad_tle_file, func=cFuncName))
 
             try:
@@ -112,6 +111,8 @@ def find_norad_tle_yydoy(dNorads: dict,
             except Exception as e:
                 logger.error('{func:s}: error occured \n{err!s}'.format(err=e, func=cFuncName))
                 # sys.exit(amc.E_FAILURE)
+
+            # input("Press Enter to continue...")
 
     amutils.logHeadTailDataFrame(logger=logger, callerName=cFuncName, df=df_tle, dfName='df_tle')
 
@@ -143,15 +144,17 @@ def rise_set_yydoy(df_tle: pd.DataFrame,
 
     # go over the PRN / NORADs that have TLE corresponding to the requested date
     for row, prn in enumerate(df_tle['PRN']):
-        logger.info('{func:s}:   for NORAD {norad:s} ({prn:s})'.format(norad=colored(df_tle['NORAD'][row], 'green'), prn=colored(prn, 'green'), func=cFuncName))
+        # logger.info('{func:s}:   for NORAD {norad:s} ({prn:s})'.format(norad=colored(df_tle['NORAD'][row], 'green'),
+        #                                                                prn=colored(prn, 'green'),
+        #                                                                func=cFuncName))
         # create a EarthSatellites from the TLE lines for this PRN
         gnss_sv = EarthSatellite(df_tle['TLE1'][row], df_tle['TLE2'][row])
-        logger.info('{func:s}:       created earth satellites {sat!s}'.format(sat=colored(gnss_sv, 'green'), func=cFuncName))
+        # logger.info('{func:s}:       created earth satellites {sat!s}'.format(sat=colored(gnss_sv, 'green'), func=cFuncName))
 
         t, events = gnss_sv.find_events(RMA, t0, t1, altitude_degrees=5.0)
 
         for ti, event in zip(t, events):
-            name = ('rise above 5d', 'culminate', 'set below 5d')[event]
+            name = ('rise above', 'culminate', 'set below')[event]
             logger.info('{func:s}:         {jpl!s} -- {name!s}'.format(jpl=ti.utc_jpl(), name=name, func=cFuncName))
 
 
@@ -173,8 +176,7 @@ def get_closests_tle(df: pd.DataFrame,
                      col: int,
                      val: int,
                      norad_file: str,
-                     logger: logging.Logger) -> Tuple[str,
-str, int]:
+                     logger: logging.Logger) -> Tuple[str, str, int]:
     """
     get_closests_tle scans the TLE files and returns those closest to epoch
     """
@@ -226,23 +228,30 @@ def tle_rise_set_times(prn: int,
     try:
         row = df_tle.index[df_tle['PRN'] == prn].tolist()[0]
 
-        logger.info('{func:s}:    for NORAD {norad:s} ({prn:s})'.format(norad=colored(df_tle['NORAD'][row], 'green'),
-                                                                        prn=colored(prn, 'green'),
-                                                                        func=cFuncName))
+        # logger.info('{func:s}:    for NORAD {norad:s} ({prn:s})'.format(norad=colored(df_tle['NORAD'][row], 'green'),
+        #                                                                 prn=colored(prn, 'green'),
+        #                                                                 func=cFuncName))
 
         # create a EarthSatellites from the TLE lines for this PRN
         gnss_sv = EarthSatellite(df_tle['TLE1'][row], df_tle['TLE2'][row])
-        logger.info('{func:s}:       created earth satellite {sat!s}'.format(sat=colored(gnss_sv, 'green'), func=cFuncName))
+        # logger.info('{func:s}:       created earth satellite {sat!s}'.format(sat=colored(gnss_sv, 'green'), func=cFuncName))
 
         # find rise:set/cul times
         t, events = gnss_sv.find_events(marker, t0, t1, altitude_degrees=elev_min)
+        print('events for {} = {}'.format(elev_min, events))
+        for ti, event in zip(t, events):
+            name = ('rise above {cutoff:2d} degrees'.format(cutoff=elev_min),
+                    'culminate',
+                    'set below {cutoff:2d} degrees'.format(cutoff=elev_min))[event]
+            logger.info('{func:s}:         {jpl!s} -- {name!s}'.format(jpl=ti.utc_jpl(), name=name, func=cFuncName))
+
 
         # create a list for setting for each rise-culminate-set sequence the datetime values
         tle_events = [t0.utc_datetime(), np.NaN, t1.utc_datetime()]
         event_latest = -1
 
         # event: 0=RISE, 1=Culminate, 2=SET
-        for i, (ti, event) in enumerate(zip(t, events)):
+        for ti, event in zip(t, events):
             tle_events[event] = ti.utc_datetime()
             event_latest = event
 
@@ -272,7 +281,7 @@ def tle_rise_set_times(prn: int,
                 dt_tle_set[i] = time(hour=23, minute=59, second=59, microsecond=0)
 
         for tle_rise, tle_set in zip(dt_tle_rise, dt_tle_set):
-            print('type tle_rise {!s}'.format(type(tle_rise)))
+            # print('type tle_rise {!s}'.format(type(tle_rise)))
             rise_sec = int(timedelta(hours=tle_rise.hour,
                                      minutes=tle_rise.minute,
                                      seconds=tle_rise.second).total_seconds())
@@ -283,18 +292,18 @@ def tle_rise_set_times(prn: int,
             tle_arc_count.append((set_sec - rise_sec) / obs_int)
 
         # inform the user
-        logger.info('{func:s}:       TLE based times for {prn:s}'.format(prn=colored(prn, 'green'), func=cFuncName))
+        # logger.info('{func:s}:       TLE based times for {prn:s}'.format(prn=colored(prn, 'green'), func=cFuncName))
         for i, (stdt, culdt, enddt) in enumerate(zip(dt_tle_rise, dt_tle_cul, dt_tle_set)):
             if isinstance(culdt, float):
                 str_culdt = 'N/A'
             else:
                 str_culdt = culdt.strftime('%H:%M:%S')
-            logger.info('{func:s}:          arc[{nr:d}]: {stdt:s} -> {culdt:s} -> {enddt:s}'
-                        .format(nr=i,
-                                stdt=colored(stdt.strftime('%H:%M:%S'), 'yellow'),
-                                culdt=colored(str_culdt, 'yellow'),
-                                enddt=colored(enddt.strftime('%H:%M:%S'), 'yellow'),
-                                func=cFuncName))
+            # logger.info('{func:s}:          arc[{nr:d}]: {stdt:s} -> {culdt:s} -> {enddt:s}'
+            #             .format(nr=i,
+            #                     stdt=colored(stdt.strftime('%H:%M:%S'), 'yellow'),
+            #                     culdt=colored(str_culdt, 'yellow'),
+            #                     enddt=colored(enddt.strftime('%H:%M:%S'), 'yellow'),
+            #                     func=cFuncName))
 
     except IndexError:
         logger.info('{func:s}: No NORAD TLE file present for {prn:s}'.format(prn=colored(prn, 'red'), func=cFuncName))
