@@ -92,6 +92,13 @@ class cutoff_action(argparse.Action):
         setattr(namespace, self.dest, cutoff)
 
 
+class elevstep_action(argparse.Action):
+    def __call__(self, parser, namespace, elev_step, option_string=None):
+        if elev_step not in range(1, 15):
+            raise argparse.ArgumentError(self, "elev_step angle must be in [1...15] degrees")
+        setattr(namespace, self.dest, elev_step)
+
+
 class prn_list_action(argparse.Action):
     def __call__(self, parser, namespace, prn_list, option_string=None):
         # print('prn_list = {!s}'.format(prn_list))

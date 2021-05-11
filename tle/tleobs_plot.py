@@ -263,10 +263,10 @@ def bars_info(nr_arcs: int,
     # get the delta-x to apply to the integer value that corresponds to a PRN
     # print('np.arange(nr_arcs) = {}'.format(np.arange(nr_arcs)))
     dx_obs = [dx_start + i * (width_space + width_arc) for i in np.arange(nr_arcs)]
-    print('\nnr_arcs = {}'.format(nr_arcs))
-    print('width_arcs = {}'.format(width_arcs))
-    print('dx_obs = {}'.format(dx_obs))
-    print('width_arc = {}'.format(width_arc))
+    # print('\nnr_arcs = {}'.format(nr_arcs))
+    # print('width_arcs = {}'.format(width_arcs))
+    # print('dx_obs = {}'.format(dx_obs))
+    # print('width_arc = {}'.format(width_arc))
 
 
     return dx_obs, width_arc
@@ -301,8 +301,8 @@ def obstle_plot_relative(marker: str,
     lst_markers = ['o', 'v', '^', '<', '>', 'x', '+', 's', 'd', '.', ',']
 
     # create an offset to plot the markers per PRN
-    print('obstypes[:-1] = {}'.format(obstypes[:-1]))
-    print('len(obstypes[:-1]) = {}'.format(len(obstypes[:-1])))
+    # print('obstypes[:-1] = {}'.format(obstypes[:-1]))
+    # print('len(obstypes[:-1]) = {}'.format(len(obstypes[:-1])))
     dx_obs, dx_width = bars_info(nr_arcs=len(obstypes[:-1]), logger=logger)
     # print('dx_obs = {}'.format(dx_obs))
     # print('dx_width = {}'.format(dx_width))
@@ -483,7 +483,7 @@ def obstle_plot_arcs_prns(marker: str,
                 markersize=6,
                 color=prn_colors[y_prn])
 
-    # # format the date time ticks
+    # format the date time ticks
     # ax.xaxis.set_major_locator(dates.DayLocator(interval=1))
     # ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
 
@@ -640,7 +640,6 @@ def plot_prn_navsig_obs(marker: str,
         axTLE.text(x=df_PRNElev.loc[ind].DATE_TIME,
                    y=1,
                    s=df_PRNElev.loc[ind].elevation,
-                   fontsize='x-small',
                    horizontalalignment='center',
                    fontweight='heavy',
                    rotation='vertical')

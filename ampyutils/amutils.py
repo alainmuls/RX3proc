@@ -568,3 +568,13 @@ def path_writable(path: str) -> bool:
     check whether a directory is writable
     """
     return os.access(path, os.W_OK)
+
+
+def is_between(time: datetime.time,
+               time_range: list) -> bool:
+    """
+    is_between checks whether a time is within a certain range
+    """
+    if time_range[1] < time_range[0]:
+        return time >= time_range[0] or time <= time_range[1]
+    return time_range[0] <= time <= time_range[1]

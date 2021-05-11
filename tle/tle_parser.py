@@ -208,8 +208,8 @@ def take_closest(num: float, collection: list):
 def tle_rise_set_times(prn: int,
                        df_tle: pd.DataFrame,
                        marker: sf.Topos,
-                       t0: sf.Time,
-                       t1: sf.Time,
+                       t0_obs: sf.Time,
+                       t1_obs: sf.Time,
                        elev_min: int,
                        obs_int: float,
                        logger: logging.Logger) -> Tuple[list, list, list, list]:
@@ -224,6 +224,38 @@ def tle_rise_set_times(prn: int,
     dt_tle_cul = []
     tle_arc_count = []
 
+    ts = sf.load.timescale()
+
+    # #DEBUG
+    # t0_obs = ts.utc(year=t0_obs.utc.year,
+    #                 month=t0_obs.utc.month,
+    #                 day=t0_obs.utc.day,
+    #                 hour=3,
+    #                 minute=27,
+    #                 second=30)
+    # t1_obs = ts.utc(year=t0_obs.utc.year,
+    #                 month=t0_obs.utc.month,
+    #                 day=t0_obs.utc.day,
+    #                 hour=21,
+    #                 minute=50,
+    #                 second=18)
+    # #DEBUG
+
+    day_t0 = ts.utc(year=t0_obs.utc.year,
+                    month=t0_obs.utc.month,
+                    day=t0_obs.utc.day,
+                    hour=0,
+                    minute=0,
+                    second=0)
+    # date_tomorrow = cur_date + timedelta(days=1)
+    # t1_obs = ts.utc(int(date_tomorrow.strftime('%Y')), int(date_tomorrow.strftime('%m')), int(date_tomorrow.strftime('%d')))
+    day_t1 = ts.utc(year=t0_obs.utc.year,
+                    month=t0_obs.utc.month,
+                    day=t0_obs.utc.day,
+                    hour=23,
+                    minute=59,
+                    second=59)
+
     # check with the TLEs what the theoretical rise / set times should be
     try:
         row = df_tle.index[df_tle['PRN'] == prn].tolist()[0]
@@ -237,49 +269,92 @@ def tle_rise_set_times(prn: int,
         # logger.info('{func:s}:       created earth satellite {sat!s}'.format(sat=colored(gnss_sv, 'green'), func=cFuncName))
 
         # find rise:set/cul times
-        t, events = gnss_sv.find_events(marker, t0, t1, altitude_degrees=elev_min)
-        print('events for {} = {}'.format(elev_min, events))
+        t, events = gnss_sv.find_events(marker, day_t0, day_t1, altitude_degrees=elev_min)
+
+        # convert to t and events to a list
+        # print('{} {}'.format(t, type(t)))
+        t_events = [ti.utc_datetime().time().replace(microsecond=0) for ti in t]
+        id_events = events.tolist()
+        # print('t_events: {} {}'.format(t_events, type(t_events)))
+        # print('id_events: {} {}'.format(id_events, type(id_events)))
+
+        # if event does not start with a rise time, than set midnight as rise event and complte if needed with  culmination time set to NaN
+        if id_events[0] != 0:
+            if id_events[0] == 1:
+                id_events.insert(0, 0)
+                t_events.insert(0, day_t0.utc_datetime().time().replace(microsecond=0))
+            elif id_events[0] == 2:
+                id_events.insert(0, 1)
+                id_events.insert(0, 0)
+                t_events.insert(0, np.NaN)
+                t_events.insert(0, day_t0.utc_datetime().time().replace(microsecond=0))
+
+        # do the same and make sure we end the list with a set time
+        if id_events[-1] != 2:
+            if id_events[-1] == 1:
+                id_events.append(2)
+                t_events.append(day_t1.utc_datetime().time().replace(microsecond=0))
+            elif id_events[-1] == 0:
+                id_events.append(1)
+                id_events.append(2)
+                t_events.append(np.NaN)
+                t_events.append(day_t1.utc_datetime().time().replace(microsecond=0))
+
+        # print('id_events = {}'.format(id_events))
+        # print(' t_events = {}'.format(t_events))
+
         for ti, event in zip(t, events):
             name = ('rise above {cutoff:2d} degrees'.format(cutoff=elev_min),
                     'culminate',
                     'set below {cutoff:2d} degrees'.format(cutoff=elev_min))[event]
             logger.info('{func:s}:         {jpl!s} -- {name!s}'.format(jpl=ti.utc_jpl(), name=name, func=cFuncName))
 
+        # check for start of observation to be between rise / set t_events times
+        for t_0, t_1 in zip(t_events[::3], t_events[2::3]):
+            print('t_0 = {}, t_1 = {}, t0_obs = {}, {} t1_obs = {}, {}'
+                  .format(t_0, t_1,
+                          t0_obs.utc_datetime().time(),
+                          amutils.is_between(t0_obs.utc_datetime().time(), [t_0, t_1]),
+                          t1_obs.utc_datetime().time(),
+                          amutils.is_between(t1_obs.utc_datetime().time(), [t_0, t_1])))
 
-        # create a list for setting for each rise-culminate-set sequence the datetime values
-        tle_events = [t0.utc_datetime(), np.NaN, t1.utc_datetime()]
-        event_latest = -1
+            # 1. check when we have TRUE for bith observation start / end interval
+            obsstart_within = amutils.is_between(t0_obs.utc_datetime().time(), [t_0, t_1])
+            obsend_within = amutils.is_between(t1_obs.utc_datetime().time(), [t_0, t_1])
 
-        # event: 0=RISE, 1=Culminate, 2=SET
-        for ti, event in zip(t, events):
-            tle_events[event] = ti.utc_datetime()
-            event_latest = event
+            if obsstart_within and obsend_within:
+                # 2. check whether the observation interval is within a rise / set interval
+                dt_tle_rise.append(t0_obs.utc_datetime().time())
+                dt_tle_set.append(t1_obs.utc_datetime().time())
 
-            if event == 2:  # PRN below cutoff
-                dt_tle_rise.append(tle_events[0].time().replace(microsecond=0))
-                dt_tle_set.append(tle_events[2].time().replace(microsecond=0))
-                if isinstance(tle_events[1], float):
-                    dt_tle_cul.append(np.NaN)
+            elif obsstart_within and not obsend_within:
+                # 3. start is within the interval, end is oafter the setting
+                dt_tle_rise.append(t0_obs.utc_datetime().time())
+                dt_tle_set.append(t_1)
+
+            elif not obsstart_within and obsend_within:
+                # 4. start is not within but end of obs is within
+                dt_tle_rise.append(t_0)
+                dt_tle_set.append(t1_obs.utc_datetime().time())
+
+            elif not obsstart_within and not obsend_within:
+                if t1_obs.utc_datetime().time() < t_0:
+                    pass
+                elif t0_obs.utc_datetime().time() > t_1:
+                    pass
                 else:
-                    dt_tle_cul.append(tle_events[1].time().replace(microsecond=0))
+                    dt_tle_rise.append(t_0)
+                    dt_tle_set.append(t_1)
 
-                tle_events = [t0.utc_datetime(), np.NaN, t1.utc_datetime()]
+            elif (t_1 == t_events[-1]) and t1_obs.utc_datetime().time() > t_1:
+                # 5. end time of observation is behind the last TLE epoch
+                dt_tle_rise.append(max(t_0, t0_obs.utc_datetime().time()))
+                dt_tle_set.append(t_1)
 
-        # add the final events detected
-        if event_latest != 2:
-            dt_tle_rise.append(tle_events[0].time().replace(microsecond=0))
-            dt_tle_set.append(tle_events[2].time().replace(microsecond=0))
-            if isinstance(tle_events[1], float):
-                dt_tle_cul.append(np.NaN)
-            else:
-                dt_tle_cul.append(tle_events[1].time().replace(microsecond=0))
+            # print('xxx dt_tle_rise = {}'.format(dt_tle_rise))
+            # print('xxx dt_tle_set = {}'.format(dt_tle_set))
 
-        # check whether a set time is "00:00:00" and change to "23:59:59"
-        midnight = time(hour=0, minute=0, second=0, microsecond=0)
-        for i, tle_set in enumerate(dt_tle_set):
-            if tle_set == midnight:
-                dt_tle_set[i] = time(hour=23, minute=59, second=59, microsecond=0)
-
+        # count the theoretical observations based on TLEs within observation interval
         for tle_rise, tle_set in zip(dt_tle_rise, dt_tle_set):
             # print('type tle_rise {!s}'.format(type(tle_rise)))
             rise_sec = int(timedelta(hours=tle_rise.hour,
@@ -291,29 +366,25 @@ def tle_rise_set_times(prn: int,
 
             tle_arc_count.append((set_sec - rise_sec) / obs_int)
 
-        # inform the user
-        # logger.info('{func:s}:       TLE based times for {prn:s}'.format(prn=colored(prn, 'green'), func=cFuncName))
-        for i, (stdt, culdt, enddt) in enumerate(zip(dt_tle_rise, dt_tle_cul, dt_tle_set)):
-            if isinstance(culdt, float):
-                str_culdt = 'N/A'
-            else:
-                str_culdt = culdt.strftime('%H:%M:%S')
-            # logger.info('{func:s}:          arc[{nr:d}]: {stdt:s} -> {culdt:s} -> {enddt:s}'
-            #             .format(nr=i,
-            #                     stdt=colored(stdt.strftime('%H:%M:%S'), 'yellow'),
-            #                     culdt=colored(str_culdt, 'yellow'),
-            #                     enddt=colored(enddt.strftime('%H:%M:%S'), 'yellow'),
-            #                     func=cFuncName))
+        # print('xxx tle_arc_count = {}'.format(tle_arc_count))
+
+        # check whether the culmination points are somewhere in th eobservation interval
+        for dt_rise, dt_set in zip(dt_tle_rise, dt_tle_set):
+            dt_tle_cul.append(np.NaN)
+            for dt_cul in t_events[1::3]:
+                if not isinstance(dt_cul, float) and amutils.is_between(dt_cul, [dt_rise, dt_set]):
+                    dt_tle_cul[-1] = dt_cul
+
+        # print('xxx dt_tle_cul = {}'.format(dt_tle_cul))
+
 
     except IndexError:
         logger.info('{func:s}: No NORAD TLE file present for {prn:s}'.format(prn=colored(prn, 'red'), func=cFuncName))
 
-    # bluffton = wgs84.latlon(+40.8939, -83.8917)
-    # t0 = ts.utc(2014, 1, 23)
-    # t1 = ts.utc(2014, 1, 24)
-    # t, events = satellite.find_events(bluffton, t0, t1, altitude_degrees=30.0)
-    # for ti, event in zip(t, events):
-    #     name = ('rise above 30°', 'culminate', 'set below 30°')[event]
-    #     print(ti.utc_strftime('%Y %b %d %H:%M:%S'), name)
+    # print('dt_tle_rise = {}'.format(dt_tle_rise))
+    # print('dt_tle_set = {}'.format(dt_tle_set))
+    # print('dt_tle_cul = {}'.format(dt_tle_cul))
+
+    # input('key press')
 
     return dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count

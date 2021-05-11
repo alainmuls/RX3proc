@@ -54,25 +54,25 @@ def PRNs_visibility(prn_lst: list,
                             DTGend=DTG_end.strftime('%Y/%m/%d %H:%M:%S'),
                             func=cFuncName))
 
-    print(DTG_start.strftime('%Y/%m/%d %H:%M:%S'))
-    print(DTG_end.strftime('%Y/%m/%d %H:%M:%S'))
-    t0 = ts.utc(year=int(DTG_start.strftime('%Y')),
-                month=int(DTG_start.strftime('%m')),
-                day=int(DTG_start.strftime('%d')),
-                hour=int(DTG_start.strftime('%H')),
-                minute=int(DTG_start.strftime('%M')),
-                second=int(DTG_start.strftime('%S')))
+    # print(DTG_start.strftime('%Y/%m/%d %H:%M:%S'))
+    # print(DTG_end.strftime('%Y/%m/%d %H:%M:%S'))
+    tobs_0 = ts.utc(year=int(DTG_start.strftime('%Y')),
+                    month=int(DTG_start.strftime('%m')),
+                    day=int(DTG_start.strftime('%d')),
+                    hour=int(DTG_start.strftime('%H')),
+                    minute=int(DTG_start.strftime('%M')),
+                    second=int(DTG_start.strftime('%S')))
     # date_tomorrow = cur_date + timedelta(days=1)
     # t1 = ts.utc(int(date_tomorrow.strftime('%Y')), int(date_tomorrow.strftime('%m')), int(date_tomorrow.strftime('%d')))
-    t1 = ts.utc(year=int(DTG_end.strftime('%Y')),
-                month=int(DTG_end.strftime('%m')),
-                day=int(DTG_end.strftime('%d')),
-                hour=int(DTG_end.strftime('%H')),
-                minute=int(DTG_end.strftime('%M')),
-                second=int(DTG_end.strftime('%S')))
+    tobs_1 = ts.utc(year=int(DTG_end.strftime('%Y')),
+                    month=int(DTG_end.strftime('%m')),
+                    day=int(DTG_end.strftime('%d')),
+                    hour=int(DTG_end.strftime('%H')),
+                    minute=int(DTG_end.strftime('%M')),
+                    second=int(DTG_end.strftime('%S')))
 
-    print('t0 = {}'.format(t0))
-    print('t1 = {}'.format(t1))
+    # print('tobs_0 = {}'.format(tobs_0))
+    # print('tobs_1 = {}'.format(tobs_1))
 
     # find corresponding TLE record for NORAD nrs
     df_tles = tle_parser.find_norad_tle_yydoy(dNorads=dNORADs, yydoy=DTG_start.strftime('%y%j'), logger=logger)
@@ -82,15 +82,15 @@ def PRNs_visibility(prn_lst: list,
 
     # find in observations and by TLEs what the riuse/set times are and number of observations
     for prn in prn_lst:
-        print('-' * 25)
-        print(prn)
+        # print('-' * 25)
+        # print(prn)
         # find rise:set times using TLEs
         dt_tle_rise, dt_tle_set, dt_tle_cul, tle_arc_count = \
             tle_parser.tle_rise_set_times(prn=prn,
                                           df_tle=df_tles,
                                           marker=RMA,
-                                          t0=t0,
-                                          t1=t1,
+                                          t0_obs=tobs_0,
+                                          t1_obs=tobs_1,
                                           elev_min=cutoff,
                                           obs_int=1,
                                           logger=logger)
@@ -119,7 +119,7 @@ def prn_elevation(prn: str,
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    print('df_tle_prn = \n{}'.format(df_tle_prn))
+    # print('df_tle_prn = \n{}'.format(df_tle_prn))
 
     # load a time scale and set RMA as Topo
     # loader = sf.Loader(dir_tle, expire=True)  # loads the needed data files into the tle dir
@@ -159,12 +159,12 @@ def prn_elevation(prn: str,
                      minute=59,
                      second=59)
 
-    print('elev_t0 = {}'.format(elev_t0))
-    print('elev_t1 = {}'.format(elev_t1))
+    # print('elev_t0 = {}'.format(elev_t0))
+    # print('elev_t1 = {}'.format(elev_t1))
 
     # create a EarthSatellites from the TLE lines for this PRN
     gnss_sv = EarthSatellite(df_tle_prn.iloc[0]['TLE1'], df_tle_prn.iloc[0]['TLE2'])
-    print('gnss_sv = {}'.format(gnss_sv))
+    # print('gnss_sv = {}'.format(gnss_sv))
 
     # keep list of events for elevation
     data_elev = []
@@ -186,7 +186,7 @@ def prn_elevation(prn: str,
 
                 # if in observation interval, add to df_PRNelev
                 if t0.utc_datetime().time() <= t_rise <= t1.utc_datetime().time():
-                    print('t_rise of PRN {} above {} degrees at {}'.format(prn, elev, t_rise))
+                    # print('t_rise of PRN {} above {} degrees at {}'.format(prn, elev, t_rise))
                     data_elev.append([datetime.combine(DTG_start.date(), t_rise), elev])
 
             # find the times for rising above elev angle
@@ -199,7 +199,7 @@ def prn_elevation(prn: str,
                 # print('t_set = {}'.format(t_set))
 
                 if t0.utc_datetime().time() <= t_set <= t1.utc_datetime().time():
-                    print('t_set of PRN {} below {} degrees at {}'.format(prn, elev, t_set))
+                    # print('t_set of PRN {} below {} degrees at {}'.format(prn, elev, t_set))
                     data_elev.append([datetime.combine(DTG_start.date(), t_set), elev])
 
         # svrise, svset, svcul, tle_count = tle_parser.tle_rise_set_times(prn=prn,

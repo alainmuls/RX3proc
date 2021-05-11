@@ -86,6 +86,12 @@ def treatCmdOpts(argv):
                         required=False,
                         default=None)
 
+    parser.add_argument('--elev_step', help='elevation step (dafault {elevs:s}'.format(elevs=colored('10', 'green')),
+                        type=int,
+                        required=False,
+                        default=10,
+                        action=gco.elevstep_action)
+
     parser.add_argument('--plot', help='displays interactive plots (default False)',
                         action='store_true',
                         required=False,
@@ -102,7 +108,7 @@ def treatCmdOpts(argv):
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.obstab, args.freqs, args.prns, args.obstypes, args.snr_th, args.cutoff, args.jamsc, args.plot, args.logging
+    return args.obstab, args.freqs, args.prns, args.obstypes, args.snr_th, args.cutoff, args.jamsc, args.elev_step, args.plot, args.logging
 
 
 def check_arguments(logger: logging.Logger = None):
@@ -364,7 +370,7 @@ def analyse_obsprn(marker: str,
         # calculate the times that PRN reaches a elevation angle
         df_PrnElev = tle_visibility.prn_elevation(prn=prn,
                                                   df_tle_prn=dfTles[dfTles['PRN'] == prn],
-                                                  elev_step=1,  # dTab['cli']['elev_step'],
+                                                  elev_step=dTab['cli']['elev_step'],
                                                   DTG_start=dTab['time']['start'],
                                                   DTG_end=dTab['time']['end'],
                                                   logger=logger)
@@ -516,7 +522,7 @@ def main_obstab_analyse(argv):
     dTab['info'] = {}
     dTab['PNT'] = {}
 
-    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], dTab['cli']['jamsc'], show_plot, logLevels = treatCmdOpts(argv)
+    dTab['cli']['obstabf'], dTab['cli']['freqs'], dTab['cli']['lst_prns'], dTab['cli']['obs_types'], dTab['cli']['snrth'], dTab['cli']['mask'], dTab['cli']['jamsc'], dTab['cli']['elev_step'], show_plot, logLevels = treatCmdOpts(argv)
 
     # detect used GNSS from the obstabf filename
     dTab['info']['gnss'] = os.path.splitext(os.path.basename(dTab['cli']['obstabf']))[0][-1]
