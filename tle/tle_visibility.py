@@ -7,6 +7,7 @@ from skyfield.api import EarthSatellite
 from skyfield import api as sf
 import pandas as pd
 import numpy as np
+from typing import Tuple
 
 from tle import tle_parser
 from ampyutils import amutils
@@ -19,7 +20,7 @@ def PRNs_visibility(prn_lst: list,
                     DTG_end: datetime,
                     interval: float,
                     cutoff: int = 5,
-                    logger: logging.Logger = None) -> pd.DataFrame:
+                    logger: logging.Logger = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     PRNs_visibility determines the visibilty info for list of PRNs passed
     """
@@ -104,6 +105,11 @@ def PRNs_visibility(prn_lst: list,
                                    index=prn_lst)
 
     # sys.exit(56)
+    print('df_tles = \n{}'.format(df_tles))
+    print('type(df_tles) = \n{}'.format(type(df_tles)))
+
+    print('df_rise_set_tmp = \n{}'.format(df_rise_set_tmp))
+    print('type(df_rise_set_tmp) = \n{}'.format(type(df_rise_set_tmp)))
 
     return df_tles, df_rise_set_tmp
 

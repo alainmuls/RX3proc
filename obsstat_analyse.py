@@ -176,21 +176,21 @@ def cvsdb_update_obstle(obsstatf: str, dfObsTle: pd.DataFrame, dTime: dict, cvsd
     pass
 
 
-def tle_cvs(dfTle: pd.DataFrame, cvs_name: str, logger: logging.Logger = None):
+def tle_cvs(dfTleVis: pd.DataFrame, cvs_name: str, logger: logging.Logger = None):
     """
     tle_cvs converts the list of datetime.time to list of strings and stores these in a CVS file
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # convert the dfTle index to a column of PRNs
-    dfTle.reset_index(inplace=True)
-    dfTle = dfTle.rename(columns={'index': 'PRN'})
+    dfTleVis.reset_index(inplace=True)
+    dfTleVis = dfTleVis.rename(columns={'index': 'PRN'})
 
     # create an empty dataframe with the same columns
-    dfCvs = pd.DataFrame(columns=dfTle.columns.tolist())
+    dfCvs = pd.DataFrame(columns=dfTleVis.columns.tolist())
 
     # get the PRN and tle_arc_count numbers into dfCvs
-    dfCvs[['PRN', 'tle_arc_count']] = dfTle[['PRN', 'tle_arc_count']]
+    dfCvs[['PRN', 'tle_arc_count']] = dfTleVis[['PRN', 'tle_arc_count']]
 
     if logger is not None:
         amutils.logHeadTailDataFrame(df=dfCvs, dfName='dfCvs', callerName=cFuncName, logger=logger)
@@ -254,22 +254,25 @@ def main_rnx_obsstat(argv):
     amutils.logHeadTailDataFrame(df=dfObsStat, dfName='dfObsStat', callerName=cFuncName, logger=logger)
 
     # get the observation time spans based on TLE values
-    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(),
-                                           DTG_start=dStat['time']['first'],
-                                           DTG_end=dStat['time']['last'],
-                                           interval=dStat['time']['interval'],
-                                           cutoff=dStat['cli']['mask'],
-                                           logger=logger)
+    dfTLE, dfTLEVis = tle_visibility.PRNs_visibility(prn_lst=dfObsStat.PRN.unique(),
+                                                     DTG_start=dStat['time']['first'],
+                                                     DTG_end=dStat['time']['last'],
+                                                     interval=dStat['time']['interval'],
+                                                     cutoff=dStat['cli']['mask'],
+                                                     logger=logger)
     amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfTLEVis, dfName='dfTLEVis', callerName=cFuncName, logger=logger)
 
     # combine the observation count and TLE count per PRN
     dfTLEtmp = pd.DataFrame(columns=['PRN', 'TLE_count'])  # , dtype={'PRN':'object','TLE_count':'int'})
-    dfTLEtmp.PRN = dfTLE.index  # convert the TLE index (which are the PRNs) to a column
+    dfTLEtmp.PRN = dfTLEVis.index  # convert the TLE index (which are the PRNs) to a column
+    amutils.logHeadTailDataFrame(df=dfTLEtmp, dfName='dfTLEtmp', callerName=cFuncName, logger=logger)
 
     # add colmun which contains the total number of observations over all arcs
-    for i, (prn, tle_prn) in enumerate(dfTLE.iterrows()):
+    for i, (prn, tle_prn) in enumerate(dfTLEVis.iterrows()):
         dfTLEtmp.iloc[i].TLE_count = sum(tle_prn.tle_arc_count)
 
+    print('dfTLEtmp = {}'.format(dfTLEtmp))
     # combine TLE and actual observations (only SNR column used since values for all other obst are the same)
     dfObsTLE = pd.merge(dfObsStat, dfTLEtmp, on='PRN')
     amutils.logHeadTailDataFrame(df=dfObsTLE,
@@ -312,7 +315,7 @@ def main_rnx_obsstat(argv):
 
     # store the observation info from TLE in CVS file
     tle_name = '{basen:s}.tle'.format(basen=os.path.basename(dStat['obsstatf']).split('.')[0])
-    tle_cvs(dfTle=dfTLE, cvs_name=tle_name, logger=logger)
+    tle_cvs(dfTleVis=dfTLEVis, cvs_name=tle_name, logger=logger)
     # dfTLE.to_csv(tle_name, index=True, date_format='%H:%M:%S')
 
     # dGFZ['ltx']['script'] = os.path.join(dGFZ['ltx']['path'], 'script_info')
