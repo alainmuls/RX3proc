@@ -41,7 +41,7 @@ def treatCmdOpts(argv):
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
 
-    parser.add_argument('--obstab', help='observation tabular file', type=str, required=True)
+    parser.add_argument('--obstab', help='observation tabular file (*.obstab)', type=str, required=True)
 
     parser.add_argument('--prns', help='list of PRNs to examine (default {:s} (if PRN is 00 than all PRNs for GNSS used)'
                                        .format(colored('E00', 'green')),
@@ -61,8 +61,8 @@ def treatCmdOpts(argv):
 
     parser.add_argument('--obstypes', help='select observation types(s) to use (out of {osbtypes:s}, default {osbtype:s})'
                                            .format(osbtypes='|'.join(gfzc.lst_obstypes),
-                        osbtype=colored(gfzc.lst_obstypes[0], 'green')),
-                                           default=gfzc.lst_obstypes[0],
+                                                   osbtype=colored(gfzc.lst_obstypes[0], 'green')),
+                        default=gfzc.lst_obstypes[0],
                         type=str,
                         required=False,
                         action=gco.obstype_action,
@@ -266,8 +266,9 @@ def analyse_obsprn(marker: str,
                    obstabf: str,
                    navsig_name: str,
                    dTime: dict,
+                   dfTles: pd.DataFrame,
                    dfPrnNavSig: pd.DataFrame,
-                   dfPrnTle: pd.DataFrame,
+                   dfPrnVisTle: pd.DataFrame,
                    dfJamSc: pd.DataFrame,
                    prn: str,
                    navsig_obst_lst: dict,
@@ -360,13 +361,22 @@ def analyse_obsprn(marker: str,
         if logger is not None:
             amutils.logHeadTailDataFrame(df=dfPrnNSObs, dfName='dfPrnNSObs', callerName=cFuncName, logger=logger)
 
+        # calculate the times that PRN reaches a elevation angle
+        df_PrnElev = tle_visibility.prn_elevation(prn=prn,
+                                                  df_tle_prn=dfTles[dfTles['PRN'] == prn],
+                                                  elev_step=1,  # dTab['cli']['elev_step'],
+                                                  DTG_start=dTab['time']['start'],
+                                                  DTG_end=dTab['time']['end'],
+                                                  logger=logger)
+
         # plot for each PRN and obstfreq
         plots[navsig_obs] = tleobs_plot.plot_prn_navsig_obs(marker=marker,
                                                             dTime=dTime,
                                                             obsf=obstabf,
                                                             prn=prn,
                                                             dfPrnObst=dfPrnNSObs,
-                                                            dfTlePrn=dfPrnTle,
+                                                            dfTleVisPrn=dfPrnVisTle,
+                                                            df_PRNElev=df_PrnElev,
                                                             dfJam=dfJamSc,
                                                             obst=navsig_obs,
                                                             posidx_gaps=posidx_time_gaps,
@@ -441,10 +451,11 @@ def pnt_available(dfPrnEvol: pd.DataFrame,
 
             dPNT['PNTgap'].append((dPNT['reacq'][-1] - dPNT['loss'][-1]).total_seconds())
             if logger is not None:
-                logger.info('{func:s}: PNT loss @ {loss:s} => {reacq:s} for {gap:.1f} s'.format(loss=dPNT['loss'][-1].strftime('%H:%M:%S'),
-                    reacq=dPNT['reacq'][-1].strftime('%H:%M:%S'),
-                    gap=dPNT['PNTgap'][-1],
-                    func=cFuncName))
+                logger.info('{func:s}: PNT loss @ {loss:s} => {reacq:s} for {gap:.1f} s'
+                            .format(loss=dPNT['loss'][-1].strftime('%H:%M:%S'),
+                                    reacq=dPNT['reacq'][-1].strftime('%H:%M:%S'),
+                                    gap=dPNT['PNTgap'][-1],
+                                    func=cFuncName))
 
         except IndexError:
             break
@@ -543,15 +554,15 @@ def main_obstab_analyse(argv):
                                                                                        logger=logger)
 
     # get the observation time spans based on TLE values
-    dfTLE = tle_visibility.PRNs_visibility(prn_lst=dfObsTab.PRN.unique(),
-                                           DTG_start=dTab['time']['start'],
-                                           DTG_end=dTab['time']['end'],
-                                           interval=dTab['time']['interval'],
-                                           cutoff=dTab['cli']['mask'],
-                                           logger=logger)
+    dfTLEs, dfTLEVis = tle_visibility.PRNs_visibility(prn_lst=dfObsTab.PRN.unique(),
+                                                      DTG_start=dTab['time']['start'],
+                                                      DTG_end=dTab['time']['end'],
+                                                      interval=dTab['time']['interval'],
+                                                      cutoff=dTab['cli']['mask'],
+                                                      logger=logger)
 
     amutils.logHeadTailDataFrame(df=dfObsTab, dfName='dfObsTab', callerName=cFuncName, logger=logger)
-    amutils.logHeadTailDataFrame(df=dfTLE, dfName='dfTLE', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfTLEVis, dfName='dfTLEVis', callerName=cFuncName, logger=logger)
 
     # read the jamming scenario into a dataframe
     if dTab['cli']['jamsc'] is not None:
@@ -561,7 +572,9 @@ def main_obstab_analyse(argv):
     else:
         df_JamSc = pd.DataFrame(columns=['DATE_TIME', 'Signal [dBm]', 'Jammer [dBm]', 'SINR [dB]'])
 
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
+    logger.info('{func:s}: Project information =\n{json!s}'
+                .format(func=cFuncName,
+                        json=json.dumps(dTab, sort_keys=False, indent=4, default=amutils.json_convertor)))
 
     # list with observable types per navigation signal
     lst_navsig_obst = {}
@@ -605,7 +618,7 @@ def main_obstab_analyse(argv):
         dfPRNEvol.reset_index(drop=True, inplace=True)
         # print('dfPRNEvol = \n{}'.format(dfPRNEvol))
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            # print(dfPRNEvol)
+        # print(dfPRNEvol)
 
         # create lists with DateTimes of loss / reacquisition of PNT
         dTab['PNT'][navsig] = pnt_available(dfPrnEvol=dfPRNEvol,
@@ -622,7 +635,7 @@ def main_obstab_analyse(argv):
                                                                              navsig_name=navsig_name,
                                                                              lst_PRNs=dTab['lst_CmnPRNs'],
                                                                              dfNavSig=dfNavSig,
-                                                                             dfTle=dfTLE,
+                                                                             dfTleVis=dfTLEVis,
                                                                              logger=logger,
                                                                              show_plot=show_plot)
 
@@ -639,7 +652,7 @@ def main_obstab_analyse(argv):
                                                                           dfNavSigPRNcnt=dfNavSigPRNCount,
                                                                           navsig_obst_lst=lst_navsig_obst[navsig],
                                                                           dfJam=df_JamSc,
-                                                                          dfTle=dfTLE,
+                                                                          dfTleVis=dfTLEVis,
                                                                           logger=logger,
                                                                           show_plot=show_plot)
 
@@ -647,7 +660,7 @@ def main_obstab_analyse(argv):
 
             # print('\nPRN = {} {}'.format(prn, navsig_name))
             # select the TLE row for this PRN
-            dfTLEPrn = dfTLE.loc[prn]
+            dfTLEVisPrn = dfTLEVis.loc[prn]
 
             # select the TLE row for this PRN
             dfNavSigPRN = dfNavSig[dfNavSig['PRN'] == prn].dropna()
@@ -658,8 +671,9 @@ def main_obstab_analyse(argv):
                                                             obstabf=dTab['obstabf'],
                                                             navsig_name=navsig_name,
                                                             dTime=dTab['time'],
+                                                            dfTles=dfTLEs,
                                                             prn=prn,
-                                                            dfPrnTle=dfTLEPrn,
+                                                            dfPrnVisTle=dfTLEVisPrn,
                                                             dfPrnNavSig=dfNavSigPRN,
                                                             dfJamSc=df_JamSc,
                                                             navsig_obst_lst=lst_navsig_obst[navsig],
@@ -692,7 +706,7 @@ def main_obstab_analyse(argv):
                                                          lst_PRNs=dTab['lst_CmnPRNs'],
                                                          lst_NavSignals=dTab['nav_signals'],
                                                          lst_ObsFreqs=dTab['obsfreqs'],
-                                                         dfTle=dfTLE)
+                                                         dfTle=dfTLEVis)
     ssec_tleobs = ltx_rnxobs_reporting.obstab_tleobs_overview(dInfo=dTab['info'],
                                                               navsigs=dTab['nav_signals'],
                                                               navsig_plts=dTab['plots'],

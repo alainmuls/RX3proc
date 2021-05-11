@@ -22,7 +22,7 @@ def tle_plot_arcs(marker: str,
                   obsf: str,
                   lst_PRNs: list,
                   dfTabObs: pd.DataFrame,
-                  dfTle: pd.DataFrame,
+                  dfTleVis: pd.DataFrame,
                   dTime: dict,
                   show_plot: bool = False, logger: logging.Logger = None):
     """
@@ -36,7 +36,7 @@ def tle_plot_arcs(marker: str,
     # find minimum time for tle_rise and maximum time for tle_set columns
     dt_rise = []
     dt_set = []
-    for j, (t_rise, t_set) in enumerate(zip(dfTle.tle_rise, dfTle.tle_set)):
+    for j, (t_rise, t_set) in enumerate(zip(dfTleVis.tle_rise, dfTleVis.tle_set)):
         if len(t_rise) > 0:
             dt_rise.append(t_rise[0])
         if len(t_set) > 0:
@@ -50,8 +50,8 @@ def tle_plot_arcs(marker: str,
                                                                           end=dt_max.strftime('%H:%M:%S'),
                                                                           func=cFuncName))
 
-    gnss_id = dfTle.index.to_list()[0][0]
-    y_prns = [int(prn[1:]) + 1 for prn in dfTle.index.to_list()]
+    gnss_id = dfTleVis.index.to_list()[0][0]
+    y_prns = [int(prn[1:]) + 1 for prn in dfTleVis.index.to_list()]
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -61,7 +61,7 @@ def tle_plot_arcs(marker: str,
     # get the date of this observation to combine with rise and set times
     cur_date = dTime['date'].date()
 
-    for y_prn, prn_color, (prn, tle_prn) in zip(y_prns, prn_colors, dfTle.iterrows()):
+    for y_prn, prn_color, (prn, tle_prn) in zip(y_prns, prn_colors, dfTleVis.iterrows()):
         for tle_rise, tle_set in zip(tle_prn.tle_rise, tle_prn.tle_set):
             ax.plot_date(y=[y_prn, y_prn],
                          x=[dt.datetime.combine(cur_date, tle_rise),
@@ -122,7 +122,7 @@ def tle_plot_arcs(marker: str,
     tick_labels = []
     for i in np.arange(0, y_prns[-1]):
         tick_prn = '{gnss:s}{prn:02d}'.format(gnss=gnss_id, prn=i)
-        if tick_prn in dfTle.index.to_list():
+        if tick_prn in dfTleVis.index.to_list():
             tick_labels.append(tick_prn)
         else:
             tick_labels.append('')
@@ -412,7 +412,7 @@ def obstle_plot_arcs_prns(marker: str,
                           navsig_name: str,
                           lst_PRNs: list,
                           dfNavSig: pd.DataFrame,
-                          dfTle: pd.DataFrame,
+                          dfTleVis: pd.DataFrame,
                           show_plot: bool = False,
                           logger: logging.Logger = None) -> str:
     """
@@ -425,7 +425,7 @@ def obstle_plot_arcs_prns(marker: str,
 
     # get min and max times according the observation smade
     amutils.logHeadTailDataFrame(df=dfNavSig, dfName='dfNavSig', callerName=cFuncName, logger=logger)
-    amutils.logHeadTailDataFrame(df=dfTle, dfName='dfTle', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfTleVis, dfName='dfTleVis', callerName=cFuncName, logger=logger)
 
     # create colormap with 36 discrete colors
     max_prn = 36
@@ -448,13 +448,13 @@ def obstle_plot_arcs_prns(marker: str,
         y_prn = int(prn[1:]) - 1
 
         # get the lists with rise / set times as observed
-        # for dt_obs_rise, dt_obs_set in zip(dfTle.loc[prn]['obs_rise'], dfTle.loc[prn]['obs_set']):
+        # for dt_obs_rise, dt_obs_set in zip(dfTleVis.loc[prn]['obs_rise'], dfTleVis.loc[prn]['obs_set']):
         #     ax.plot_date([dt_obs_rise, dt_obs_set], [y_prn, y_prn], linestyle='solid', color=prn_colors[y_prn], linewidth=2, marker='v', markersize=4, alpha=1)
 
         # get the lists with rise / set times by TLEs
-        for tle_rise, tle_set, tle_cul in zip(dfTle.loc[prn]['tle_rise'],
-                                              dfTle.loc[prn]['tle_set'],
-                                              dfTle.loc[prn]['tle_cul']):
+        for tle_rise, tle_set, tle_cul in zip(dfTleVis.loc[prn]['tle_rise'],
+                                              dfTleVis.loc[prn]['tle_set'],
+                                              dfTleVis.loc[prn]['tle_cul']):
             ax.plot_date([dt.datetime.combine(dfNavSig.DATE_TIME.iloc[0], tle_rise),
                           dt.datetime.combine(dfNavSig.DATE_TIME.iloc[0], tle_set)],
                          [y_prn, y_prn],
@@ -516,10 +516,10 @@ def obstle_plot_arcs_prns(marker: str,
     prn_ticks = [''] * max_prn
 
     # get list of observed PRN numbers (without satsyst letter)
-    prn_nrs = [int(prn[1:]) for prn in dfTle.index]
+    prn_nrs = [int(prn[1:]) for prn in dfTleVis.index]
 
     # and the corresponding ticks
-    for prn_nr, prn_txt in zip(prn_nrs, dfTle.index):
+    for prn_nr, prn_txt in zip(prn_nrs, dfTleVis.index):
         prn_ticks[prn_nr - 1] = prn_txt
     # ax.yaxis.set_major_locator(mticker.FixedLocator(prn_ticks))
 
@@ -556,7 +556,8 @@ def plot_prn_navsig_obs(marker: str,
                         obsf: str,
                         prn: str,
                         dfPrnObst: pd.DataFrame,
-                        dfTlePrn: pd.DataFrame,
+                        dfTleVisPrn: pd.DataFrame,
+                        df_PRNElev: pd.DataFrame,
                         dfJam: pd.DataFrame,
                         obst: str,
                         posidx_gaps: list,
@@ -569,6 +570,9 @@ def plot_prn_navsig_obs(marker: str,
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     amutils.logHeadTailDataFrame(df=dfPrnObst, dfName='dfPrnObst', callerName=cFuncName, logger=logger)
+    amutils.logHeadTailDataFrame(df=dfTleVisPrn, dfName='dfTleVisPrn', callerName=cFuncName, logger=logger)
+
+    # sys.exit(98)
 
     # used markers
     lst_markers = ['o', 'x', '+', '.', ',', 'v', '^', '<', '>', 's', 'd']
@@ -618,7 +622,7 @@ def plot_prn_navsig_obs(marker: str,
         axJam.set_ylabel('SINR [dB]')
 
     # read in the timings for the TLE of this PRN
-    for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
+    for tle_rise, tle_set, tle_cul in zip(dfTleVisPrn['tle_rise'], dfTleVisPrn['tle_set'], dfTleVisPrn['tle_cul']):
         axTLE.plot_date([dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_rise),
                          dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_set)],
                         [1, 1],
@@ -629,6 +633,17 @@ def plot_prn_navsig_obs(marker: str,
             axTLE.plot(dt.datetime.combine(dfPrnObst.DATE_TIME.iloc[0], tle_cul),
                        1,
                        marker='v', markersize=14)
+
+    # print the elevation values at the according time
+    # ax.text(x=x_text_annotation, y=670000, s='Holiday in US', alpha=0.7, color='#334f8d')
+    for ind in df_PRNElev.index:
+        axTLE.text(x=df_PRNElev.loc[ind].DATE_TIME,
+                   y=1,
+                   s=df_PRNElev.loc[ind].elevation,
+                   fontsize='x-small',
+                   horizontalalignment='center',
+                   fontweight='heavy',
+                   rotation='vertical')
 
     # create title
     fig.suptitle('{marker:s}: {obst:s} for {prn:s} @ {dt:s} ({yyyy:04d}/{doy:03d})'.format(marker=marker, obst=obst, prn=prn, dt=dTime['date'].strftime('%d/%m/%Y'), yyyy=dTime['YYYY'], doy=dTime['DOY']))
@@ -705,7 +720,7 @@ def obstle_plot_gnss_obst(marker: str,
                           dfNavSigPRNcnt: pd.DataFrame,
                           navsig_obst_lst: list,
                           dfJam: pd.DataFrame,
-                          dfTle: pd.DataFrame,
+                          dfTleVis: pd.DataFrame,
                           show_plot: bool = False,
                           logger: logging.Logger = None) -> dict:
     """
@@ -744,7 +759,7 @@ def obstle_plot_gnss_obst(marker: str,
                         color=prn_color, label=prn)
 
             # read in the timings for the TLE of this PRN
-            dfTlePrn = dfTle.loc[prn]
+            dfTlePrn = dfTleVis.loc[prn]
             iPRN = int(prn[1:])
             for tle_rise, tle_set, tle_cul in zip(dfTlePrn['tle_rise'], dfTlePrn['tle_set'], dfTlePrn['tle_cul']):
                 # print('prn = {}'.format(prn))
