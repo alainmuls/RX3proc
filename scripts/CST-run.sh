@@ -31,3 +31,7 @@ obsstat_analyse.py --obsstat ~/RxTURP/RFI-20349/CST/rnx/20349/SEPT00BEL_R_202034
 obstab_analyse.py  --freqs 1 --cutoff 0 --snr_th 2.5 --obstypes S  --jamsc ~/RxTURP/RFI-20349/CST/CST-jamming.csv --obstab ~/RxTURP/RFI-20349/CST/rnx/20349/SEPT00BEL_R_20203491400_30M_01S_MO_E.obstab --prns E00 --plot --elev_step 1
 obstab_analyse.py  --freqs 1 --cutoff 0 --snr_th 2.5 --obstypes S  --jamsc ~/RxTURP/RFI-20349/CST/CST-jamming.csv --obstab ~/RxTURP/RFI-20349/CST/rnx/20349/SEPT00BEL_R_20203491400_30M_01S_MO_G.obstab --prns G00 --plot --elev_step 1
 
+obstab_analyse.py  --freqs 1 6 --cutoff 0 --snr_th 2.5 --obstypes S  --jamsc ~/RxTURP/RFI-20349/CST/CST-jamming.csv --obstab ~/RxTURP/RFI-20349/CST/rnx/20349/TURX00BEL_R_20203491400_30M_01S_MO_E.obstab --prns E00 --plot --elev_step=1
+
+obstab_analyse.py  --freqs 1 --cutoff 0 --snr_th 2.5 --obstypes S --prns G00  --jamsc ~/RxTURP/RFI-20349/CST/CST-jamming.csv --obstab ~/RxTURP/RFI-20349/CST/rnx/20349/P3RS04BEL_R_20203490000_01D_00U_MO_G.obstab --plot --elev_step 1
+ obstab_analyse.py  --freqs 1 6 --cutoff 0 --snr_th 2.5 --obstypes S --prns E00  --jamsc ~/RxTURP/RFI-20349/CST/CST-jamming.csv --obstab ~/RxTURP/RFI-20349/CST/rnx/20349/P3RS04BEL_R_20203490000_01D_00U_MO_E.obstab --plot --elev_step 1
