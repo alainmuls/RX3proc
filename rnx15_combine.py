@@ -80,7 +80,8 @@ def list_rinex_files(logger: logging.Logger) -> Union[list, list]:
     return lst_obsf, lst_nav
 
 
-def check_obstypes_order(lst_obsf: list, logger: logging.Logger = None) -> bool:
+def check_obstypes_order(lst_obsf: list,
+                         logger: logging.Logger = None) -> bool:
     """
     check_obstypes_order checks whether the RINEX OBS has the same order for the observable types
     """
@@ -109,7 +110,9 @@ def check_obstypes_order(lst_obsf: list, logger: logging.Logger = None) -> bool:
     return ret_value
 
 
-def combine_rnx_obs(lst_obsf: list, ext: str, logger: logging.Logger) -> str:
+def combine_rnx_obs(lst_obsf: list,
+                    ext: str,
+                    logger: logging.Logger) -> str:
     """
     combine_rnx_obs combines the found observation files
     """
@@ -200,7 +203,9 @@ def combine_rnx_obs(lst_obsf: list, ext: str, logger: logging.Logger) -> str:
     return tmp_obsf
 
 
-def create_crux_file(crux_tmpl: str, marker: str, logger: logging.Logger = None):
+def create_crux_file(crux_tmpl: str,
+                     marker: str,
+                     logger: logging.Logger = None):
     """
     create_crux_file creates the crux file used to correct the RINEX headers
     """
@@ -218,7 +223,15 @@ def create_crux_file(crux_tmpl: str, marker: str, logger: logging.Logger = None)
     return tmp_cruxf.name
 
 
-def convert_obsrnx3(gfzrnx: str, rnxf_tmp: str, cruxf: str, rnxdir: str, yyyy: int, doy: int, start_ep: str, end_ep: str, logger: logging.Logger = None) -> str:
+def convert_obsrnx3(gfzrnx: str,
+                    rnxf_tmp: str,
+                    cruxf: str,
+                    rnxdir: str,
+                    yyyy: int,
+                    doy: int,
+                    start_ep: str,
+                    end_ep: str,
+                    logger: logging.Logger = None) -> str:
     """
     convert_obsrnx3 updates the observation header file and converts to ::RX3::
     """
@@ -264,7 +277,8 @@ def convert_obsrnx3(gfzrnx: str, rnxf_tmp: str, cruxf: str, rnxdir: str, yyyy: i
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=args4gfzrnx, logger=logger)
     if err_code != amc.E_SUCCESS:
         if logger is not None:
-            logger.error('{func:s}: error {err!s} converting {obsf:s} to RINEX observation ::RX3::'.format(err=err_code, obsf=rnxf_tmp, func=cFuncName))
+            logger.error('{func:s}: error {err!s} converting {obsf:s} to RINEX observation ::RX3::'
+                         .format(err=err_code, obsf=rnxf_tmp, func=cFuncName))
         sys.exit(err_code)
     else:
         if (len(proc_out.strip()) > 0) and (logger is not None):
@@ -273,7 +287,11 @@ def convert_obsrnx3(gfzrnx: str, rnxf_tmp: str, cruxf: str, rnxdir: str, yyyy: i
     return rnx3f
 
 
-def convert_navrnx3(gfzrnx: str, rnxf_tmp: str, cruxf: str, rnxdir: str, logger: logging.Logger = None) -> str:
+def convert_navrnx3(gfzrnx: str,
+                    rnxf_tmp: str,
+                    cruxf: str,
+                    rnxdir: str,
+                    logger: logging.Logger = None) -> str:
     """
     convert_navrnx3 updates the navigation file and converts to ::RX3::
     """
@@ -296,7 +314,8 @@ def convert_navrnx3(gfzrnx: str, rnxf_tmp: str, cruxf: str, rnxdir: str, logger:
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=args4gfzrnx, logger=logger)
     if err_code != amc.E_SUCCESS:
         if logger is not None:
-            logger.error('{func:s}: error {err!s} converting {navf:s} to RINEX navigation ::RX3::'.format(err=err_code, navf=rnxf_tmp, func=cFuncName))
+            logger.error('{func:s}: error {err!s} converting {navf:s} to RINEX navigation ::RX3::'
+                         .format(err=err_code, navf=rnxf_tmp, func=cFuncName))
         sys.exit(err_code)
     else:
         if (len(proc_out.strip()) > 0) and (logger is not None):
@@ -337,7 +356,8 @@ def main_combine_rnx15(argv):
     # change to rinex directory
     path = pathlib.Path(dRnx['cli']['from_dir'])
     if not path.is_dir():
-        logger.info('{func:s}: P3RS2 RINEX directory {rnxd:s} does not exist'.format(rnxd=colored(dRnx['cli']['from_dir'], 'red'), func=cFuncName))
+        logger.info('{func:s}: P3RS2 RINEX directory {rnxd:s} does not exist'
+                    .format(rnxd=colored(dRnx['cli']['from_dir'], 'red'), func=cFuncName))
         return amc.E_DIR_NOT_EXIST
     else:  # change to directory
         os.chdir(path)

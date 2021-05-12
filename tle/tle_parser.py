@@ -18,7 +18,7 @@ __author__ = 'amuls'
 
 def read_norad2prn(logger: logging.Logger) -> pd.DataFrame:
     """
-    read_norad2prn reads the files NORAD-PRN.t and gps-ops-NORAD-PRN.t from dir ~/RxTURP/BEGPIOS/tle/cmb connecting NORAD number to PRN (period 2018-2020)
+    read_norad2prn reads the files gnss-NORAD-PRN.t from dir ~/RxTURP/BEGPIOS/tle/cmb connecting NORAD number to PRN (period 2018-2020)
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 

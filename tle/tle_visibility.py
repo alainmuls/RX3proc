@@ -169,56 +169,60 @@ def prn_elevation(prn: str,
     # print('elev_t1 = {}'.format(elev_t1))
 
     # create a EarthSatellites from the TLE lines for this PRN
-    gnss_sv = EarthSatellite(df_tle_prn.iloc[0]['TLE1'], df_tle_prn.iloc[0]['TLE2'])
-    # print('gnss_sv = {}'.format(gnss_sv))
+    if len(df_tle_prn.index) != 0:
+        gnss_sv = EarthSatellite(df_tle_prn.iloc[0]['TLE1'], df_tle_prn.iloc[0]['TLE2'])
+        # print('gnss_sv = {}'.format(gnss_sv))
 
-    # keep list of events for elevation
-    data_elev = []
+        # keep list of events for elevation
+        data_elev = []
 
-    for elev in range(0, 90, elev_step):
-        ti, elev_events = gnss_sv.find_events(RMA, elev_t0, elev_t1, altitude_degrees=elev)
-        # print('{}: {} {} {}'.format(elev, elev_events, elev_events.size, type(elev_events)))
-        if elev_events.size > 0 and (0 in elev_events or 2 in elev_events):
-            # print('HERE {} @ {} elev_events {}: \n{}'.format(prn, elev, elev_events, ti.utc_datetime()))
+        for elev in range(0, 90, elev_step):
+            ti, elev_events = gnss_sv.find_events(RMA, elev_t0, elev_t1, altitude_degrees=elev)
+            # print('{}: {} {} {}'.format(elev, elev_events, elev_events.size, type(elev_events)))
+            if elev_events.size > 0 and (0 in elev_events or 2 in elev_events):
+                # print('HERE {} @ {} elev_events {}: \n{}'.format(prn, elev, elev_events, ti.utc_datetime()))
 
-            # find the times for rising above elev angle
-            idx_rises = np.where(elev_events == 0)
-            # print('idx_rises = {}'.format(idx_rises))
-            for idx_rise in idx_rises[0]:
-                # print('idx_rise = {}'.format(idx_rise))
-                # t_rise = ti[idx_rise].utc_datetime()
-                t_rise = ti[idx_rise].utc_datetime().time().replace(microsecond=0)
-                # print('t_rise = {}'.format(t_rise))
+                # find the times for rising above elev angle
+                idx_rises = np.where(elev_events == 0)
+                # print('idx_rises = {}'.format(idx_rises))
+                for idx_rise in idx_rises[0]:
+                    # print('idx_rise = {}'.format(idx_rise))
+                    # t_rise = ti[idx_rise].utc_datetime()
+                    t_rise = ti[idx_rise].utc_datetime().time().replace(microsecond=0)
+                    # print('t_rise = {}'.format(t_rise))
 
-                # if in observation interval, add to df_PRNelev
-                if t0.utc_datetime().time() <= t_rise <= t1.utc_datetime().time():
-                    # print('t_rise of PRN {} above {} degrees at {}'.format(prn, elev, t_rise))
-                    data_elev.append([datetime.combine(DTG_start.date(), t_rise), elev])
+                    # if in observation interval, add to df_PRNelev
+                    if t0.utc_datetime().time() <= t_rise <= t1.utc_datetime().time():
+                        # print('t_rise of PRN {} above {} degrees at {}'.format(prn, elev, t_rise))
+                        data_elev.append([datetime.combine(DTG_start.date(), t_rise), elev])
 
-            # find the times for rising above elev angle
-            idx_sets = np.where(elev_events == 2)
-            # print('idx_sets = {}'.format(idx_sets))
-            for idx_set in idx_sets[0]:
-                # print('idx_set = {}'.format(idx_set))
-                # t_set = ti[idx_set].utc_datetime()
-                t_set = ti[idx_set].utc_datetime().time().replace(microsecond=0)
-                # print('t_set = {}'.format(t_set))
+                # find the times for rising above elev angle
+                idx_sets = np.where(elev_events == 2)
+                # print('idx_sets = {}'.format(idx_sets))
+                for idx_set in idx_sets[0]:
+                    # print('idx_set = {}'.format(idx_set))
+                    # t_set = ti[idx_set].utc_datetime()
+                    t_set = ti[idx_set].utc_datetime().time().replace(microsecond=0)
+                    # print('t_set = {}'.format(t_set))
 
-                if t0.utc_datetime().time() <= t_set <= t1.utc_datetime().time():
-                    # print('t_set of PRN {} below {} degrees at {}'.format(prn, elev, t_set))
-                    data_elev.append([datetime.combine(DTG_start.date(), t_set), elev])
+                    if t0.utc_datetime().time() <= t_set <= t1.utc_datetime().time():
+                        # print('t_set of PRN {} below {} degrees at {}'.format(prn, elev, t_set))
+                        data_elev.append([datetime.combine(DTG_start.date(), t_set), elev])
 
-        # svrise, svset, svcul, tle_count = tle_parser.tle_rise_set_times(prn=prn,
-        #                                                                 df_tle=df_tles,
-        #                                                                 marker=RMA,
-        #                                                                 t0=t0,
-        #                                                                 t1=t1,
-        #                                                                 elev_min=elev,
-        #                                                                 obs_int=1,
-        #                                                                 logger=logger)
-        # print('this {} @ {}: {} {} {}'.format(prn, elev, svrise, svcul, svset))
+            # svrise, svset, svcul, tle_count = tle_parser.tle_rise_set_times(prn=prn,
+            #                                                                 df_tle=df_tles,
+            #                                                                 marker=RMA,
+            #                                                                 t0=t0,
+            #                                                                 t1=t1,
+            #                                                                 elev_min=elev,
+            #                                                                 obs_int=1,
+            #                                                                 logger=logger)
+            # print('this {} @ {}: {} {} {}'.format(prn, elev, svrise, svcul, svset))
 
-    # create dataframe containing the DATE_TIME at which time a elevation angle is reached
-    df_PRNelev = pd.DataFrame(data_elev, columns=['DATE_TIME', 'elevation'])
+        # create dataframe containing the DATE_TIME at which time a elevation angle is reached
+        df_PRNelev = pd.DataFrame(data_elev, columns=['DATE_TIME', 'elevation'])
+
+    else:  # create empty dataframe
+        df_PRNelev = pd.DataFrame(columns=['DATE_TIME', 'elevation'])
 
     return df_PRNelev

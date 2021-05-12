@@ -28,7 +28,7 @@ lst_freqs = ['1', '2', '5', '6']
 lst_MARKER_TYPES = ['STATIC', 'MOVING']
 
 # crux templates
-crux_tmpl = path.expanduser('~/amPython/RX3proc/gfzrnx/P3RS2-obs.crux')
+crux_tmpl = path.expanduser('~/amPython/rnx3proc/gfzrnx/P3RS2-obs.crux')
 
 # identification of the navigation entries read by georinex
 
