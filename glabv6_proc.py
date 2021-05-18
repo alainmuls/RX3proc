@@ -7,77 +7,14 @@ from termcolor import colored
 import json
 import logging
 import pathlib
-from shutil import move
 from string import Template
 
-import am_config as amc
-from ampyutils import amutils, location, exeprogram
+from ampyutils import am_config as amc
+from gfzrnx import gfzrnx_constants as gfzc
+from ampyutils import amutils, location
+from ampyutils import gnss_cmd_opts as gco
 
 __author__ = 'amuls'
-
-
-lst_rnx_id = ['COMB', 'GPRS']
-lst_gnsss = ['E', 'G']
-lst_prcodes = ['C1C', 'C1W', 'C2L', 'C2W', 'C2W', 'C5Q', 'C1A', 'C6A']
-
-lst_rxtypes = ['ASTX', 'BEGP']
-dir_igs = os.path.join(os.path.expanduser("~"), 'RxTURP/BEGPIOS/igs')
-
-lst_logging_choices = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
-
-glab_template = os.path.join(os.path.expanduser("~"), 'RxTURP/BEGPIOS', 'glab_kinematic.tmpl')
-
-
-class logging_action(argparse.Action):
-    def __call__(self, parser, namespace, log_actions, option_string=None):
-        for log_action in log_actions:
-            if log_action not in lst_logging_choices:
-                raise argparse.ArgumentError(self, "log_actions must be in {logoptions!s}".format(logoptions='|'.join(lst_logging_choices)))
-        setattr(namespace, self.dest, log_actions)
-
-
-class doy_action(argparse.Action):
-    def __call__(self, parser, namespace, doy, option_string=None):
-        if doy not in range(1, 366):
-            raise argparse.ArgumentError(self, "day-of-year must be in [1...366]")
-        setattr(namespace, self.dest, doy)
-
-
-class rxtype_action(argparse.Action):
-    def __call__(self, parser, namespace, rxtype, option_string=None):
-        if rxtype not in lst_rxtypes:
-            raise argparse.ArgumentError(self, 'rxtype is one of {rxtypes:s}'.format(rxtypes='|'.join(lst_rxtypes)))
-        setattr(namespace, self.dest, rxtype)
-
-
-class marker_action(argparse.Action):
-    def __call__(self, parser, namespace, marker, option_string=None):
-        if marker not in lst_rnx_id:
-            raise argparse.ArgumentError(self, 'marker is one of {markers:s}'.format(markers='|'.join(lst_rnx_id)))
-        setattr(namespace, self.dest, marker)
-
-
-class gnss_action(argparse.Action):
-    def __call__(self, parser, namespace, gnsss, option_string=None):
-        for gnss in gnsss:
-            if gnss not in lst_gnsss:
-                raise argparse.ArgumentError(self, 'select GNSS(s) out of {gnsss:s}'.format(gnsss='|'.join(lst_gnsss)))
-        setattr(namespace, self.dest, gnsss)
-
-
-class cutoff_action(argparse.Action):
-    def __call__(self, parser, namespace, cutoff, option_string=None):
-        if cutoff not in range(0, 90):
-            raise argparse.ArgumentError(self, 'cutoff must be within [0..90] degrees')
-        setattr(namespace, self.dest, cutoff)
-
-
-class prcode_action(argparse.Action):
-    def __call__(self, parser, namespace, prcodes, option_string=None):
-        for prcode in prcodes:
-            if prcode not in lst_prcodes:
-                raise argparse.ArgumentError(self, 'prcode is one of {prcodes:s}'.format(prcodes='|'.join(lst_prcodes)))
-        setattr(namespace, self.dest, prcodes)
 
 
 def treatCmdOpts(argv):
@@ -90,33 +27,59 @@ def treatCmdOpts(argv):
     baseName = os.path.basename(__file__)
     amc.cBaseName = colored(baseName, 'yellow')
 
-    helpTxt = amc.cBaseName + ' processes gLAB (v6) receiver position based on a template configuration file'
+    helpTxt = amc.cBaseName + ' gLAB (v6) processing of receiver position based on a template configuration file'
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
-    parser.add_argument('-i', '--igsdir', help='Root IGS directory (default {igs:s}))'.format(igs=colored(dir_igs, 'green')), required=False, type=str, default=dir_igs)
+    parser.add_argument('--igsdir', help='Root IGS directory (default {igs:s}))'
+                                         .format(igs=colored(gco.dir_igs, 'green')),
+                        required=False,
+                        type=str,
+                        default=gco.dir_igs)
 
-    parser.add_argument('-r', '--rxtype', help='Receiver type (one of {choices:s} (default {choice:s}))'.format(choices='|'.join(lst_rxtypes), choice=colored(lst_rxtypes[0], 'green')), default=lst_rxtypes[0], required=False, type=str, action=rxtype_action)
-    parser.add_argument('-m', '--marker', help='marker name (4 chars, one of {markers:s}, default {marker:s})'.format(markers='|'.join(lst_rnx_id), marker=colored(lst_rnx_id[0], 'green')), type=str, required=False, default=lst_rnx_id[0], action=marker_action)
+    parser.add_argument('--year', help='Year (4 digits)',
+                        required=True, type=int,
+                        action=gco.year_action)
 
-    parser.add_argument('-y', '--year', help='Year (4 digits)', required=True, type=int)
-    parser.add_argument('-d', '--doy', help='day-of-year [1..366]', required=True, type=int, action=doy_action)
+    parser.add_argument('--doy', help='day-of-year [1..366]',
+                        required=True, type=int,
+                        action=gco.doy_action)
 
-    parser.add_argument('-g', '--gnss', help='select GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'.format(gnsss='|'.join(lst_gnsss), gnss=colored(lst_gnsss[0], 'green')), default=lst_gnsss[0], type=str, required=False, action=gnss_action, nargs='+')
+    parser.add_argument('--gnss', help='select GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'
+                                       .format(gnsss='|'.join(gfzc.lst_GNSSs),
+                                               gnss=colored(gfzc.lst_GNSSs[0], 'green')),
+                        default=gfzc.lst_GNSSs[0],
+                        type=str,
+                        required=False,
+                        action=gco.gnss_action,
+                        nargs='+')
 
-    parser.add_argument('-p', '--prcodes', help='select from {prcodes:s} (default to {prcode:s})'.format(prcodes='|'.join(lst_prcodes), prcode=colored(lst_prcodes[0], 'green')), required=False, type=str, default=lst_prcodes[0], action=prcode_action, nargs='+')
+    parser.add_argument('--cutoff', help='cutoff angle (default {cutoff:s})'
+                                         .format(cutoff=colored('5 deg', 'green')),
+                        required=False,
+                        default=5,
+                        type=int,
+                        action=gco.cutoff_action)
 
-    parser.add_argument('-c', '--cutoff', help='cutoff angle (default {cutoff:s})'.format(cutoff=colored('5 deg', 'green')), required=False, default=5, type=int, action=cutoff_action)
+    parser.add_argument('--template', help='glab template file (out of {tmpls:s}, default {tmpl:s})'
+                                           .format(tmpls='|'.join(gco.dGLab_tmpls.values()),
+                                                   tmpl=colored(gco.dGLab_tmpls['kin'], 'green')),
+                        required=False,
+                        type=str,
+                        default=gco.dGLab_tmpls['kin'])
 
-    parser.add_argument('-t', '--template', help='glab template file (default {tmpl:s})'.format(tmpl=colored(glab_template, 'green')), required=False, type=str, default=glab_template)
-
-    parser.add_argument('-l', '--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(lst_logging_choices), choice=colored(' '.join(lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=lst_logging_choices[3:5], action=logging_action)
+    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'
+                                          .format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')),
+                        nargs=2,
+                        required=False,
+                        default=gco.lst_logging_choices[3:5],
+                        action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv[1:])
 
     # return arguments
-    return args.rxtype, args.igsdir, args.marker, args.year, args.doy, args.gnss, args.prcodes, args.cutoff, args.template, args.logging
+    return args.igsdir, args.year, args.doy, args.gnss, args.cutoff, args.template, args.logging
 
 
 def check_arguments(logger: logging.Logger) -> int:
@@ -177,63 +140,6 @@ def check_arguments(logger: logging.Logger) -> int:
     amc.dRTK['proc']['glab_cfg'] = amc.dRTK['proc']['glab_out'][:-3] + 'cfg'
 
     return amc.E_SUCCESS
-
-
-def uncompress_rnx_files(logger: logging.Logger):
-    """
-    uncompress_rnx_files uncompresses RINEX OBS & NAV files
-    """
-    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
-
-    # uncompress the RINEX OBS file
-    runCRZ2RNX = '{prog:s} -f {crz:s}'.format(prog=amc.dRTK['progs']['crz2rnx'], crz=os.path.join(amc.dRTK['proc']['dir_rnx'], amc.dRTK['proc']['cmp_obs']))
-    logger.info('{func:s}: Running:\n{cmd:s}'.format(func=cFuncName, cmd=colored(runCRZ2RNX, 'green')))
-
-    # run the program
-    exeprogram.subProcessDisplayStdErr(cmd=runCRZ2RNX, verbose=True)
-
-    # get name of uncompressed file
-    amc.dRTK['proc']['obs'] = amc.dRTK['proc']['cmp_obs'][:-3] + 'O'
-
-    # check if this decompressed file exists
-    path = pathlib.Path(os.path.join(amc.dRTK['proc']['dir_rnx'], amc.dRTK['proc']['obs']))
-    if not path.is_file():
-        logger.info('{func:s}: Failed creating decompressed RINEX observation file {obs:s}'.format(obs=colored(amc.dRTK['proc']['obs'], 'green'), func=cFuncName))
-
-    # decompress allnavigation files
-    amc.dRTK['proc']['nav'] = []
-    for cmp_nav in amc.dRTK['proc']['cmp_nav']:
-        runGUNZIP = '{prog:s} -f {zip:s}'.format(prog=amc.dRTK['progs']['gunzip'], zip=os.path.join(amc.dRTK['proc']['dir_igs'], cmp_nav))
-        logger.info('{func:s}: Running:\n{cmd:s}'.format(func=cFuncName, cmd=colored(runGUNZIP, 'green')))
-
-        # run the program
-        exeprogram.subProcessDisplayStdErr(cmd=runGUNZIP, verbose=True)
-
-        # get name of uncompressed file
-        amc.dRTK['proc']['nav'].append(cmp_nav[:-3])
-
-        # check if this decompressed file exists
-        path = pathlib.Path(os.path.join(amc.dRTK['proc']['dir_igs'], amc.dRTK['proc']['nav'][-1]))
-        if not path.is_file():
-            logger.info('{func:s}: Failed creating decompressed RINEX navigation file {nav:s}'.format(nav=colored(amc.dRTK['proc']['nav'], 'green'), func=cFuncName))
-
-
-def cleanup_rnx_files(logger: logging.Logger):
-    """
-    cleanup_rnx_files cleans up the uncompressed RINEX obs & nav files (restoring original state)
-    """
-    cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
-
-    # remove obs rinex file used
-    logger.info('{func:s}: removal of OBS file {obs:s}'.format(obs=amc.dRTK['proc']['obs'], func=cFuncName))
-    os.remove(os.path.join(amc.dRTK['proc']['dir_rnx'], amc.dRTK['proc']['obs']))
-
-    # recompress the navigation files
-    for nav_file in amc.dRTK['proc']['nav']:
-        runGZIP = '{prog:s} -f {zip:s}'.format(prog=amc.dRTK['progs']['gzip'], zip=os.path.join(amc.dRTK['proc']['dir_igs'], nav_file))
-        logger.info('{func:s}: compressing {nav:s} file by:\n{cmd:s}'.format(nav=nav_file, func=cFuncName, cmd=colored(runGZIP, 'green')))
-        # run the program
-        exeprogram.subProcessDisplayStdErr(cmd=runGZIP, verbose=True)
 
 
 def create_session_template(logger: logging.Logger):
@@ -301,7 +207,7 @@ def run_glabng_session(logger: logging.Logger):
     runGZIP
 
 
-def main(argv) -> bool:
+def main_glab_proc(argv) -> bool:
     """
     glabplotposn plots data from gLAB (v6) OUTPUT messages
 
@@ -311,7 +217,7 @@ def main(argv) -> bool:
     # store cli parameters
     amc.dRTK = {}
     cli_opt = {}
-    cli_opt['rxtype'], cli_opt['igs_root'], cli_opt['marker'], cli_opt['year'], cli_opt['doy'], cli_opt['gnss'], cli_opt['prcodes'], cli_opt['cutoff'], cli_opt['template'], log_levels = treatCmdOpts(argv)
+    cli_opt['igs_root'], cli_opt['year'], cli_opt['doy'], cli_opt['gnss'], cli_opt['cutoff'], cli_opt['template'], log_levels = treatCmdOpts(argv)
     amc.dRTK['options'] = cli_opt
 
     # check some arguments
@@ -330,29 +236,23 @@ def main(argv) -> bool:
     amc.dRTK['progs']['gunzip'] = location.locateProg('gunzip', logger)
     amc.dRTK['progs']['gzip'] = location.locateProg('gzip', logger)
 
-    # uncompress RINEX files
-    uncompress_rnx_files(logger=logger)
-
     # use the template file for creation of glab config file
     create_session_template(logger=logger)
 
     # run glabng using created cfg file
     run_glabng_session(logger=logger)
 
-    # remove the decompressed RINEX files
-    cleanup_rnx_files(logger=logger)
-
     # report to the user
     logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(amc.dRTK, sort_keys=False, indent=4, default=amutils.DT_convertor)))
 
-    # move the log file to the glab directory
-    code_txt = ''
-    for code in amc.dRTK['proc']['codes']:
-        code_txt += ('_' + code)
-    move(log_name, os.path.join(amc.dRTK['proc']['dir_glab'], 'glab_proc_{gnss:s}{prcodes:s}.log'.format(gnss=''.join(amc.dRTK['proc']['gnss']), prcodes=code_txt)))
+    # # move the log file to the glab directory
+    # code_txt = ''
+    # for code in amc.dRTK['proc']['codes']:
+    #     code_txt += ('_' + code)
+    # move(log_name, os.path.join(amc.dRTK['proc']['dir_glab'], 'glab_proc_{gnss:s}{prcodes:s}.log'.format(gnss=''.join(amc.dRTK['proc']['gnss']), prcodes=code_txt)))
 
     return amc.E_SUCCESS
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
-    main(sys.argv)
+    main_glab_proc(sys.argv)

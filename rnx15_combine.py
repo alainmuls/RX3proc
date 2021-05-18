@@ -42,18 +42,62 @@ def treatCmdOpts(argv):
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=helpTxt)
-    parser.add_argument('--from_dir', help='Directory of P3RS2 RINEX files (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
-    parser.add_argument('--rnx_dir', help='Root directory of P3RS2 RINEX files (default {:s})'.format(colored(gco.P3RS2RNXDIR, 'green')), required=False, type=str, default=gco.P3RS2RNXDIR)
-    parser.add_argument('--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
-    parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
-    parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
 
-    parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'.format(start=colored('00:00:00', 'green')), required=False, type=str, default='00:00:00', action=gco.epoch_action)
-    parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'.format(end=colored('23:59:59', 'green')), required=False, type=str, default='23:59:59', action=gco.epoch_action)
+    parser.add_argument('--from_dir', help='Directory of P3RS2 RINEX files (default {:s})'
+                                           .format(colored('.', 'green')),
+                        required=False,
+                        type=str,
+                        default='.')
 
-    parser.add_argument('--crux', help='CRUX template file for updating RINEX headers (default {crux:s})'.format(crux=colored(gfzc.crux_tmpl, 'green')), required=False, type=str, default=gfzc.crux_tmpl)
+    parser.add_argument('--rnx_dir', help='Root directory of P3RS2 RINEX files (default {:s})'
+                                          .format(colored(gco.P3RS2RNXDIR, 'green')),
+                        required=False,
+                        type=str,
+                        default=gco.P3RS2RNXDIR)
 
-    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
+    parser.add_argument('--marker', help='marker name (4 chars)',
+                        required=True,
+                        type=str,
+                        action=gco.marker_action)
+
+    parser.add_argument('--year', help='Year (4 digits)',
+                        required=True,
+                        type=int,
+                        action=gco.year_action)
+
+    parser.add_argument('--doy', help='day-of-year [1..366]',
+                        required=True,
+                        type=int,
+                        action=gco.doy_action)
+
+    parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'
+                                             .format(start=colored('00:00:00', 'green')),
+                        required=False,
+                        type=str,
+                        default='00:00:00',
+                        action=gco.epoch_action)
+
+    parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'
+                                           .format(end=colored('23:59:59', 'green')),
+                        required=False,
+                        type=str,
+                        default='23:59:59',
+                        action=gco.epoch_action)
+
+    parser.add_argument('--crux', help='CRUX template file for updating RINEX headers (default {crux:s})'
+                                       .format(crux=colored(gfzc.crux_tmpl, 'green')),
+                        required=False,
+                        type=str,
+                        default=gfzc.crux_tmpl)
+
+    parser.add_argument('--logging',
+                        help='specify logging level console/file (two of {choices:s}, default {choice:s})'
+                             .format(choices='|'.join(gco.lst_logging_choices),
+                                     choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')),
+                        nargs=2,
+                        required=False,
+                        default=gco.lst_logging_choices[3:5],
+                        action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv)
@@ -68,14 +112,22 @@ def list_rinex_files(logger: logging.Logger) -> Union[list, list]:
     """
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
-    file_pattern = 'P3RS-2_RX_R_{year:04d}{doy:03d}*_15M_00U_MO.rnx'.format(year=dRnx['cli']['year'], doy=dRnx['cli']['doy'])
+    file_pattern = 'P3RS-2_RX_R_{year:04d}{doy:03d}*_15M_00U_MO.rnx'
+                    .format(year=dRnx['cli']['year'],
+                            doy=dRnx['cli']['doy'])
     lst_obsf = sorted(glob.glob(file_pattern))
 
-    file_pattern = 'P3RS-2_RX_R_{year:04d}{doy:03d}*_15M_MN.rnx'.format(year=dRnx['cli']['year'], doy=dRnx['cli']['doy'])
+    file_pattern = 'P3RS-2_RX_R_{year:04d}{doy:03d}*_15M_MN.rnx'
+                   .format(year=dRnx['cli']['year'],
+                           doy=dRnx['cli']['doy'])
     lst_nav = sorted(glob.glob(file_pattern))
 
-    logger.info('{func:s}: found {count:d} RINEX observation files'.format(count=len(lst_obsf), func=cFuncName))
-    logger.info('{func:s}: found {count:d} RINEX navigation files'.format(count=len(lst_nav), func=cFuncName))
+    logger.info('{func:s}: found {count:d} RINEX observation files'
+                .format(count=len(lst_obsf),
+                        func=cFuncName))
+    logger.info('{func:s}: found {count:d} RINEX navigation files'
+                .format(count=len(lst_nav),
+                        func=cFuncName))
 
     return lst_obsf, lst_nav
 

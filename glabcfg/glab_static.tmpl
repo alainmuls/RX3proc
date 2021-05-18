@@ -1,0 +1,44 @@
+# INPUT
+-input:obs ${CMP_OBS_FILE}
+-input:nav ${CMP_NAV_FILES}
+
+-input:antsatblock /home/amuls/RxTURP/ngs14.atx
+
+# PREPROCESS
+-pre:elevation ${CUTOFF_ANGLE}
+-pre:sat 0,+${GNSS}0
+
+-pre:setrecpos 4023741.230 309110.534 4922723.243
+	# -pre:starttime 2019/05/14 10:00:00
+	# -pre:endtime 2019/05/14 11:59:59
+
+# FILTER
+-filter:prefitoutliers:median 30  # Set the prefit outlier detector threshold to 30 metres
+
+-filter:select ${GNSS}0-${PRCODES}
+-filter:nav kinematic
+
+-filter:refclkonlyorder ${GNSS}
+-filter:maxpdop 10
+
+-filter:fixedweight ${GNSS}0-${PRCODES} 1
+
+# MODEL
+--model:sathealth
+
+# OUTPUT
+-print:info
+--print:cycleslips
+-print:meas
+-print:filter
+--print:prefit
+--print:postfit
+--print:usererror
+-print:meas:snr
+-print:output
+-print:satsel
+-print:summary
+-print:progress
+-print:model
+-print:sat
+-output:file ${GLAB_OUT}

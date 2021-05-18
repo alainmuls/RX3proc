@@ -12,10 +12,15 @@ P3RS2PVTLSDIR = os.path.expanduser('~/RxTURP/BEGPIOS/P3RS2/LOG/pvt_ls/')
 
 lst_logging_choices = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 lst_intervals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 2., 5., 10., 30., 60.]
-
 lst_MARKER_TYPES = ['STATIC', 'MOVING']
 
 CVSDB_OBSTLE = os.path.join(ROOTDIR, 'obsstat_tle.cvs')
+
+dir_igs = os.path.join(os.path.expanduser("~"), 'RxTURP/BEGPIOS/igs')
+
+dGLab_tmpls = {}
+dGLab_tmpls['kin'] = os.path.join(os.path.expanduser("~"), 'RxTURP/BEGPIOS', 'glab_kinematic.tmpl')
+dGLab_tmpls['stat'] = os.path.join(os.path.expanduser("~"), 'RxTURP/BEGPIOS', 'glab_static.tmpl')
 
 
 class logging_action(argparse.Action):
