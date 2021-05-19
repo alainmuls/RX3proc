@@ -37,28 +37,55 @@ def treatCmdOpts(argv: list):
     # parser.add_argument('-s', '--ubxdir', help='UBX directory (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
     parser.add_argument('--ubxfile', help='Binary UBX file', required=True, type=str)
 
-    parser.add_argument('--rnxdir', help='Directory for RINEX output (default {:s})'.format(colored('.', 'green')), required=False, type=str, default='.')
+    parser.add_argument('--rnxdir', help='Directory for RINEX output (default {:s})'
+                                         .format(colored('.', 'green')),
+                        required=False, type=str, default='.')
 
-    parser.add_argument('--marker', help='marker name (4 chars)', required=True, type=str, action=gco.marker_action)
-    parser.add_argument('--year', help='Year (4 digits)', required=True, type=int, action=gco.year_action)
-    parser.add_argument('--doy', help='day-of-year [1..366]', required=True, type=int, action=gco.doy_action)
+    parser.add_argument('--marker', help='marker name (4 chars)',
+                        required=True, type=str, action=gco.marker_action)
+    parser.add_argument('--year', help='Year (4 digits)',
+                        required=True, type=int, action=gco.year_action)
+    parser.add_argument('--doy', help='day-of-year [1..366]',
+                        required=True, type=int, action=gco.doy_action)
 
-    parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'.format(start=colored('00:00:00', 'green')), required=False, type=str, default='00:00:00', action=gco.epoch_action)
-    parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'.format(end=colored('23:59:59', 'green')), required=False, type=str, default='23:59:59', action=gco.epoch_action)
+    parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'
+                                             .format(start=colored('00:00:00', 'green')),
+                        required=False, type=str, default='00:00:00', action=gco.epoch_action)
+    parser.add_argument('--endepoch', help='specify end epoch hh:mm:ss (default {end:s})'
+                                           .format(end=colored('23:59:59', 'green')),
+                        required=False, type=str, default='23:59:59', action=gco.epoch_action)
 
-    parser.add_argument('--observer', help='observer info (default={})'.format(colored('AMULS RMA-CISS)', 'green')), nargs=2, type=str, default=['AMULS', 'RMA-CISS'], required=False)
-    parser.add_argument('--receiver', help='receiver info (default={})'.format(colored('RX_NR RX_TYPE RX_VER)', 'green')), nargs=3, type=str, default=['RX_NR', 'RX_TYPE', 'RX_VER'], required=False)
-    parser.add_argument('--antenna', help='antenna information (default={})'.format(colored('ANT_NR ANT_TYPE)', 'green')), nargs=2, type=str, default=['ANT_NR', 'ANT_TYPE'], required=False)
-    parser.add_argument('--markertype', help='select one of {mtypes:s} (default to {choice:s})'.format(mtypes='|'.join(gco.lst_MARKER_TYPES), choice=colored(gco.lst_MARKER_TYPES[0], 'green')), required=False, type=str, default=gco.lst_MARKER_TYPES[0])
+    parser.add_argument('--observer', help='observer info (default={})'
+                                           .format(colored('AMULS RMA-CISS)', 'green')),
+                        nargs=2, type=str, default=['AMULS', 'RMA-CISS'],
+                        required=False)
+    parser.add_argument('--receiver', help='receiver info (default={})'
+                                           .format(colored('RX_NR RX_TYPE RX_VER)', 'green')),
+                        nargs=3, type=str, default=['RX_NR', 'RX_TYPE', 'RX_VER'],
+                        required=False)
+    parser.add_argument('--antenna', help='antenna information (default={})'
+                                          .format(colored('ANT_NR ANT_TYPE', 'green')),
+                        nargs=2, type=str, default=['ANT_NR', 'ANT_TYPE'],
+                        required=False)
+    parser.add_argument('--markerno', help='marker number (default={})'
+                                           .format(colored('5', 'green')),
+                        type=int, default=5, required=False)
+    parser.add_argument('--markertype', help='select one of {mtypes:s} (default={choice:s})'
+                                             .format(mtypes='|'.join(gco.lst_MARKER_TYPES),
+                                                     choice=colored(gco.lst_MARKER_TYPES[0], 'green')),
+                        required=False, type=str, default=gco.lst_MARKER_TYPES[0])
 
-    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default {choice:s})'.format(choices='|'.join(gco.lst_logging_choices), choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')), nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
+    parser.add_argument('--logging', help='specify logging level console/file (two of {choices:s}, default={choice:s})'
+                                          .format(choices='|'.join(gco.lst_logging_choices),
+                                                  choice=colored(' '.join(gco.lst_logging_choices[3:5]), 'green')),
+                        nargs=2, required=False, default=gco.lst_logging_choices[3:5], action=gco.logging_action)
 
     # drop argv[0]
     args = parser.parse_args(argv)
 
     # return arguments
     print('args.observer = {}'.format(args.observer))
-    return args.ubxfile, args.rnxdir, args.marker, args.year, args.doy, args.startepoch, args.endepoch, args.observer, args.logging
+    return args.ubxfile, args.rnxdir, args.marker, args.year, args.doy, args.startepoch, args.endepoch, args.observer, args.receiver, args.antenna, args.markerno, args.markertype, args.logging
 
 
 def checkValidityArgs(logger: logging.Logger) -> bool:
@@ -68,7 +95,8 @@ def checkValidityArgs(logger: logging.Logger) -> bool:
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # change to baseDir, everything is relative to this directory
-    logger.info('{func:s}: check existence of ubxDir {root:s}'.format(func=cFuncName, root=dRnx['dirs']['ubx']))
+    logger.info('{func:s}: check existence of ubx directory {root:s}'
+                .format(func=cFuncName, root=dRnx['dirs']['ubx']))
 
     # expand the directories
     for k, v in dRnx['dirs'].items():
@@ -76,17 +104,23 @@ def checkValidityArgs(logger: logging.Logger) -> bool:
 
     # check if SBF dire exists
     if not os.path.exists(dRnx['dirs']['ubx']):
-        logger.error('{func:s}   !!! Dir {basedir:s} does not exist.'.format(func=cFuncName, basedir=dRnx['dirs']['ubx']))
+        logger.error('{func:s}   !!! Dir {basedir:s} does not exist.'.format(func=cFuncName,
+                                                                             basedir=dRnx['dirs']['ubx']))
         return amc.E_INVALID_ARGS
 
     # make the coplete filename by adding to ubxDir and check existence of binary file to convert
-    logger.info('{func:s}: check existence of binary file {bin:s} to convert'.format(func=cFuncName, bin=os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf'])))
+    logger.info('{func:s}: check existence of binary file {bin:s} to convert'
+                .format(func=cFuncName,
+                        bin=os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf'])))
+
     if not os.access(os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']), os.R_OK):
-        logger.error('{func:s}   !!! binary observation file {bin:s} not accessible.'.format(func=cFuncName, bin=dRnx['ubxf']))
+        logger.error('{func:s}   !!! binary observation file {bin:s} not accessible.'
+                     .format(func=cFuncName, bin=dRnx['ubxf']))
         return amc.E_FILE_NOT_EXIST
 
     # check existence of rnxdir and create if needed
-    logger.info('{func:s}: check existence of rnxdir {rinex:s} and create if needed'.format(func=cFuncName, rinex=dRnx['dirs']['rnx']))
+    logger.info('{func:s}: check existence of rnxdir {rinex:s} and create if needed'
+                .format(func=cFuncName, rinex=dRnx['dirs']['rnx']))
     amutils.mkdir_p(dRnx['dirs']['rnx'])
 
     return amc.E_SUCCESS
@@ -109,20 +143,26 @@ def ubx2rinex(logger: logging.Logger) -> list:
 
     # convert to RINEX v3.x format
     # argsCONVBIN = [dRnx['bin']['CONVBIN'], os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
-    argsCONVBIN = ['/usr/bin/convbin', os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
+    argsCONVBIN = [dRnx['bin']['CONVBIN'],
+                   os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
                    '-r', 'ubx',
-                   # '-f', '2',
-                   # '-y', excludeGNSSs,
                    '-hm', dRnx['crux']['marker'],
-                   '-hn', '05',
-                   '-ho', 'amuls/RMA-CISS',
-                   '-hr', 'rcvrnr/rcvrtype/rcvrver',
-                   '-ha', 'antnr/anttype',
-                   '-od', '-os',
-                   '-v', '3.03',
+                   '-hn', dRnx['crux']['markerno'],
+                   '-ho', dRnx['crux']['observer'],
+                   '-hr', dRnx['crux']['receiver'],
+                   '-ha', dRnx['crux']['antenna'],
+                   '-od',
+                   '-os',
+                   '-oi',
+                   '-ot',
+                   '-ol',
                    '-y', 'C',
                    '-y', 'R',
-                   '-o', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}-MO.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0]))]
+                   '-y', 'S',
+                   '-c', dRnx['crux']['marker'],
+                   '-d', dRnx['dirs']['rnx'],
+                   '-o', '{ubxf:s}-MO.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0]),
+                   '-n', '{ubxf:s}-MN.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0])]
 
     if dRnx['time']['startepoch'] != '00:00:00':
         argsCONVBIN += ['-ts', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
@@ -137,7 +177,29 @@ def ubx2rinex(logger: logging.Logger) -> list:
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsCONVBIN, logger=logger)
     if err_code != amc.E_SUCCESS:
         print(proc_out)
-        logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation ::RX3::'.format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
+        logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation/navigation file'
+                     .format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
+        sys.exit(err_code)
+    else:
+        if len(proc_out.strip()) > 0:
+            print('   process output = {!s}'.format(proc_out))
+
+    # convert using gfzrnx to RINEX v3 file name and perform check on file
+    argsGFZRNX = [dRnx['bin']['GFZRNX'],
+                  '-f',
+                  '-finp', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}-MN.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0])),
+                  '-fout', os.path.join(dRnx['dirs']['rnx'], '::RX3::{markerno:02d},BEL'.format(markerno=int(dRnx['crux']['markerno']))),
+                  '-split', '86400']
+
+    print('argsGFZRNX = {}'.format(argsGFZRNX))
+
+    # run the sbf2rin program
+    logger.info('{func:s}: converting to RINEX v3.x format and naming'.format(func=cFuncName))
+    err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsGFZRNX, logger=logger)
+    if err_code != amc.E_SUCCESS:
+        print(proc_out)
+        logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation ::RX3::'
+                     .format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
         sys.exit(err_code)
     else:
         if len(proc_out.strip()) > 0:
@@ -154,7 +216,7 @@ def main_ubx2rnx3(argv):
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # treat command line options
-    ubxfile, rnxdir, marker, yyyy, doy, startepoch, endepoch, observer, logLevels, = treatCmdOpts(argv)
+    ubxfile, rnxdir, marker, yyyy, doy, startepoch, endepoch, observer, receiver, antenna, markerno, markertype, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
@@ -168,34 +230,42 @@ def main_ubx2rnx3(argv):
     dRnx['crux'] = {}
     dRnx['crux']['marker'] = marker
     dRnx['crux']['observer'] = '/'.join([obsinfo for obsinfo in observer])
+    dRnx['crux']['receiver'] = '/'.join([rx for rx in receiver])
+    dRnx['crux']['markertype'] = markertype
+    dRnx['crux']['markerno'] = markerno
+    dRnx['crux']['antenna'] = '/'.join([antinfo for antinfo in antenna])
     print(dRnx['crux']['observer'])
-    sys.exit(8)
 
     dRnx['time'] = {}
     if endepoch < startepoch:
-        logger.error('{func:s}: startepoch {start:s} must be before endepoch {end:s}'.format(start=colored(startepoch, 'red'), end=colored(endepoch, 'red'), func=cFuncName))
+        logger.error('{func:s}: startepoch {start:s} must be before endepoch {end:s}'
+                     .format(start=colored(startepoch, 'red'),
+                             end=colored(endepoch, 'red'),
+                             func=cFuncName))
         sys.exit(amc.E_INCORRECT_TIMES)
 
     dRnx['time']['YYYY'] = yyyy
     dRnx['time']['DOY'] = doy
-    dRnx['time']['date'] = datetime.strptime('{year:04d}-{doy:03d}'.format(year=dRnx['time']['YYYY'], doy=dRnx['time']['DOY']), "%Y-%j")
+    dRnx['time']['date'] = datetime.strptime('{year:04d}-{doy:03d}'
+                                             .format(year=dRnx['time']['YYYY'],
+                                                     doy=dRnx['time']['DOY']), "%Y-%j")
 
     dRnx['time']['startepoch'] = startepoch
     dRnx['time']['endepoch'] = endepoch
-
 
     logger.info('{func:s}: arguments processed: dRnx = {drtk!s}'.format(func=cFuncName, drtk=dRnx))
 
     # check validity of passed arguments
     retCode = checkValidityArgs(logger=logger)
     if retCode != amc.E_SUCCESS:
-        logger.error('{func:s}: Program exits with code {error:s}'.format(func=cFuncName, error=colored('{!s}'.format(retCode), 'red')))
+        logger.error('{func:s}: Program exits with code {error:s}'.format(func=cFuncName,
+                                                                          error=colored('{!s}'.format(retCode), 'red')))
         sys.exit(retCode)
 
     # locate the conversion programs SBF2RIN and CONVBIN
     dRnx['bin'] = {}
-    # dRnx['bin']['CONVBIN'] = location.locateProg('convbin', logger)
     dRnx['bin']['CONVBIN'] = location.locateProg('convbin', logger)
+    dRnx['bin']['GFZRNX'] = location.locateProg('gfzrnx', logger)
 
     # convert binary file to rinex
     logger.info('{func:s}: convert binary file to rinex'.format(func=cFuncName))
