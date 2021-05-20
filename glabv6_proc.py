@@ -92,19 +92,28 @@ def check_arguments(logger: logging.Logger) -> int:
     # root directory for processing
     amc.dRTK['proc'] = {}
 
-    amc.dRTK['proc']['dir_rnx'] = os.path.join(os.path.expanduser("~"), 'RxTURP/BEGPIOS', amc.dRTK['options']['rxtype'], 'rinex', '{yy:s}{doy:03d}'.format(yy=str(amc.dRTK['options']['year'])[-2:], doy=amc.dRTK['options']['doy']))
+    amc.dRTK['proc']['dir_rnx'] = os.path.join(os.path.expanduser("~"),
+                                               'RxTURP/BEGPIOS',
+                                               amc.dRTK['options']['rxtype'],
+                                               'rinex',
+                                               '{yy:s}{doy:03d}'.format(yy=str(amc.dRTK['options']['year'])[-2:],
+                                                                        doy=amc.dRTK['options']['doy']))
     path = pathlib.Path(amc.dRTK['proc']['dir_rnx'])
     if not path.is_dir():
-        logger.info('{func:s}: root directory {root:s} does not exist'.format(root=colored(amc.dRTK['proc']['dir_rnx'], 'red'), func=cFuncName))
+        logger.info('{func:s}: root directory {root:s} does not exist'.format(root=colored(amc.dRTK['proc']['dir_rnx'], 'red'),
+                                                                              func=cFuncName))
         return amc.E_DIR_NOT_EXIST
     else:  # change to directory
         os.chdir(path)
 
     # check whether the given IGS dir exist
-    amc.dRTK['proc']['dir_igs'] = os.path.join(amc.dRTK['options']['igs_root'], '{yy:s}{doy:03d}'.format(yy=str(amc.dRTK['options']['year'])[-2:], doy=amc.dRTK['options']['doy']))
+    amc.dRTK['proc']['dir_igs'] = os.path.join(amc.dRTK['options']['igs_root'],
+                                               '{yy:s}{doy:03d}'.format(yy=str(amc.dRTK['options']['year'])[-2:],
+                                                                        doy=amc.dRTK['options']['doy']))
     path = pathlib.Path(amc.dRTK['proc']['dir_igs'])
     if not path.is_dir():
-        logger.info('{func:s}: IGS directory {igs:s} does not exist'.format(igs=colored(amc.dRTK['proc']['dir_igs'], 'red'), func=cFuncName))
+        logger.info('{func:s}: IGS directory {igs:s} does not exist'.format(igs=colored(amc.dRTK['proc']['dir_igs'], 'red'),
+                                                                            func=cFuncName))
         return amc.E_DIR_NOT_EXIST
 
     # path to the glab directory, create it of not existing
@@ -112,16 +121,20 @@ def check_arguments(logger: logging.Logger) -> int:
     path = pathlib.Path(amc.dRTK['proc']['dir_glab'])
     if not path.is_dir():
         path.mkdir(parents=True, exist_ok=True)
-        logger.info('{func:s}: Created glab directory {glab:s} does not exist'.format(glab=colored(amc.dRTK['proc']['dir_glab'], 'green'), func=cFuncName))
+        logger.info('{func:s}: Created glab directory {glab:s} does not exist'.format(glab=colored(amc.dRTK['proc']['dir_glab'], 'green'),
+                                                                                      func=cFuncName))
 
     # check whether the template file exists
     path = pathlib.Path(amc.dRTK['options']['template'])
     if not path.is_file():
-        logger.info('{func:s}: gLAB template file {tmpl:s} does not exist'.format(tmpl=colored(amc.dRTK['options']['template'], 'red'), func=cFuncName))
+        logger.info('{func:s}: gLAB template file {tmpl:s} does not exist'.format(tmpl=colored(amc.dRTK['options']['template'], 'red'),
+                                                                                  func=cFuncName))
         return amc.E_FILE_NOT_EXIST
 
     # create the RINEX obs name and check whether it exists
-    amc.dRTK['proc']['cmp_obs'] = '{marker:s}{doy:03d}0.{yy:s}D.Z'.format(marker=amc.dRTK['options']['marker'], yy=str(amc.dRTK['options']['year'])[-2:], doy=amc.dRTK['options']['doy'])
+    amc.dRTK['proc']['cmp_obs'] = '{marker:s}{doy:03d}0.{yy:s}D.Z'.format(marker=amc.dRTK['options']['marker'],
+                                                                          yy=str(amc.dRTK['options']['year'])[-2:],
+                                                                          doy=amc.dRTK['options']['doy'])
 
     # determine the options for GNSS and codes / freqs
     amc.dRTK['proc']['marker'] = amc.dRTK['options']['marker']
@@ -129,14 +142,19 @@ def check_arguments(logger: logging.Logger) -> int:
     amc.dRTK['proc']['cmp_nav'] = []
     for gnss in amc.dRTK['proc']['gnss']:
         # determine the navigation files used (currently using the IGS NAV files - should be changed)
-        amc.dRTK['proc']['cmp_nav'].append('BRUX00BEL_R_{year:04d}{doy:03d}0000_01D_{gnss:s}N.rnx.gz'.format(year=amc.dRTK['options']['year'], doy=amc.dRTK['options']['doy'], gnss=gnss))
+        amc.dRTK['proc']['cmp_nav'].append('BRUX00BEL_R_{year:04d}{doy:03d}0000_01D_{gnss:s}N.rnx.gz'
+                                           .format(year=amc.dRTK['options']['year'],
+                                                   doy=amc.dRTK['options']['doy'],
+                                                   gnss=gnss))
 
     # get the codes used and corresponding frequency numbers
     amc.dRTK['proc']['codes'] = [code for code in amc.dRTK['options']['prcodes']]
     amc.dRTK['proc']['freqs'] = [prcode[1:2] for prcode in amc.dRTK['proc']['codes']]
 
     # name for glab output file
-    amc.dRTK['proc']['glab_out'] = '{marker:s}-{gnss:s}-{codes:s}.out'.format(marker=amc.dRTK['proc']['marker'], gnss=''.join(amc.dRTK['proc']['gnss']), codes='-'.join(amc.dRTK['proc']['codes']))
+    amc.dRTK['proc']['glab_out'] = '{marker:s}-{gnss:s}-{codes:s}.out'.format(marker=amc.dRTK['proc']['marker'],
+                                                                              gnss=''.join(amc.dRTK['proc']['gnss']),
+                                                                              codes='-'.join(amc.dRTK['proc']['codes']))
     amc.dRTK['proc']['glab_cfg'] = amc.dRTK['proc']['glab_out'][:-3] + 'cfg'
 
     return amc.E_SUCCESS
@@ -178,10 +196,12 @@ def create_session_template(logger: logging.Logger):
         fd_cfg.write(glab_cfg)
         fd_cfg.close()
 
-        logger.info('{func:s}: created glab configuration file {cfg:s}\n{content!s}'.format(cfg=amc.dRTK['proc']['glab_cfg'], content=glab_cfg, func=cFuncName))
+        logger.info('{func:s}: created glab configuration file {cfg:s}\n{content!s}'.format(cfg=amc.dRTK['proc']['glab_cfg'],
+                                                                                            content=glab_cfg, func=cFuncName))
 
     except IOError:
-        logger.info('{func:s}: problems using template file {tmpl:s}'.format(tmpl=amc.dRTK['options']['template'], func=cFuncName))
+        logger.info('{func:s}: problems using template file {tmpl:s}'.format(tmpl=amc.dRTK['options']['template'],
+                                                                             func=cFuncName))
         sys.exit(amc.E_FILE_NOT_EXIST)
 
 
@@ -192,15 +212,21 @@ def run_glabng_session(logger: logging.Logger):
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # uncompress the RINEX OBS file
-    runGLABNG = '{prog:s} -input:cfg {cfg:s}'.format(prog=amc.dRTK['progs']['glabng'], cfg=os.path.join(amc.dRTK['proc']['dir_glab'], amc.dRTK['proc']['glab_cfg']))
-    logger.info('{func:s}: Running:\n{cmd:s}'.format(func=cFuncName, cmd=colored(runGLABNG, 'green')))
+    runGLABNG = '{prog:s} -input:cfg {cfg:s}'.format(prog=amc.dRTK['progs']['glabng'],
+                                                     cfg=os.path.join(amc.dRTK['proc']['dir_glab'],
+                                                                      amc.dRTK['proc']['glab_cfg']))
+    logger.info('{func:s}: Running:\n{cmd:s}'.format(func=cFuncName,
+                                                     cmd=colored(runGLABNG, 'green')))
 
     # run the program
     exeprogram.subProcessDisplayStdOut(cmd=runGLABNG, verbose=True)
 
     # compress the resulting "out" file
-    runGZIP = '{prog:s} -f {zip:s}'.format(prog=amc.dRTK['progs']['gzip'], zip=os.path.join(amc.dRTK['proc']['dir_glab'], amc.dRTK['proc']['glab_out']))
-    logger.info('{func:s}: compressing {out:s} file by:\n{cmd:s}'.format(out=amc.dRTK['proc']['glab_out'], func=cFuncName, cmd=colored(runGZIP, 'green')))
+    runGZIP = '{prog:s} -f {zip:s}'.format(prog=amc.dRTK['progs']['gzip'],
+                                           zip=os.path.join(amc.dRTK['proc']['dir_glab'], amc.dRTK['proc']['glab_out']))
+    logger.info('{func:s}: compressing {out:s} file by:\n{cmd:s}'.format(out=amc.dRTK['proc']['glab_out'],
+                                                                         func=cFuncName,
+                                                                         cmd=colored(runGZIP, 'green')))
     # run the program
     exeprogram.subProcessDisplayStdErr(cmd=runGZIP, verbose=True)
 
@@ -243,7 +269,11 @@ def main_glab_proc(argv) -> bool:
     run_glabng_session(logger=logger)
 
     # report to the user
-    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName, json=json.dumps(amc.dRTK, sort_keys=False, indent=4, default=amutils.DT_convertor)))
+    logger.info('{func:s}: Project information =\n{json!s}'.format(func=cFuncName,
+                                                                   json=json.dumps(amc.dRTK,
+                                                                                   sort_keys=False,
+                                                                                   indent=4,
+                                                                                   default=amutils.DT_convertor)))
 
     # # move the log file to the glab directory
     # code_txt = ''

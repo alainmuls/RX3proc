@@ -9,6 +9,7 @@ from shutil import copyfile, move
 from pathlib import Path
 import glob
 from datetime import datetime
+import json
 
 from ampyutils import gnss_cmd_opts as gco
 from gfzrnx import gfzrnx_constants as gfzc
@@ -165,9 +166,6 @@ def ubx2rinex(logger: logging.Logger) -> list:
                    '-oi',
                    '-ot',
                    '-ol',
-                   '-y', 'C',
-                   '-y', 'R',
-                   '-y', 'S',
                    '-c', dRnx['crux']['marker'],
                    '-d', dRnx['dirs']['rnx'],
                    '-n', '{ubxf:s}-{ext:s}.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0], ext=dUbxExt['nav']),
@@ -179,12 +177,6 @@ def ubx2rinex(logger: logging.Logger) -> list:
     for excl_gnss in gnss_excluded:
         argsCONVBIN += ['-y', excl_gnss]
 
-    if dRnx['time']['startepoch'] != '00:00:00':
-        argsCONVBIN += ['-ts', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
-                                                          time=dRnx['time']['startepoch'])]
-    if dRnx['time']['endepoch'] != '23:59:59':
-        argsCONVBIN += ['-te', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
-                                                          time=dRnx['time']['endepoch'])]
     print('argsCONVBIN = {}'.format(argsCONVBIN))
 
     # run the sbf2rin program
@@ -209,8 +201,15 @@ def ubx2rinex(logger: logging.Logger) -> list:
                                                                                                ext=rnxext)),
                       '-fout', os.path.join(dRnx['dirs']['rnx'], '::RX3::{markerno:02d},BEL'.format(markerno=int(dRnx['crux']['markerno'])))]
 
-        # if rnxtype == 'obs':
-        #     argsGFZRNX += ['-split', '86400']
+        if rnxtype == 'obs':
+            if dRnx['time']['startepoch'] != '00:00:00':
+                argsGFZRNX += ['-epo_beg', '{date:s}_{time:s}'.format(date=dRnx['time']['date'].strftime('%Y-%m-%d'),
+                                                                      time=dRnx['time']['startepoch'])]
+            if dRnx['time']['endepoch'] != '23:59:59':
+                # calculate the difference in seconds between begin and end epoch
+                duration = (datetime.strptime(dRnx['time']['endepoch'], '%H:%M:%S') - \
+                            datetime.strptime(dRnx['time']['startepoch'], '%H:%M:%S')).total_seconds()
+                argsGFZRNX += ['--duration', '{duration:.0f}'.format(duration=duration)]
 
         print('argsGFZRNX = {}'.format(argsGFZRNX))
 
@@ -239,8 +238,7 @@ def ubx2rinex(logger: logging.Logger) -> list:
                 move(lst_of_rnx3_files[rnxtype], rename_navf)
                 lst_of_rnx3_files[rnxtype] = rename_navf
 
-    print(lst_of_rnx3_files)
-    sys.exit(6)
+    return lst_of_rnx3_files['obs'], lst_of_rnx3_files['nav']
 
 
 def main_ubx2rnx3(argv):
@@ -305,9 +303,28 @@ def main_ubx2rnx3(argv):
     dRnx['bin']['GFZRNX'] = location.locateProg('gfzrnx', logger)
 
     # convert binary file to rinex
-    logger.info('{func:s}: convert binary file to rinex'.format(func=cFuncName))
+    logger.info('{func:s}: convert uBlox binary file to rinex'.format(func=cFuncName))
     lst_rnx_files = ubx2rinex(logger=logger)
+
+    dRnx['obs3f'] = lst_rnx_files[0]
+    dRnx['nav3f'] = lst_rnx_files[1]
+
+    # report to the user
+    logger.info('{func:s}: dRnx =\n{json!s}'.format(func=cFuncName, json=json.dumps(dRnx, sort_keys=False, indent=4, default=amutils.json_convertor)))
+
+    # store the json structure
+    jsonName = os.path.join(dRnx['dirs']['rnx'], '{scrname:s}.json'.format(scrname=os.path.splitext(os.path.basename(__file__))[0]))
+    with open(jsonName, 'w+') as f:
+        json.dump(dRnx, f, ensure_ascii=False, indent=4, default=amutils.json_convertor)
+
+    # clean up
+    copyfile(log_name, os.path.join(dRnx['dirs']['rnx'], '{scrname:s}.log'.format(scrname=os.path.basename(__file__).replace('.', '_'))))
+    os.remove(log_name)
+
+    return dRnx['obs3f'], dRnx['nav3f']
 
 
 if __name__ == "__main__":  # Only run if this file is called directly
     rnx_obsf, rnx_navf = main_ubx2rnx3(argv=sys.argv[1:])
+    print(rnx_obsf)
+    print(rnx_navf)
