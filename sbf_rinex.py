@@ -127,10 +127,10 @@ def sbf2rinex(logger: logging.Logger) -> list:
             print('   process output = {!s}'.format(proc_out))
 
     # RINEX files are created in the SBF directory, have to move them to RNX dir
-    list_of_rnx_files = sorted(glob.glob(os.path.join(dRnx['dirs']['rnx'], '*.rnx')), key=os.path.getmtime)
-    logger.info('{func:s}: sorted list (by modification time) of rnx files:\n{lst:s}'.format(lst='\n'.join(list_of_rnx_files), func=cFuncName))
+    list_of_rnx3_files = sorted(glob.glob(os.path.join(dRnx['dirs']['rnx'], '*.rnx')), key=os.path.getmtime)
+    logger.info('{func:s}: sorted list (by modification time) of rnx files:\n{lst:s}'.format(lst='\n'.join(list_of_rnx3_files), func=cFuncName))
 
-    return list_of_rnx_files[-2:]
+    return list_of_rnx3_files[-2:]
 
 
 def main_sbf2rnx3(argv):

@@ -4,14 +4,14 @@ import sys
 import os
 import argparse
 from termcolor import colored
-import json
 import logging
-from shutil import copyfile
+from shutil import copyfile, move
 from pathlib import Path
 import glob
 from datetime import datetime
 
 from ampyutils import gnss_cmd_opts as gco
+from gfzrnx import gfzrnx_constants as gfzc
 
 from ampyutils import am_config as amc
 from ampyutils import amutils, location
@@ -43,11 +43,19 @@ def treatCmdOpts(argv: list):
 
     parser.add_argument('--marker', help='marker name (4 chars)',
                         required=True, type=str, action=gco.marker_action)
+    parser.add_argument('--gnss', help='select GNSS(s) to use (out of {gnsss:s}, default {gnss:s})'
+                                       .format(gnsss='|'.join(gfzc.lst_GNSSs),
+                                               gnss=colored(gfzc.lst_GNSSs[0], 'green')),
+                        default=gfzc.lst_GNSSs[0],
+                        type=str,
+                        required=False,
+                        action=gco.gnss_action,
+                        nargs='+')
+
     parser.add_argument('--year', help='Year (4 digits)',
                         required=True, type=int, action=gco.year_action)
     parser.add_argument('--doy', help='day-of-year [1..366]',
                         required=True, type=int, action=gco.doy_action)
-
     parser.add_argument('--startepoch', help='specify start epoch hh:mm:ss (default {start:s})'
                                              .format(start=colored('00:00:00', 'green')),
                         required=False, type=str, default='00:00:00', action=gco.epoch_action)
@@ -85,7 +93,7 @@ def treatCmdOpts(argv: list):
 
     # return arguments
     print('args.observer = {}'.format(args.observer))
-    return args.ubxfile, args.rnxdir, args.marker, args.year, args.doy, args.startepoch, args.endepoch, args.observer, args.receiver, args.antenna, args.markerno, args.markertype, args.logging
+    return args.ubxfile, args.rnxdir, args.marker, args.gnss, args.year, args.doy, args.startepoch, args.endepoch, args.observer, args.receiver, args.antenna, args.markerno, args.markertype, args.logging
 
 
 def checkValidityArgs(logger: logging.Logger) -> bool:
@@ -138,11 +146,12 @@ def ubx2rinex(logger: logging.Logger) -> list:
     # convert to RINEX for selected GNSS system
     logger.info('{func:s}: RINEX conversion from UBX binary'.format(func=cFuncName))
 
-    # we'll convert always by for only GPS & Galileo, excluding other GNSSs (G:GPS,R:GLONASS,E:Galileo,J:QZSS,S:SBAS,C:BeiDou)
-    # excludeGNSSs = 'RJSC'
+    # create the observation and navigation file
+    dUbxExt = {'obs': 'MO',
+               'nav': 'MN'}
 
     # convert to RINEX v3.x format
-    # argsCONVBIN = [dRnx['bin']['CONVBIN'], os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
+    # we'll convert always by for only GPS & Galileo, excluding other GNSSs (G:GPS,R:GLONASS,E:Galileo,J:QZSS,S:SBAS,C:BeiDou)
     argsCONVBIN = [dRnx['bin']['CONVBIN'],
                    os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']),
                    '-r', 'ubx',
@@ -161,8 +170,14 @@ def ubx2rinex(logger: logging.Logger) -> list:
                    '-y', 'S',
                    '-c', dRnx['crux']['marker'],
                    '-d', dRnx['dirs']['rnx'],
-                   '-o', '{ubxf:s}-MO.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0]),
-                   '-n', '{ubxf:s}-MN.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0])]
+                   '-n', '{ubxf:s}-{ext:s}.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0], ext=dUbxExt['nav']),
+                   '-o', '{ubxf:s}-{ext:s}.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0], ext=dUbxExt['obs'])]
+
+    # exclude satsystems not used
+    excludeGNSSs = ['G', 'E', 'R', 'J', 'S', 'C']
+    gnss_excluded = [gnss for gnss in excludeGNSSs if gnss not in dRnx['gnsss']]
+    for excl_gnss in gnss_excluded:
+        argsCONVBIN += ['-y', excl_gnss]
 
     if dRnx['time']['startepoch'] != '00:00:00':
         argsCONVBIN += ['-ts', '{date:s} {time:s}'.format(date=dRnx['time']['date'].strftime('%Y/%m/%d'),
@@ -184,27 +199,47 @@ def ubx2rinex(logger: logging.Logger) -> list:
         if len(proc_out.strip()) > 0:
             print('   process output = {!s}'.format(proc_out))
 
-    # convert using gfzrnx to RINEX v3 file name and perform check on file
-    argsGFZRNX = [dRnx['bin']['GFZRNX'],
-                  '-f',
-                  '-finp', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}-MN.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0])),
-                  '-fout', os.path.join(dRnx['dirs']['rnx'], '::RX3::{markerno:02d},BEL'.format(markerno=int(dRnx['crux']['markerno']))),
-                  '-split', '86400']
+    # convert using gfzrnx to RINEX v3 file name and split on daily baoundaries
+    lst_of_rnx3_files = {}
+    for rnxtype, rnxext in dUbxExt.items():
+        # prepare the gfzrnx arguments
+        argsGFZRNX = [dRnx['bin']['GFZRNX'],
+                      '-f',
+                      '-finp', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}-{ext:s}.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0],
+                                                                                               ext=rnxext)),
+                      '-fout', os.path.join(dRnx['dirs']['rnx'], '::RX3::{markerno:02d},BEL'.format(markerno=int(dRnx['crux']['markerno'])))]
 
-    print('argsGFZRNX = {}'.format(argsGFZRNX))
+        # if rnxtype == 'obs':
+        #     argsGFZRNX += ['-split', '86400']
 
-    # run the sbf2rin program
-    logger.info('{func:s}: converting to RINEX v3.x format and naming'.format(func=cFuncName))
-    err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsGFZRNX, logger=logger)
-    if err_code != amc.E_SUCCESS:
-        print(proc_out)
-        logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation ::RX3::'
-                     .format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
-        sys.exit(err_code)
-    else:
-        if len(proc_out.strip()) > 0:
-            print('   process output = {!s}'.format(proc_out))
+        print('argsGFZRNX = {}'.format(argsGFZRNX))
 
+        # run the sbf2rin program
+        logger.info('{func:s}: converting {rnxt:s} to RINEX v3.x format and naming convention'.format(rnxt=rnxtype,
+                                                                                                      func=cFuncName))
+        err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsGFZRNX, logger=logger)
+        if err_code != amc.E_SUCCESS:
+            print(proc_out)
+            logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation ::RX3::'
+                         .format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
+            sys.exit(err_code)
+        else:
+            if len(proc_out.strip()) > 0:
+                print('   process output = {!s}'.format(proc_out))
+
+            # find the rnx3 file for this rnxtype
+            lst_of_rnx3_files[rnxtype] = sorted(glob.glob(os.path.join(dRnx['dirs']['rnx'], '*{ext:s}.rnx'.format(ext=rnxext))),
+                                                key=os.path.getmtime)[-1]
+            print(lst_of_rnx3_files)
+            # for navigation file name, replace first 4 chars by marker name
+            if rnxtype == 'nav':
+                rnx_basename = os.path.basename(lst_of_rnx3_files[rnxtype])
+                rename_navf = os.path.join(dRnx['dirs']['rnx'], '{marker:4s}{rnxn:s}'.format(marker=dRnx['crux']['marker'],
+                                                                                             rnxn=rnx_basename[4:]))
+                move(lst_of_rnx3_files[rnxtype], rename_navf)
+                lst_of_rnx3_files[rnxtype] = rename_navf
+
+    print(lst_of_rnx3_files)
     sys.exit(6)
 
 
@@ -216,7 +251,7 @@ def main_ubx2rnx3(argv):
     cFuncName = colored(os.path.basename(__file__), 'yellow') + ' - ' + colored(sys._getframe().f_code.co_name, 'green')
 
     # treat command line options
-    ubxfile, rnxdir, marker, yyyy, doy, startepoch, endepoch, observer, receiver, antenna, markerno, markertype, logLevels = treatCmdOpts(argv)
+    ubxfile, rnxdir, marker, gnsss, yyyy, doy, startepoch, endepoch, observer, receiver, antenna, markerno, markertype, logLevels = treatCmdOpts(argv)
 
     # create logging for better debugging
     logger, log_name = amc.createLoggers(os.path.basename(__file__), logLevels=logLevels)
@@ -225,6 +260,8 @@ def main_ubx2rnx3(argv):
     dRnx['dirs'] = {}
     dRnx['dirs']['ubx'] = os.path.dirname(Path(ubxfile).resolve())
     dRnx['dirs']['rnx'] = Path(rnxdir).resolve()
+
+    dRnx['gnsss'] = gnsss
 
     dRnx['ubxf'] = os.path.basename(ubxfile)
     dRnx['crux'] = {}
