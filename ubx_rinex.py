@@ -93,7 +93,7 @@ def treatCmdOpts(argv: list):
     args = parser.parse_args(argv)
 
     # return arguments
-    print('args.observer = {}'.format(args.observer))
+    # print('args.observer = {}'.format(args.observer))
     return args.ubxfile, args.rnxdir, args.marker, args.gnss, args.year, args.doy, args.startepoch, args.endepoch, args.observer, args.receiver, args.antenna, args.markerno, args.markertype, args.logging
 
 
@@ -113,8 +113,9 @@ def checkValidityArgs(logger: logging.Logger) -> bool:
 
     # check if SBF dire exists
     if not os.path.exists(dRnx['dirs']['ubx']):
-        logger.error('{func:s}   !!! Dir {basedir:s} does not exist.'.format(func=cFuncName,
-                                                                             basedir=dRnx['dirs']['ubx']))
+        logger.error('{func:s}   !!! Dir {basedir:s} does not exist.'
+                     .format(func=cFuncName,
+                             basedir=colored(dRnx['dirs']['ubx'], 'red')))
         return amc.E_INVALID_ARGS
 
     # make the coplete filename by adding to ubxDir and check existence of binary file to convert
@@ -124,7 +125,7 @@ def checkValidityArgs(logger: logging.Logger) -> bool:
 
     if not os.access(os.path.join(dRnx['dirs']['ubx'], dRnx['ubxf']), os.R_OK):
         logger.error('{func:s}   !!! binary observation file {bin:s} not accessible.'
-                     .format(func=cFuncName, bin=dRnx['ubxf']))
+                     .format(func=cFuncName, bin=colored(dRnx['ubxf'], 'red')))
         return amc.E_FILE_NOT_EXIST
 
     # check existence of rnxdir and create if needed
@@ -177,19 +178,23 @@ def ubx2rinex(logger: logging.Logger) -> list:
     for excl_gnss in gnss_excluded:
         argsCONVBIN += ['-y', excl_gnss]
 
-    print('argsCONVBIN = {}'.format(argsCONVBIN))
+    # print('argsCONVBIN = {}'.format(argsCONVBIN))
 
     # run the sbf2rin program
     logger.info('{func:s}: creating RINEX observation file'.format(func=cFuncName))
     err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsCONVBIN, logger=logger)
     if err_code != amc.E_SUCCESS:
-        print(proc_out)
+        # print(proc_out)
         logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation/navigation file'
-                     .format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
+                     .format(err=err_code, ubxf=colored(dRnx['ubxf'], 'red'), func=cFuncName))
         sys.exit(err_code)
     else:
         if len(proc_out.strip()) > 0:
-            print('   process output = {!s}'.format(proc_out))
+            logger.info('   process output = \n{!s}'.format(proc_out))
+
+    # change to rnx directory
+    os.chdir(dRnx['dirs']['rnx'])
+    # print(os.getcwd())
 
     # convert using gfzrnx to RINEX v3 file name and split on daily baoundaries
     lst_of_rnx3_files = {}
@@ -197,44 +202,64 @@ def ubx2rinex(logger: logging.Logger) -> list:
         # prepare the gfzrnx arguments
         argsGFZRNX = [dRnx['bin']['GFZRNX'],
                       '-f',
-                      '-finp', os.path.join(dRnx['dirs']['rnx'], '{ubxf:s}-{ext:s}.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0],
-                                                                                               ext=rnxext)),
-                      '-fout', os.path.join(dRnx['dirs']['rnx'], '::RX3::{markerno:02d},BEL'.format(markerno=int(dRnx['crux']['markerno'])))]
+                      '-finp', '{ubxf:s}-{ext:s}.rnx'.format(ubxf=os.path.splitext(dRnx['ubxf'])[0],
+                                                             ext=rnxext),
+                      '-fout', '::RX3::{markerno:02d},BEL'.format(markerno=int(dRnx['crux']['markerno']))]
 
-        if rnxtype == 'obs':
-            if dRnx['time']['startepoch'] != '00:00:00':
-                argsGFZRNX += ['-epo_beg', '{date:s}_{time:s}'.format(date=dRnx['time']['date'].strftime('%Y-%m-%d'),
-                                                                      time=dRnx['time']['startepoch'])]
-            if dRnx['time']['endepoch'] != '23:59:59':
-                # calculate the difference in seconds between begin and end epoch
-                duration = (datetime.strptime(dRnx['time']['endepoch'], '%H:%M:%S') - \
-                            datetime.strptime(dRnx['time']['startepoch'], '%H:%M:%S')).total_seconds()
-                argsGFZRNX += ['--duration', '{duration:.0f}'.format(duration=duration)]
-
-        print('argsGFZRNX = {}'.format(argsGFZRNX))
+        # print('argsGFZRNX = {}'.format(argsGFZRNX))
 
         # run the sbf2rin program
-        logger.info('{func:s}: converting {rnxt:s} to RINEX v3.x format and naming convention'.format(rnxt=rnxtype,
-                                                                                                      func=cFuncName))
+        logger.info('{func:s}: converting {rnxt:s} to RINEX v3.x format and naming convention'
+                    .format(rnxt=rnxtype, func=cFuncName))
         err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsGFZRNX, logger=logger)
         if err_code != amc.E_SUCCESS:
-            print(proc_out)
+            # print(proc_out)
             logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation ::RX3::'
-                         .format(err=err_code, ubxf=dRnx['ubxf'], func=cFuncName))
+                         .format(err=err_code, ubxf=colored(dRnx['ubxf'], 'red'), func=cFuncName))
             sys.exit(err_code)
         else:
             if len(proc_out.strip()) > 0:
-                print('   process output = {!s}'.format(proc_out))
+                logger.info('   process output = \n{!s}'.format(proc_out))
 
             # find the rnx3 file for this rnxtype
             lst_of_rnx3_files[rnxtype] = sorted(glob.glob(os.path.join(dRnx['dirs']['rnx'], '*{ext:s}.rnx'.format(ext=rnxext))),
                                                 key=os.path.getmtime)[-1]
-            print(lst_of_rnx3_files)
+            # print(lst_of_rnx3_files)
+            if rnxtype == 'obs':
+                if (dRnx['time']['startepoch'] != '00:00:00') | (dRnx['time']['endepoch'] != '23:59:59'):
+                    argsGFZRNX = [dRnx['bin']['GFZRNX'],
+                                  '-f',
+                                  '-finp', lst_of_rnx3_files['obs'],
+                                  '-fout', '::RX3::{markerno:02d},BEL'.format(markerno=int(dRnx['crux']['markerno']))]
+                    if (dRnx['time']['startepoch'] != '00:00:00'):
+                        argsGFZRNX += ['-epo_beg', '{date:s}_{time:s}'.format(date=dRnx['time']['date'].strftime('%Y-%m-%d'),
+                                                                              time=dRnx['time']['startepoch'])]
+                    if dRnx['time']['endepoch'] != '23:59:59':
+                        # calculate the difference in seconds between begin and end epoch
+                        duration = (datetime.strptime(dRnx['time']['endepoch'], '%H:%M:%S') - \
+                                    datetime.strptime(dRnx['time']['startepoch'], '%H:%M:%S')).total_seconds()
+                        argsGFZRNX += ['--duration', '{duration:.0f}'.format(duration=duration)]
+
+                    logger.info('{func:s}: reducing  {rnxt:s} to time interval {stt:s} -> {endt:s}'
+                                .format(rnxt=rnxtype,
+                                        stt=dRnx['time']['startepoch'],
+                                        endt=dRnx['time']['endepoch'],
+                                        func=cFuncName))
+                    err_code, proc_out = amutils.run_subprocess_output(sub_proc=argsGFZRNX, logger=logger)
+                    if err_code != amc.E_SUCCESS:
+                        # print(proc_out)
+                        logger.error('{func:s}: error {err!s} converting {ubxf:s} to RINEX observation ::RX3::'
+                                     .format(err=err_code, ubxf=colored(dRnx['ubxf'], 'red'), func=cFuncName))
+                        sys.exit(err_code)
+                    else:
+                        if len(proc_out.strip()) > 0:
+                            logger.info('   process output = \n{!s}'.format(proc_out))
+
             # for navigation file name, replace first 4 chars by marker name
             if rnxtype == 'nav':
                 rnx_basename = os.path.basename(lst_of_rnx3_files[rnxtype])
-                rename_navf = os.path.join(dRnx['dirs']['rnx'], '{marker:4s}{rnxn:s}'.format(marker=dRnx['crux']['marker'],
-                                                                                             rnxn=rnx_basename[4:]))
+                rename_navf = '{marker:4s}{rnxn:s}'.format(marker=dRnx['crux']['marker'],
+                                                           rnxn=rnx_basename[4:])
                 move(lst_of_rnx3_files[rnxtype], rename_navf)
                 lst_of_rnx3_files[rnxtype] = rename_navf
 
@@ -269,7 +294,7 @@ def main_ubx2rnx3(argv):
     dRnx['crux']['markertype'] = markertype
     dRnx['crux']['markerno'] = markerno
     dRnx['crux']['antenna'] = '/'.join([antinfo for antinfo in antenna])
-    print(dRnx['crux']['observer'])
+    # print(dRnx['crux']['observer'])
 
     dRnx['time'] = {}
     if endepoch < startepoch:
@@ -293,8 +318,9 @@ def main_ubx2rnx3(argv):
     # check validity of passed arguments
     retCode = checkValidityArgs(logger=logger)
     if retCode != amc.E_SUCCESS:
-        logger.error('{func:s}: Program exits with code {error:s}'.format(func=cFuncName,
-                                                                          error=colored('{!s}'.format(retCode), 'red')))
+        logger.error('{func:s}: Program exits with code {error:s}'
+                     .format(func=cFuncName,
+                             error=colored('{!s}'.format(retCode), 'red')))
         sys.exit(retCode)
 
     # locate the conversion programs SBF2RIN and CONVBIN
@@ -326,5 +352,5 @@ def main_ubx2rnx3(argv):
 
 if __name__ == "__main__":  # Only run if this file is called directly
     rnx_obsf, rnx_navf = main_ubx2rnx3(argv=sys.argv[1:])
-    print(rnx_obsf)
     print(rnx_navf)
+    print(rnx_obsf)
